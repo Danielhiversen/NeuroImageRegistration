@@ -1,5 +1,21 @@
-# sudo pip install dipy
+""" install
+wget -O- http://neuro.debian.net/lists/wily.de-m.full | sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
+sudo apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
+sudo apt-get update
 
+sudo apt-get install libblas-dev liblapack-dev libfreetype6-dev libpng16-dev fsl-complete cmake ninja-build
+pip install --upgrade setuptools
+pip install --upgrade distribute
+sudo apt-get install python-pip matplotlib
+sudo pip install dipy nipype
+
+git clone git://github.com/stnava/ANTs.git
+mkdir antsbin
+cd antsbin
+cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ../ANTs/
+ninja
+
+"""
 from __future__ import print_function
 
 #from dipy.align.aniso2iso import resample
@@ -19,18 +35,63 @@ import nibabel as nib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
-MULTITHREAD = "max" # 1,23,4....., "max"
+MULTITHREAD = 4 # 1,23,4....., "max"
 # MULTITHREAD = "max"
 
-DATA_PATH = ''
+DATA_PATH = ""
 T1_PATTERN = []
-DATA_OUT_PATH = ''
-TEMP_FOLDER_PATH = 'temp/'
+DATA_OUT_PATH = ""
+TEMP_FOLDER_PATH = ""
 TEMPLATE_VOLUME = ""
 TEMPLATE_MASK = ""
+MASK_TUMOR = False
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
-    
+
+def setup(dataset):
+    global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK, MASK_TUMOR
+    if dataset=="HGG":
+        T1_PATTERN = ['T1_diag', 'T1_preop']
+        TEMP_FOLDER_PATH = 'temp_HGG/'
+    elif dataset=="LGG":
+        T1_PATTERN = ['_pre.nii']
+        TEMP_FOLDER_PATH = 'temp_LGG/'
+    else:
+        print("Unkown dataset")
+        raise Exception
+
+    hostname = os.uname()[1]
+    if hostname == 'dahoiv-Alienware-15':
+        if dataset=="HGG":
+            DATA_PATH = '/home/dahoiv/disk/data/tumor_segmentation/'
+            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out/'
+        elif dataset=="LGG":
+            DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/PRE/'
+            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out_LGG/'
+        else:
+            print("Unkown dataset")
+            raise Exception
+        TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
+        TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
+        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/' #path to ANTs bin folder
+    elif hostname == 'dahoiv-Precision-M6500':
+        if dataset=="HGG":
+            DATA_PATH = '/mnt/dokumenter/tumor_segmentation/'
+            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out/'
+        elif dataset=="LGG":
+            DATA_PATH = '/mnt/dokumenter/data/LGG_kart/PRE/'
+            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_LGG/'
+        else:
+            print("Unkown dataset")
+            raise Exception
+        TEMPLATE_VOLUME = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
+        TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
+        os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/' #path to ANTs bin folder
+    else:
+        print("Unkown host name " + hostname)
+        print("Add your host name path to " +sys.argv[0] )
+        raise Exception
+
 def prepareTemplate():
     mult = ants.MultiplyImages()
     mult.inputs.dimension = 3
@@ -57,6 +118,21 @@ def pre_process(data):
         return bet.inputs.out_file
     bet.run()
     print(TEMP_FOLDER_PATH + splitext(basename(data))[0] + '_bet.nii.gz')
+
+    if MASK_TUMOR:
+        k=0
+        segmentations = find_seg_images(bet.inputs.out_file)
+        if len(segmentations) > 1:
+            for segmentation in segmentations[1:]:
+                mult = ants.MultiplyImages()
+                mult.inputs.dimension = 3
+                mult.inputs.first_input = bet.inputs.out_file
+                mult.inputs.second_input = segmentation
+                k=k+1
+                mult.inputs.output_product_image = splitext(bet.inputs.out_file)[0] + '_masked' + str(k)+ '.nii'
+                mult.run()
+        return mult.inputs.output_product_image
+    
     return bet.inputs.out_file
 
 def registration(moving, fixed):
@@ -73,7 +149,7 @@ def registration(moving, fixed):
     reg.inputs.convergence_threshold = [1e-06]
     reg.inputs.convergence_window_size = [10]
     reg.inputs.metric = ['MI', 'MI', 'CC']
-    reg.inputs.metric_weight = [1.0]*3 
+    reg.inputs.metric_weight = [1.0]*3
     reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
                                        [1000, 500, 250, 100],
                                        [100, 70, 50, 20]]
@@ -89,7 +165,10 @@ def registration(moving, fixed):
     reg.inputs.use_histogram_matching = True
     reg.inputs.write_composite_transform = True
     #reg.inputs.collapse_output_transforms = False
-    
+
+    if MASK_TUMOR:
+        reg.inputs.moving_image_mask= splitext(moving)[0] + '_masked.nii'
+
     name=splitext(splitext(basename(moving))[0])[0]
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + "output_"+name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
@@ -98,32 +177,7 @@ def registration(moving, fixed):
     if os.path.exists(res):
         return res
     out=reg.run()
-    
-    img=nib.load(reg.inputs.output_warped_image).get_data()
-    img_template = nib.load(TEMPLATE_VOLUME).get_data()
-
-    def show_slices(slices,layers):
-        fig,axes = plt.subplots(1, len(slices))
-        for i, slice in enumerate(slices):
-            axes[i].imshow(slice.T, cmap="gray", origin="lower")
-            axes[i].imshow(layers[i].T, cmap=cm.Reds, origin="lower", alpha=0.4)
-
-    x=img.shape[0]/2
-    y=img.shape[1]/2
-    z=img.shape[2]/2
-    
-    slice_0=img[x, :, :]
-    slice_1=img[:, y, :]
-    slice_2=img[:, :, z]
-    slices=[slice_0, slice_1, slice_2]
-    
-    slice_0=img_template[x, :, :]
-    slice_1=img_template[:, y, :]
-    slice_2=img_template[:, :, z]
-    slices_template=[slice_0, slice_1, slice_2]
-
-    show_slices(slices,slices_template)
-    plt.suptitle(name)
+    generate_image(reg.inputs.output_warped_image)
 
     return res
 
@@ -152,6 +206,8 @@ def post_calculation(images, label):
     avg.inputs.images = images
     print(avg.cmdline)
     avg.run()
+    generate_image(avg.inputs.output_average_image)
+
 
 def find_moving_images():
     res =[]
@@ -161,6 +217,7 @@ def find_moving_images():
 
 def find_seg_images(moving):
     pattern = ''
+    
     for char in basename(moving)[1:]:
         if char == '-':
             break
@@ -209,30 +266,36 @@ def move_segmentations(transforms):
                 res[label] = [temp]
     return res
 
-def setup(dataset):
-    global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK
-    hostname = os.uname()[1]
-    if hostname == 'dahoiv-Alienware-15':
-        if dataset=="HGG":
-            DATA_PATH = '/home/dahoiv/disk/data/tumor_segmentation/'
-            T1_PATTERN = ['T1_diag', 'T1_preop']
-            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out/'
-            TEMP_FOLDER_PATH = 'temp/'
-        elif dataset=="LGG":
-            DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/PRE/'
-            T1_PATTERN = ['_pre.nii']
-            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out_LGG/'
-            TEMP_FOLDER_PATH = 'temp_LGG/'
-        else:
-            print("Unkown dataset")
-            raise Exception
-        TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
-        TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/' #path to ANTs bin folder
-    else:
-        print("Unkown host name " + hostname)
-        print("Add your host name path to " +sys.argv[0] )
-        raise Exception
+def generate_image(path):
+    img=nib.load(path).get_data()
+    img_template = nib.load(TEMPLATE_VOLUME).get_data()
+
+    def show_slices(slices,layers):
+        fig,axes = plt.subplots(1, len(slices))
+        for i, slice in enumerate(slices):
+            axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
+            axes[i].imshow(slice.T, cmap=cm.Reds, origin="lower", alpha=0.6)
+
+    x=img.shape[0]/2
+    y=img.shape[1]/2
+    z=img.shape[2]/2
+    slice_0=img[x, :, :]
+    slice_1=img[:, y, :]
+    slice_2=img[:, :, z]
+    slices=[slice_0, slice_1, slice_2]
+
+    x=img_template.shape[0]/2
+    y=img_template.shape[1]/2
+    z=img_template.shape[2]/2
+    slice_0=img_template[x, :, :]
+    slice_1=img_template[:, y, :]
+    slice_2=img_template[:, :, z]
+    slices_template=[slice_0, slice_1, slice_2]
+
+    show_slices(slices,slices_template)
+    name=splitext(splitext(basename(path))[0])[0]
+    plt.suptitle(name)
+    plt.savefig(splitext(splitext(path)[0])[0] + ".png")
 
 if __name__ == "__main__":
     os.nice(19)
