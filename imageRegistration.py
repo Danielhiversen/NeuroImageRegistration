@@ -76,7 +76,7 @@ def setup(dataset):
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/' #path to ANTs bin folder
     elif hostname == 'dahoiv-Precision-M6500':
         if dataset=="HGG":
-            DATA_PATH = '/mnt/dokumenter/tumor_segmentation/'
+            DATA_PATH = '/mnt/dokumenter/data/tumor_segmentation/'
             DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out/'
         elif dataset=="LGG":
             DATA_PATH = '/mnt/dokumenter/data/LGG_kart/PRE/'
@@ -246,7 +246,7 @@ def move_dataset(moving_dataset):
             pool = Pool()
         else:
             pool = Pool(MULTITHREAD)
-        res = pool.map_async(process_dataset, moving_dataset).get(9999999) # http://stackoverflow.com/a/1408476/636384
+        res = pool.map_async(process_dataset, moving_dataset).get(99999999) # http://stackoverflow.com/a/1408476/636384
         pool.close()
         pool.join()
     else:
