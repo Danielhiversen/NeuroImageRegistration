@@ -64,7 +64,7 @@ def setup(dataset):
     if hostname == 'dahoiv-Alienware-15':
         if dataset=="HGG":
             DATA_PATH = '/home/dahoiv/disk/data/tumor_segmentation/'
-            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out/'
+            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out_HGG/'
         elif dataset=="LGG":
             DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/PRE/'
             DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out_LGG/'
