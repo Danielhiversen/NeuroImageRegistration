@@ -36,7 +36,7 @@ import matplotlib.pyplot as plt
 import matplotlib.cm as cm
 
 MULTITHREAD = 4 # 1,23,4....., "max"
-# MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 DATA_PATH = ""
 T1_PATTERN = []
@@ -56,6 +56,9 @@ def setup(dataset):
     elif dataset=="LGG":
         T1_PATTERN = ['_pre.nii']
         TEMP_FOLDER_PATH = 'temp_LGG/'
+    elif dataset=="LGG_POST":
+        T1_PATTERN = ['_post.nii']
+        TEMP_FOLDER_PATH = 'temp_LGG_POST/'
     else:
         print("Unkown dataset")
         raise Exception
@@ -81,6 +84,9 @@ def setup(dataset):
         elif dataset=="LGG":
             DATA_PATH = '/mnt/dokumenter/data/LGG_kart/PRE/'
             DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_LGG/'
+        elif dataset=="LGG_POST":
+            DATA_PATH = '/mnt/dokumenter/data/LGG_kart/POST/'
+            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_LGG_POST/'
         else:
             print("Unkown dataset")
             raise Exception
@@ -236,9 +242,15 @@ def find_label(path):
 
 def process_dataset(moving):
     print(moving)
-    moving_preProcessed = pre_process(moving)
-    transform = registration(moving_preProcessed, TEMP_FOLDER_PATH + "masked_template.nii")
-    return (moving, transform)
+    num_tries=3
+    for k in range(num_tries):
+        try:
+            moving_preProcessed = pre_process(moving)
+            transform = registration(moving_preProcessed, TEMP_FOLDER_PATH + "masked_template.nii")
+            return (moving, transform)
+        except Exception as exp:
+             print('Crashed during processing of '+moving +'. Try ' + str(k+1) + ' of ' + str(num_tries)+ ' \n'+str(exp))
+ 
 
 def move_dataset(moving_dataset):
     if MULTITHREAD > 1:
