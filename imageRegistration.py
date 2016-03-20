@@ -251,13 +251,14 @@ def process_dataset(moving):
         try:
             moving_preProcessed = pre_process(moving)
             transform = registration(moving_preProcessed, TEMP_FOLDER_PATH + "masked_template.nii")
+            global FINISHED
+            FINISHED = FINISHED +1
+            print(FINISHED/TOTAL)
             return (moving, transform)
         except Exception as exp:
              print('Crashed during processing of '+moving +'. Try ' + str(k+1) + ' of ' + str(num_tries)+ ' \n'+str(exp))
  
-    global FINISHED
-    FINISHED = FINISHED +1
-    print(FINISHED/TOTAL)
+
 
 def move_dataset(moving_dataset):
     global TOTAL
