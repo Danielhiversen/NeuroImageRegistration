@@ -17,6 +17,7 @@ ninja
 
 """
 from __future__ import print_function
+from __future__ import division
 
 #from dipy.align.aniso2iso import resample
 
@@ -80,7 +81,7 @@ def setup(dataset):
     elif hostname == 'dahoiv-Precision-M6500':
         if dataset=="HGG":
             DATA_PATH = '/mnt/dokumenter/data/tumor_segmentation/'
-            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out/'
+            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_HGG/'
         elif dataset=="LGG":
             DATA_PATH = '/mnt/dokumenter/data/LGG_kart/PRE/'
             DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_LGG/'
@@ -240,6 +241,9 @@ def find_label(path):
      label = '_'.join(label.split("_")[1:])
      return label
 
+FINISHED = 0
+TOTAL = 0
+
 def process_dataset(moving):
     print(moving)
     num_tries=3
@@ -251,14 +255,19 @@ def process_dataset(moving):
         except Exception as exp:
              print('Crashed during processing of '+moving +'. Try ' + str(k+1) + ' of ' + str(num_tries)+ ' \n'+str(exp))
  
+    global FINISHED
+    FINISHED = FINISHED +1
+    print(FINISHED/TOTAL)
 
 def move_dataset(moving_dataset):
+    global TOTAL
+    TOTAL = len(moving_dataset)
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
             pool = Pool()
         else:
             pool = Pool(MULTITHREAD)
-        res = pool.map_async(process_dataset, moving_dataset).get(99999999) # http://stackoverflow.com/a/1408476/636384
+        res = pool.map_async(process_dataset, moving_dataset).get(999999999) # http://stackoverflow.com/a/1408476/636384
         pool.close()
         pool.join()
     else:
@@ -288,17 +297,17 @@ def generate_image(path):
             axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
             axes[i].imshow(slice.T, cmap=cm.Reds, origin="lower", alpha=0.6)
 
-    x=img.shape[0]/2
-    y=img.shape[1]/2
-    z=img.shape[2]/2
+    x=int(img.shape[0]/2)
+    y=int(img.shape[1]/2)
+    z=int(img.shape[2]/2)
     slice_0=img[x, :, :]
     slice_1=img[:, y, :]
     slice_2=img[:, :, z]
     slices=[slice_0, slice_1, slice_2]
 
-    x=img_template.shape[0]/2
-    y=img_template.shape[1]/2
-    z=img_template.shape[2]/2
+    x=int(img_template.shape[0]/2)
+    y=int(img_template.shape[1]/2)
+    z=int(img_template.shape[2]/2)
     slice_0=img_template[x, :, :]
     slice_1=img_template[:, y, :]
     slice_2=img_template[:, :, z]
@@ -325,7 +334,5 @@ if __name__ == "__main__":
 
     for label in res:
         post_calculation(res[label], label)
-
-
 
         #break
