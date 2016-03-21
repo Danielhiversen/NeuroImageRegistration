@@ -18,6 +18,9 @@ ninja
 """
 from __future__ import print_function
 from __future__ import division
+from builtins import map
+from builtins import str
+from builtins import range
 
 #from dipy.align.aniso2iso import resample
 
@@ -272,7 +275,7 @@ def move_dataset(moving_dataset):
         pool.close()
         pool.join()
     else:
-        res = map(process_dataset, moving_dataset)
+        res = list(map(process_dataset, moving_dataset))
     return res
 
 def move_segmentations(transforms):
