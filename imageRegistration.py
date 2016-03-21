@@ -139,23 +139,24 @@ def pre_process(data):
                 mult.inputs.first_input = bet.inputs.out_file
                 mult.inputs.second_input = segmentation
                 k=k+1
-                mult.inputs.output_product_image = splitext(bet.inputs.out_file)[0] + '_masked' + str(k)+ '.nii'
+                mult.inputs.output_product_image = splitext(bet.inputs.out_file)[0] + '_masked' + str(k) + '.nii'
                 mult.run()
         return mult.inputs.output_product_image
-    
+
     return bet.inputs.out_file
+
 
 def registration(moving, fixed):
     """Image2Image registration """
     reg = ants.Registration()
-    reg.inputs.collapse_output_transforms=True
+    reg.inputs.collapse_output_transforms = True
     reg.inputs.fixed_image = fixed
     reg.inputs.moving_image = moving
     reg.inputs.initial_moving_transform_com = True
-    reg.inputs.num_threads=1
-    reg.inputs.transforms = ['Rigid', 'Affine'] #, 'SyN']
-    reg.inputs.winsorize_lower_quantile=0.005
-    reg.inputs.winsorize_upper_quantile=0.995
+    reg.inputs.num_threads = 1
+    reg.inputs.transforms = ['Rigid', 'Affine']  # , 'SyN']
+    reg.inputs.winsorize_lower_quantile = 0.005
+    reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_threshold = [1e-06]
     reg.inputs.convergence_window_size = [10]
     reg.inputs.metric = ['MI', 'MI', 'CC']
@@ -168,28 +169,28 @@ def registration(moving, fixed):
     reg.inputs.sampling_percentage = [0.25, 0.25, 1]
     reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
     reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]*3
-    reg.inputs.sigma_units=['vox']*3
+    reg.inputs.sigma_units = ['vox']*3
     reg.inputs.transform_parameters = [(0.1,),
                                        (0.1,),
                                        (0.2, 3.0, 0.0)]
     reg.inputs.use_histogram_matching = True
     reg.inputs.write_composite_transform = True
-    #reg.inputs.collapse_output_transforms = False
 
     if MASK_TUMOR:
-        reg.inputs.moving_image_mask= splitext(moving)[0] + '_masked.nii'
+        reg.inputs.moving_image_mask = splitext(moving)[0] + '_masked.nii'
 
-    name=splitext(splitext(basename(moving))[0])[0]
+    name = splitext(splitext(basename(moving))[0])[0]
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + "output_"+name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
-    #print(reg.cmdline)
-    res= reg.inputs.output_transform_prefix + 'Composite.h5'
+
+    res = reg.inputs.output_transform_prefix + 'Composite.h5'
     if os.path.exists(res):
         return res
-    out=reg.run()
+    reg.run()
     generate_image(reg.inputs.output_warped_image)
 
     return res
+
 
 def move_data(moving, transform):
     """ Move data with transform """
@@ -197,12 +198,14 @@ def move_data(moving, transform):
     at.inputs.dimension = 3
     at.inputs.input_image = moving
     at.inputs.reference_image = TEMPLATE_VOLUME
-    at.inputs.output_image = DATA_OUT_PATH + splitext(basename(moving))[0] + '_reg.nii'
+    at.inputs.output_image = [DATA_OUT_PATH +
+                              splitext(basename(moving))[0] +
+                              '_reg.nii']
     at.inputs.interpolation = 'NearestNeighbor'
     at.inputs.default_value = 0
     at.inputs.transforms = [transform]
     at.inputs.invert_transform_flags = [False]
-    #print(at.cmdline)
+    # print(at.cmdline)
     at.run()
 
     return at.inputs.output_image
@@ -220,47 +223,51 @@ def post_calculation(images, label):
 
 
 def find_moving_images():
-    res =[]
+    res = []
     for pattern in T1_PATTERN:
-        res.extend(glob.glob(DATA_PATH +  '*' + pattern +'*'))
+        res.extend(glob.glob(DATA_PATH + '*' + pattern + '*'))
     return res
+
 
 def find_seg_images(moving):
     pattern = ''
-    
+
     for char in basename(moving)[1:]:
         if char == '-':
             break
         pattern += str(char)
     res = glob.glob(os.path.dirname(moving) + '/k' + pattern + '*.nii')
-    if len(res) ==0: #LGG
+    if len(res) == 0:  # LGG
         pattern = os.path.splitext(os.path.basename(moving))[0]
         res = glob.glob(os.path.dirname(moving) + '/'+pattern + '*.nii')
 #    res.remove(moving)
     return res
 
+
 def find_label(path):
-     label = splitext(basename(path))[0]
-     label = '_'.join(label.split("_")[1:])
-     return label
+    label = splitext(basename(path))[0]
+    label = '_'.join(label.split("_")[1:])
+    return label
 
 FINISHED = 0
 TOTAL = 0
 
+
 def process_dataset(moving):
     print(moving)
-    num_tries=3
+    num_tries = 3
     for k in range(num_tries):
         try:
             moving_preProcessed = pre_process(moving)
-            transform = registration(moving_preProcessed, TEMP_FOLDER_PATH + "masked_template.nii")
+            transform = registration(moving_preProcessed,
+                                     TEMP_FOLDER_PATH + "masked_template.nii")
             global FINISHED
-            FINISHED = FINISHED +1
+            FINISHED = FINISHED + 1
             print(FINISHED/TOTAL)
             return (moving, transform)
         except Exception as exp:
-             print('Crashed during processing of '+moving +'. Try ' + str(k+1) + ' of ' + str(num_tries)+ ' \n'+str(exp))
- 
+            print('Crashed during processing of ' + moving + '. Try ' +
+                  str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
 
 
 def move_dataset(moving_dataset):
@@ -271,19 +278,21 @@ def move_dataset(moving_dataset):
             pool = Pool()
         else:
             pool = Pool(MULTITHREAD)
-        res = pool.map_async(process_dataset, moving_dataset).get(999999999) # http://stackoverflow.com/a/1408476/636384
+        # http://stackoverflow.com/a/1408476/636384
+        res = pool.map_async(process_dataset, moving_dataset).get(999999999)
         pool.close()
         pool.join()
     else:
         res = list(map(process_dataset, moving_dataset))
     return res
 
+
 def move_segmentations(transforms):
     res = dict()
-    for moving,transform in transforms:
+    for moving, transform in transforms:
         for segmentation in find_seg_images(moving):
             print("         ", segmentation, transform)
-            temp = move_data(segmentation,  transform)
+            temp = move_data(segmentation, transform)
             label = find_label(temp)
             if label in res:
                 res[label].append(temp)
@@ -291,34 +300,35 @@ def move_segmentations(transforms):
                 res[label] = [temp]
     return res
 
+
 def generate_image(path):
-    img=nib.load(path).get_data()
+    img = nib.load(path).get_data()
     img_template = nib.load(TEMPLATE_VOLUME).get_data()
 
-    def show_slices(slices,layers):
-        fig,axes = plt.subplots(1, len(slices))
+    def show_slices(slices, layers):
+        fig, axes = plt.subplots(1, len(slices))
         for i, slice in enumerate(slices):
             axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
             axes[i].imshow(slice.T, cmap=cm.Reds, origin="lower", alpha=0.6)
 
-    x=int(img.shape[0]/2)
-    y=int(img.shape[1]/2)
-    z=int(img.shape[2]/2)
-    slice_0=img[x, :, :]
-    slice_1=img[:, y, :]
-    slice_2=img[:, :, z]
-    slices=[slice_0, slice_1, slice_2]
+    x = int(img.shape[0]/2)
+    y = int(img.shape[1]/2)
+    z = int(img.shape[2]/2)
+    slice_0 = img[x, :, :]
+    slice_1 = img[:, y, :]
+    slice_2 = img[:, :, z]
+    slices = [slice_0, slice_1, slice_2]
 
-    x=int(img_template.shape[0]/2)
-    y=int(img_template.shape[1]/2)
-    z=int(img_template.shape[2]/2)
-    slice_0=img_template[x, :, :]
-    slice_1=img_template[:, y, :]
-    slice_2=img_template[:, :, z]
-    slices_template=[slice_0, slice_1, slice_2]
+    x = int(img_template.shape[0]/2)
+    y = int(img_template.shape[1]/2)
+    z = int(img_template.shape[2]/2)
+    slice_0 = img_template[x, :, :]
+    slice_1 = img_template[:, y, :]
+    slice_2 = img_template[:, :, z]
+    slices_template = [slice_0, slice_1, slice_2]
 
-    show_slices(slices,slices_template)
-    name=splitext(splitext(basename(path))[0])[0]
+    show_slices(slices, slices_template)
+    name = splitext(splitext(basename(path))[0])[0]
     plt.suptitle(name)
     plt.savefig(splitext(splitext(path)[0])[0] + ".png")
 
@@ -338,5 +348,3 @@ if __name__ == "__main__":
 
     for label in res:
         post_calculation(res[label], label)
-
-        #break
