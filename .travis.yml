@@ -6,4 +6,4 @@ install:
   - "pip install flake8 pylint"
 script:
   - flake8 
-  - pylint
+  - pylint image_registration.py 
