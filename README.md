@@ -1,4 +1,1 @@
-# NeuroImageRegistration |Build Status|
-
-.. |Build Status| image:: https://travis-ci.org/Danielhiversen/NeuroImageRegistration.svg?branch=master
-   :target: https://travis-ci.org/Danielhiversen/NeuroImageRegistration
+# NeuroImageRegistration [![Build Status](https://travis-ci.org/Danielhiversen/NeuroImageRegistration.svg?branch=master)](https://travis-ci.org/Danielhiversen/NeuroImageRegistration)
