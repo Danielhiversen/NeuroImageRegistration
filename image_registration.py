@@ -40,7 +40,7 @@ import nibabel as nib
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-#MULTITHREAD = "max"
+# MULTITHREAD = "max"
 
 DATA_PATH = ""
 T1_PATTERN = []
@@ -53,8 +53,7 @@ os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
 def setup(dataset):
-    # pylint: disable= too-many-branches, global-statement
-    # pylint: disable= line-too-long
+    # pylint: disable= too-many-branches, global-statement, line-too-long, too-many-statements
     """setup for current computer """
     global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK
     hostname = os.uname()[1]
@@ -65,10 +64,11 @@ def setup(dataset):
         TEMPLATE_VOLUME = data.get("t1")
         TEMPLATE_MASK = data.get("mask")
         TEMP_FOLDER_PATH = 'temp/'
-        DATA_PATH = '/mnt/dokumenter/data/tumor_segmentation/'
+        DATA_PATH = os.path.dirname(TEMPLATE_VOLUME) + '/'
         DATA_OUT_PATH = 'data/'
         T1_PATTERN = ['mni_icbm152_t1_tal_nlin_sym_09a']
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'  # path to ANTs bin folder
+        os.environ["PATH"] += os.pathsep + '$HOME/antsbin/bin'  # path to ANTs bin folder
         return
 
     elif dataset == "HGG":
@@ -155,8 +155,8 @@ def pre_process(data):
     can often give better results than just running bet2."""
     bet.inputs.reduce_bias = True
     bet.inputs.out_file = TEMP_FOLDER_PATH +\
-                           splitext(basename(data))[0] +\
-                           '_bet.nii.gz'
+        splitext(basename(data))[0] +\
+        '_bet.nii.gz'
     if os.path.exists(bet.inputs.out_file):
         return bet.inputs.out_file
     bet.run()
@@ -215,8 +215,8 @@ def move_data(moving, transform):
     apply_transforms.inputs.input_image = moving
     apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
     apply_transforms.inputs.output_image = DATA_OUT_PATH +\
-                                            splitext(basename(moving))[0] +\
-                                            '_reg.nii'
+        splitext(basename(moving))[0] +\
+        '_reg.nii'
     apply_transforms.inputs.interpolation = 'NearestNeighbor'
     apply_transforms.inputs.default_value = 0
     apply_transforms.inputs.transforms = [transform]

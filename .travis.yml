@@ -10,6 +10,12 @@ cache:
 # Setup anaconda
 install:
   - sudo apt-get update
+  - sudo apt-get install cmake ninja-build git
+  - git clone git://github.com/stnava/ANTs.git
+  - mkdir antsbin
+  - cd antsbin
+  - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ../ANTs/
+  - ninja
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
@@ -33,4 +39,4 @@ install:
 script:
   - flake8 
   - pylint image_registration.py
-  - python imageRegistration.py test
+  - python image_registration.py test
