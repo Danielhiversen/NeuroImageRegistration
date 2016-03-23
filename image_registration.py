@@ -21,6 +21,12 @@ ninja
 from __future__ import print_function
 from __future__ import division
 # pylint: disable= redefined-builtin
+import nipype.interfaces.ants as ants
+# import nipype.interfaces.dipy as dipy
+import nipype.interfaces.fsl as fsl
+import nibabel as nib
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 import glob
 import os
 import sys
@@ -32,13 +38,6 @@ from builtins import str
 from builtins import range
 
 # from dipy.align.aniso2iso import resample
-
-import nipype.interfaces.ants as ants
-# import nipype.interfaces.dipy as dipy
-import nipype.interfaces.fsl as fsl
-import nibabel as nib
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
 
 MULTITHREAD = 4  # 1,23,4....., "max"
 MULTITHREAD = "max"
