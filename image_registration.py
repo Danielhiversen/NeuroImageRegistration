@@ -39,8 +39,8 @@ import nibabel as nib
 
 # from dipy.align.aniso2iso import resample
 
-MULTITHREAD = 4  # 1,23,4....., "max"
-MULTITHREAD = "max"
+MULTITHREAD = 1  # 1,23,4....., "max"
+#MULTITHREAD = "max"
 
 DATA_PATH = ""
 T1_PATTERN = []
@@ -59,9 +59,20 @@ def setup(dataset):
     global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK
     hostname = os.uname()[1]
 
-    if dataset == "HGG":
+    if dataset == "test":
+        from nilearn import datasets
+        data = datasets.fetch_icbm152_2009()
+        TEMPLATE_VOLUME = data.get("t1")
+        TEMPLATE_MASK = data.get("mask")
+        TEMP_FOLDER_PATH = 'temp/'
+        DATA_PATH = '/mnt/dokumenter/data/tumor_segmentation/'
+        DATA_OUT_PATH = 'data/'
+        T1_PATTERN = ['mni_icbm152_t1_tal_nlin_sym_09a']
+        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'  # path to ANTs bin folder
+        return
+
+    elif dataset == "HGG":
         T1_PATTERN = ['T1_diag', 'T1_preop']
-        TEMP_FOLDER_PATH = 'temp_HGG/'
     elif dataset == "LGG":
         T1_PATTERN = ['_pre.nii']
         TEMP_FOLDER_PATH = 'temp_LGG/'
@@ -143,9 +154,9 @@ def pre_process(data):
     and standard-space masking are combined to produce a result which
     can often give better results than just running bet2."""
     bet.inputs.reduce_bias = True
-    bet.inputs.out_file = [TEMP_FOLDER_PATH +
-                           splitext(basename(data))[0] +
-                           '_bet.nii.gz']
+    bet.inputs.out_file = TEMP_FOLDER_PATH +\
+                           splitext(basename(data))[0] +\
+                           '_bet.nii.gz'
     if os.path.exists(bet.inputs.out_file):
         return bet.inputs.out_file
     bet.run()
@@ -203,9 +214,9 @@ def move_data(moving, transform):
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = moving
     apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
-    apply_transforms.inputs.output_image = [DATA_OUT_PATH +
-                                            splitext(basename(moving))[0] +
-                                            '_reg.nii']
+    apply_transforms.inputs.output_image = DATA_OUT_PATH +\
+                                            splitext(basename(moving))[0] +\
+                                            '_reg.nii'
     apply_transforms.inputs.interpolation = 'NearestNeighbor'
     apply_transforms.inputs.default_value = 0
     apply_transforms.inputs.transforms = [transform]
@@ -358,3 +369,9 @@ if __name__ == "__main__":
 
     for label_i in results:
         post_calculation(results[label_i], label_i)
+
+    if sys.argv[1] == "test":
+        print(len(results))
+        print(len(moving_datasets))
+        print(len(data_transforms))
+        print(len(results))

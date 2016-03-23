@@ -5,6 +5,8 @@ python:
 cache:
   - pip
   - apt
+  - directories:
+      - $HOME/nilearn_data
 # Setup anaconda
 install:
   - sudo apt-get update
@@ -30,4 +32,5 @@ install:
   - "pip install -r requirements.txt"
 script:
   - flake8 
-  - pylint image_registration.py 
+  - pylint image_registration.py
+  - python imageRegistration.py test
