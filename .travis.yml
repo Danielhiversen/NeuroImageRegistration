@@ -3,8 +3,8 @@ language: python
 python:
   - "2.7"
 cache:
- - apt
- - directories:
+ apt
+ directories:
   - $HOME/.cache/pip
 addons:
   apt:
