@@ -7,15 +7,18 @@ cache:
   - apt
   - directories:
       - $HOME/nilearn_data
+      . $HOME/anstbin/
 # Setup anaconda
 install:
   - sudo apt-get update
-  - sudo apt-get install cmake ninja-build git
+  - sudo apt-get install cmake ninja-build git ninja
   - git clone git://github.com/stnava/ANTs.git
   - mkdir antsbin
   - cd antsbin
   - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ../ANTs/
   - ninja
+  - echo 'source $HOME/anstbin/bin/ANTS' >> $HOME/.profile
+
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then

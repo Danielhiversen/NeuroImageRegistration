@@ -68,7 +68,6 @@ def setup(dataset):
         DATA_OUT_PATH = 'data/'
         T1_PATTERN = ['mni_icbm152_t1_tal_nlin_sym_09a']
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'  # path to ANTs bin folder
-        os.environ["PATH"] += os.pathsep + '$HOME/antsbin/bin'  # path to ANTs bin folder
         return
 
     elif dataset == "HGG":
