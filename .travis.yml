@@ -8,17 +8,13 @@ cache:
   - directories:
       - $HOME/nilearn_data
       - $HOME/anstbin
-# Setup anaconda
+      - $HOME/ANTs
+pre:
+    # Let CircleCI cache the apt archive
+  - bash <(wget -q -O- http://neuro.debian.net/_files/neurodebian-travis.sh)
 install:
   - sudo apt-get update
-  - sudo apt-get install cmake ninja-build git ninja
-  - git clone git://github.com/stnava/ANTs.git
-  - mkdir antsbin
-  - cd antsbin
-  - cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ../ANTs/
-  - ninja
-  - echo 'source $HOME/anstbin/bin/ANTS' >> $HOME/.profile
-
+  - sudo apt-get install ants
   # We do this conditionally because it saves us some downloading if the
   # version is the same.
   - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
