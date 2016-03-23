@@ -18,24 +18,24 @@ cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ../ANTs/
 ninja
 
 """
+# pylint: disable= redefined-builtin
+# import nipype.interfaces.dipy as dipy
 from __future__ import print_function
 from __future__ import division
-# pylint: disable= redefined-builtin
-import nipype.interfaces.ants as ants
-# import nipype.interfaces.dipy as dipy
-import nipype.interfaces.fsl as fsl
-import nibabel as nib
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
-import glob
-import os
-import sys
 from multiprocessing import Pool
 from os.path import basename
 from os.path import splitext
 from builtins import map
 from builtins import str
 from builtins import range
+import glob
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+import nipype.interfaces.ants as ants
+import nipype.interfaces.fsl as fsl
+import nibabel as nib
+import os
+import sys
 
 # from dipy.align.aniso2iso import resample
 
