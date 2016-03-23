@@ -21,6 +21,12 @@ ninja
 from __future__ import print_function
 from __future__ import division
 # pylint: disable= redefined-builtin
+import glob
+import os
+import sys
+from multiprocessing import Pool
+from os.path import basename
+from os.path import splitext
 from builtins import map
 from builtins import str
 from builtins import range
@@ -30,14 +36,6 @@ from builtins import range
 import nipype.interfaces.ants as ants
 # import nipype.interfaces.dipy as dipy
 import nipype.interfaces.fsl as fsl
-
-from os.path import basename
-from os.path import splitext
-import os
-import sys
-import glob
-from multiprocessing import Pool
-
 import nibabel as nib
 import matplotlib.pyplot as plt
 import matplotlib.cm as cm
