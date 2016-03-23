@@ -24,7 +24,7 @@ install:
   - conda info -a
 
   # Replace dep1 dep2 ... with your dependencies
-  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy
+  - conda create -q -n test-environment python=$TRAVIS_PYTHON_VERSION scipy matplotlib
   - source activate test-environment
   - "pip install flake8 pylint"
   - "pip install -r requirements.txt"

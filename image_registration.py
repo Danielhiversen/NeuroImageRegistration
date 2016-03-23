@@ -23,9 +23,9 @@ ninja
 from __future__ import print_function
 from __future__ import division
 import glob
-import os
 import sys
 from multiprocessing import Pool
+import os
 from os.path import basename
 from os.path import splitext
 from builtins import map
@@ -57,6 +57,8 @@ def setup(dataset):
     # pylint: disable= line-too-long
     """setup for current computer """
     global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK
+    hostname = os.uname()[1]
+
     if dataset == "HGG":
         T1_PATTERN = ['T1_diag', 'T1_preop']
         TEMP_FOLDER_PATH = 'temp_HGG/'
@@ -70,7 +72,6 @@ def setup(dataset):
         print("Unkown dataset")
         raise Exception
 
-    hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
         if dataset == "HGG":
             DATA_PATH = '/home/dahoiv/disk/data/tumor_segmentation/'
