@@ -3,3 +3,4 @@ nipype
 matplotlib
 future
 nilearn
+sklearn
