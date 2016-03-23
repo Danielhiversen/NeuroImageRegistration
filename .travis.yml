@@ -7,7 +7,7 @@ cache:
   - apt
   - directories:
       - $HOME/nilearn_data
-      . $HOME/anstbin/
+      - $HOME/anstbin
 # Setup anaconda
 install:
   - sudo apt-get update
