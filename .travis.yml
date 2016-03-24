@@ -2,6 +2,7 @@ language: python
 python:
   - "2.7"
   - "3.4"
+  - "nightly"
 cache:
   - pip
   - apt
@@ -30,4 +31,3 @@ install:
 script:
   - flake8 
   - pylint image_registration.py
-  - python image_registration.py test

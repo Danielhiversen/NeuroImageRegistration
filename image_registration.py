@@ -57,7 +57,7 @@ def setup(dataset):
     global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK
     hostname = os.uname()[1]
 
-    elif dataset == "HGG":
+    if dataset == "HGG":
         T1_PATTERN = ['T1_diag', 'T1_preop']
     elif dataset == "LGG":
         T1_PATTERN = ['_pre.nii']
