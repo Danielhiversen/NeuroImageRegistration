@@ -35,7 +35,6 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
 import nipype.interfaces.fsl as fsl
-import nibabel as nib
 
 # from dipy.align.aniso2iso import resample
 
@@ -57,18 +56,6 @@ def setup(dataset):
     """setup for current computer """
     global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK
     hostname = os.uname()[1]
-
-    if dataset == "test":
-        from nilearn import datasets
-        data = datasets.fetch_icbm152_2009()
-        TEMPLATE_VOLUME = data.get("t1")
-        TEMPLATE_MASK = data.get("mask")
-        TEMP_FOLDER_PATH = 'temp/'
-        DATA_PATH = os.path.dirname(TEMPLATE_VOLUME) + '/'
-        DATA_OUT_PATH = 'data/'
-        T1_PATTERN = ['mni_icbm152_t1_tal_nlin_sym_09a']
-        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'  # path to ANTs bin folder
-        return
 
     elif dataset == "HGG":
         T1_PATTERN = ['T1_diag', 'T1_preop']
