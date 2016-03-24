@@ -35,6 +35,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
 import nipype.interfaces.fsl as fsl
+import nibabel as nib
 
 # from dipy.align.aniso2iso import resample
 
