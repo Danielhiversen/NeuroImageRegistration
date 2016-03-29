@@ -48,54 +48,64 @@ DATA_OUT_PATH = ""
 TEMP_FOLDER_PATH = ""
 TEMPLATE_VOLUME = ""
 TEMPLATE_MASK = ""
+DEFORMATION = False
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
-def setup(dataset):
+def setup(argv):
     # pylint: disable= too-many-branches, global-statement, line-too-long, too-many-statements
     """setup for current computer """
-    global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK
+    global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK, DEFORMATION
     hostname = os.uname()[1]
+
+    dataset = argv[0]
 
     if dataset == "HGG":
         T1_PATTERN = ['T1_diag', 'T1_preop']
+        data_folder = 'out_HGG/'
     elif dataset == "LGG":
         T1_PATTERN = ['_pre.nii']
-        TEMP_FOLDER_PATH = 'temp_LGG/'
+        data_folder = 'out_LGG/'
     elif dataset == "LGG_POST":
         T1_PATTERN = ['_post.nii']
-        TEMP_FOLDER_PATH = 'temp_LGG_POST/'
+        data_folder = 'out_LGG_POST/'
     else:
         print("Unkown dataset")
         raise Exception
+    TEMP_FOLDER_PATH = "temp_" + data_folder
+
+    if len(argv) > 1 and argv[1] == "DEF":
+        DEFORMATION = True
+        data_folder = data_folder[:-1] + "_def/"
+        TEMP_FOLDER_PATH = TEMP_FOLDER_PATH[:-1] + "_def/"
+    else:
+        DEFORMATION = False
 
     if hostname == 'dahoiv-Alienware-15':
         if dataset == "HGG":
             DATA_PATH = '/home/dahoiv/disk/data/tumor_segmentation/'
-            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out_HGG/'
         elif dataset == "LGG":
             DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/PRE/'
-            DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/out_LGG/'
         else:
             print("Unkown dataset")
             raise Exception
+        DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/' + data_folder
         TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'  # path to ANTs bin folder
     elif hostname == 'dahoiv-Precision-M6500':
         if dataset == "HGG":
             DATA_PATH = '/mnt/dokumenter/data/tumor_segmentation/'
-            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_HGG/'
         elif dataset == "LGG":
             DATA_PATH = '/mnt/dokumenter/data/LGG_kart/PRE/'
-            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_LGG/'
         elif dataset == "LGG_POST":
             DATA_PATH = '/mnt/dokumenter/data/LGG_kart/POST/'
-            DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/out_LGG_POST/'
         else:
             print("Unkown dataset")
             raise Exception
+
+        DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/' + data_folder
         TEMPLATE_VOLUME = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         # path to ANTs bin folder
@@ -104,6 +114,8 @@ def setup(dataset):
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
         raise Exception
+
+    print("Setup: \n\n Datapath: " + DATA_PATH + "\n Data out: " + DATA_OUT_PATH + "\n Deformation in registration: " + str(DEFORMATION) + "\n\n")
 
 
 def prepare_template():
@@ -144,6 +156,10 @@ def pre_process(data):
     bet.inputs.out_file = TEMP_FOLDER_PATH +\
         splitext(basename(data))[0] +\
         '_bet.nii.gz'
+
+    if "45_pre.nii" in data:
+        bet.inputs.vertical_gradient = 1
+    
     if os.path.exists(bet.inputs.out_file):
         return bet.inputs.out_file
     bet.run()
@@ -160,7 +176,10 @@ def registration(moving, fixed):
     reg.inputs.moving_image = moving
     reg.inputs.initial_moving_transform_com = True
     reg.inputs.num_threads = 1
-    reg.inputs.transforms = ['Rigid', 'Affine']  # , 'SyN']
+    if DEFORMATION:
+        reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
+    else:
+        reg.inputs.transforms = ['Rigid', 'Affine']
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_threshold = [1e-06]
@@ -211,6 +230,8 @@ def move_data(moving, transform):
     # print(apply_transforms.cmdline)
     apply_transforms.run()
 
+    generate_image(apply_transforms.inputs.output_image)
+
     return apply_transforms.inputs.output_image
 
 
@@ -231,6 +252,7 @@ def find_moving_images():
     result = []
     for pattern in T1_PATTERN:
         result.extend(glob.glob(DATA_PATH + '*' + pattern + '*'))
+    result = ["/mnt/dokumneter/data/LGG_kart/PRE/45_pre.nii"]
     return result
 
 
@@ -341,8 +363,11 @@ def generate_image(path):
 
 # pylint: disable= invalid-name
 if __name__ == "__main__":
+    if len(sys.argv) < 2:
+        print("Usage: python " + __file__ + " dataset")
+        exit(1)
     os.nice(19)
-    setup(sys.argv[1])
+    setup(sys.argv[1:])
     if not os.path.exists(TEMP_FOLDER_PATH):
         os.makedirs(TEMP_FOLDER_PATH)
     if not os.path.exists(DATA_OUT_PATH):
