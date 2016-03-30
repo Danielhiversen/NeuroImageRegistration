@@ -26,6 +26,8 @@ import glob
 import sys
 from multiprocessing import Pool
 import os
+from nilearn.image import resample_img
+import numpy as np
 from os.path import basename
 from os.path import splitext
 from builtins import map
@@ -130,15 +132,15 @@ def prepare_template():
 
 def pre_process(data):
     """ Pre process the data"""
-#    reslice = dipy.Resample()
-#    reslice.inputs.in_file = data
-#    reslice.inputs.out_file =
-#    TEMP_FOLDER_PATH + splitext(basename(data))[0] + '_temp.nii.gz'
-#    reslice.run()
+    target_affine_3x3 = np.eye(3) * 1
+    resampled_file = TEMP_FOLDER_PATH + splitext(basename(data))[0]\
+        + '_resample.nii'
+    img_3d_affine = resample_img(data, target_affine=target_affine_3x3)
+    nib.save(img_3d_affine, resampled_file)
 
     # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
     bet = fsl.BET(command="fsl5.0-bet")
-    bet.inputs.in_file = data
+    bet.inputs.in_file = resampled_file
     # pylint: disable= pointless-string-statement
     """ fractional intensity threshold (0->1); default=0.5;
     smaller values give larger brain outline estimates"""
@@ -158,13 +160,14 @@ def pre_process(data):
         '_bet.nii.gz'
 
     if "45_pre.nii" in data:
-        bet.inputs.vertical_gradient = 1
-    
+        bet.inputs.frac = 0.49
+        bet.inputs.vertical_gradient = 0
+
     if os.path.exists(bet.inputs.out_file):
         return bet.inputs.out_file
     bet.run()
     print(TEMP_FOLDER_PATH + splitext(basename(data))[0] + '_bet.nii.gz')
-
+    generate_image(bet.inputs.out_file)
     return bet.inputs.out_file
 
 
