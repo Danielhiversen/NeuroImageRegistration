@@ -253,7 +253,6 @@ def find_moving_images():
     result = []
     for pattern in T1_PATTERN:
         result.extend(glob.glob(DATA_PATH + '*' + pattern + '*'))
-    result = ["/mnt/dokumneter/data/LGG_kart/PRE/45_pre.nii"]
     return result
 
 
