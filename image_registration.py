@@ -28,10 +28,10 @@ from multiprocessing import Pool
 import os
 from os.path import basename
 from os.path import splitext
-from nilearn.image import resample_img
 from builtins import map
 from builtins import str
 from builtins import range
+from nilearn.image import resample_img
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
