@@ -26,9 +26,9 @@ import glob
 import sys
 from multiprocessing import Pool
 import os
-from nilearn.image import resample_img
 from os.path import basename
 from os.path import splitext
+from nilearn.image import resample_img
 from builtins import map
 from builtins import str
 from builtins import range
