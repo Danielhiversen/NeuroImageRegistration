@@ -42,7 +42,7 @@ import nibabel as nib
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-# MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 DATA_PATH = ""
 T1_PATTERN = []
@@ -66,40 +66,43 @@ def setup(argv):
     if dataset == "HGG":
         T1_PATTERN = ['T1_diag', 'T1_preop']
         data_folder = 'out_HGG/'
-    elif dataset == "LGG":
+    elif dataset == "LGG_PRE":
         T1_PATTERN = ['_pre.nii']
-        data_folder = 'out_LGG/'
+        data_folder = 'out_LGG_PRE/'
     elif dataset == "LGG_POST":
         T1_PATTERN = ['_post.nii']
         data_folder = 'out_LGG_POST/'
     else:
-        print("Unkown dataset")
+        print("Unkown dataset: ", dataset)
         raise Exception
-    TEMP_FOLDER_PATH = "temp_" + data_folder
 
     if len(argv) > 1 and argv[1] == "DEF":
         DEFORMATION = True
         data_folder = data_folder[:-1] + "_def/"
-        TEMP_FOLDER_PATH = TEMP_FOLDER_PATH[:-1] + "_def/"
     else:
         DEFORMATION = False
+
+    TEMP_FOLDER_PATH = "temp_" + data_folder
 
     if hostname == 'dahoiv-Alienware-15':
         if dataset == "HGG":
             DATA_PATH = '/home/dahoiv/disk/data/tumor_segmentation/'
-        elif dataset == "LGG":
+        elif dataset == "LGG_PRE":
             DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/PRE/'
+        elif dataset == "LGG_POST":
+            DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/POST/'
         else:
             print("Unkown dataset")
             raise Exception
         DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/' + data_folder
         TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'  # path to ANTs bin folder
+        # path to ANTs bin folder
+        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         if dataset == "HGG":
             DATA_PATH = '/mnt/dokumenter/data/tumor_segmentation/'
-        elif dataset == "LGG":
+        elif dataset == "LGG_PRE":
             DATA_PATH = '/mnt/dokumenter/data/LGG_kart/PRE/'
         elif dataset == "LGG_POST":
             DATA_PATH = '/mnt/dokumenter/data/LGG_kart/POST/'
