@@ -5,7 +5,7 @@ sudo apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
 sudo apt-get update
 
 sudo apt-get install libblas-dev liblapack-dev libfreetype6-dev
-sudo apt-get install libpng16-dev fsl-complete cmake ninja-build
+sudo apt-get install libpng16-dev fsl-complete cmake ninja-build python-sklearn
 pip install --upgrade setuptools
 pip install --upgrade distribute
 sudo apt-get install python-pip matplotlib
@@ -27,7 +27,6 @@ import sys
 from multiprocessing import Pool
 import os
 from nilearn.image import resample_img
-import numpy as np
 from os.path import basename
 from os.path import splitext
 from builtins import map
@@ -38,6 +37,7 @@ import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
 import nipype.interfaces.fsl as fsl
 import nibabel as nib
+import numpy as np
 
 # from dipy.align.aniso2iso import resample
 

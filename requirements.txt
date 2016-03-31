@@ -2,3 +2,4 @@ nibabel>=2.0.1
 nipype
 matplotlib
 future
+nilearn
