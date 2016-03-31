@@ -132,7 +132,7 @@ def prepare_template():
 
 def pre_process(data):
     """ Pre process the data"""
-    target_affine_3x3 = np.eye(3) * 1
+    target_affine_3x3 = np.eye(3) * 1 # 1 mm slices
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(data))[0]\
         + '_resample.nii'
     img_3d_affine = resample_img(data, target_affine=target_affine_3x3)
@@ -156,18 +156,13 @@ def pre_process(data):
     can often give better results than just running bet2."""
     bet.inputs.reduce_bias = True
     bet.inputs.out_file = TEMP_FOLDER_PATH +\
-        splitext(basename(data))[0] +\
+        splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
-
-    if "45_pre.nii" in data:
-        bet.inputs.frac = 0.49
-        bet.inputs.vertical_gradient = 0
 
     if os.path.exists(bet.inputs.out_file):
         return bet.inputs.out_file
     bet.run()
     print(TEMP_FOLDER_PATH + splitext(basename(data))[0] + '_bet.nii.gz')
-    generate_image(bet.inputs.out_file)
     return bet.inputs.out_file
 
 
