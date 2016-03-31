@@ -132,7 +132,7 @@ def prepare_template():
 
 def pre_process(data):
     """ Pre process the data"""
-    target_affine_3x3 = np.eye(3) * 1 # 1 mm slices
+    target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(data))[0]\
         + '_resample.nii'
     img_3d_affine = resample_img(data, target_affine=target_affine_3x3)
