@@ -135,9 +135,16 @@ def prepare_template():
 
 def pre_process(data):
     """ Pre process the data"""
-    target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(data))[0]\
         + '_resample.nii'
+    out_file = TEMP_FOLDER_PATH +\
+        splitext(basename(resampled_file))[0] +\
+        '_bet.nii.gz'
+
+    if os.path.exists(out_file):
+        return out_file
+
+    target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
     img_3d_affine = resample_img(data, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
 
@@ -158,12 +165,8 @@ def pre_process(data):
     and standard-space masking are combined to produce a result which
     can often give better results than just running bet2."""
     bet.inputs.reduce_bias = True
-    bet.inputs.out_file = TEMP_FOLDER_PATH +\
-        splitext(basename(resampled_file))[0] +\
-        '_bet.nii.gz'
+    bet.inputs.out_file = out_file
 
-    if os.path.exists(bet.inputs.out_file):
-        return bet.inputs.out_file
     bet.run()
     print(TEMP_FOLDER_PATH + splitext(basename(data))[0] + '_bet.nii.gz')
     return bet.inputs.out_file
