@@ -225,7 +225,7 @@ def move_data(moving, transform):
     target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
     img_3d_affine = resample_img(moving, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
-    
+
     apply_transforms = ants.ApplyTransforms()
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = moving
