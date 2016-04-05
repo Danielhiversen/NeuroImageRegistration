@@ -220,12 +220,18 @@ def registration(moving, fixed):
 
 def move_data(moving, transform):
     """ Move data with transform """
+    resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0]\
+        + '_resample.nii'
+    target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
+    img_3d_affine = resample_img(moving, target_affine=target_affine_3x3)
+    nib.save(img_3d_affine, resampled_file)
+    
     apply_transforms = ants.ApplyTransforms()
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = moving
     apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
     apply_transforms.inputs.output_image = DATA_OUT_PATH +\
-        splitext(basename(moving))[0] +\
+        splitext(basename(resampled_file))[0] +\
         '_reg.nii'
     apply_transforms.inputs.interpolation = 'NearestNeighbor'
     apply_transforms.inputs.default_value = 0
