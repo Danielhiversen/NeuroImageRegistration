@@ -255,12 +255,12 @@ def post_calculation(images, label):
     print(avg.cmdline)
     avg.run()
     generate_image(avg.inputs.output_average_image)
-    
+
     convert = fsl.maths.ChangeDataType()
-    convert.inputs.in_file= avg.inputs.output_average_image
+    convert.inputs.in_file = avg.inputs.output_average_image
     convert.inputs.output_datatype = 'float'
     convert.inputs.output_type = 'NIFTI'
-    convert.inputs.out_file =  DATA_OUT_PATH + 'avg_' + label + '_convert.nii'
+    convert.inputs.out_file = DATA_OUT_PATH + 'avg_' + label + '_convert.nii'
     convert.run()
 
 
