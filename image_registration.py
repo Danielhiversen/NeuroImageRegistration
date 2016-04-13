@@ -222,6 +222,10 @@ def move_data(moving, transform):
     """ Move data with transform """
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0]\
         + '_resample.nii'
+    result = DATA_OUT_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
+    if os.path.exists(result):
+        return result
+
     target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
     img_3d_affine = resample_img(moving, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
@@ -230,9 +234,7 @@ def move_data(moving, transform):
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = resampled_file
     apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
-    apply_transforms.inputs.output_image = DATA_OUT_PATH +\
-        splitext(basename(resampled_file))[0] +\
-        '_reg.nii'
+    apply_transforms.inputs.output_image = result
     apply_transforms.inputs.interpolation = 'NearestNeighbor'
     apply_transforms.inputs.default_value = 0
     apply_transforms.inputs.transforms = [transform]
@@ -247,21 +249,29 @@ def move_data(moving, transform):
 
 def post_calculation(images, label):
     """ Calculate average volumes """
-    avg = ants.AverageImages()
-    avg.inputs.dimension = 3
-    avg.inputs.output_average_image = DATA_OUT_PATH + 'avg_' + label + '.nii'
-    avg.inputs.normalize = True
-    avg.inputs.images = images
-    print(avg.cmdline)
-    avg.run()
-    generate_image(avg.inputs.output_average_image)
-    
-    convert = fsl.maths.ChangeDataType()
-    convert.inputs.in_file= avg.inputs.output_average_image
-    convert.inputs.output_datatype = 'float'
-    convert.inputs.output_type = 'NIFTI'
-    convert.inputs.out_file =  DATA_OUT_PATH + 'avg_' + label + '_convert.nii'
-    convert.run()
+    path = DATA_OUT_PATH + 'avg_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+
+#    avg = ants.AverageImages()
+#    avg.inputs.dimension = 3
+#    avg.inputs.output_average_image = path
+#    avg.inputs.normalize = True
+#    avg.inputs.images = images
+#    print(avg.cmdline)
+#    avg.run()
+
+    average = None
+    for file_name in images:
+        img = nib.load(file_name)
+        if average is None:
+            average = np.zeros(img.get_data().shape)
+        average = average + np.array(img.get_data())
+    average = average
+    result_img = nib.Nifti1Image(average, img.affine)
+    result_img.to_filename(path)
+    print(np.amax(average))
+    print(np.amin(average))
+    generate_image(path)
 
 
 def find_moving_images():
