@@ -1,21 +1,32 @@
-""" install
-wget -O- http://neuro.debian.net/lists/wily.de-m.full
-sudo tee /etc/apt/sources.list.d/neurodebian.sources.list
-sudo apt-key adv --recv-keys --keyserver hkp://pgp.mit.edu:80 0xA5D32F012649A5A9
-sudo apt-get update
 
-sudo apt-get install libblas-dev liblapack-dev libfreetype6-dev
-sudo apt-get install libpng16-dev fsl-complete cmake ninja-build python-sklearn
-pip install --upgrade setuptools
-pip install --upgrade distribute
-sudo apt-get install python-pip matplotlib
-sudo pip install dipy nipype
+""" install
+http://neuro.debian.net/install_pkg.html?p=fsl-complete
+
+sudo apt-get install -y libblas-dev liblapack-dev libfreetype6-dev
+sudo apt-get install -y cmake ninja-build git
+sudo apt-get install gfortran
 
 git clone git://github.com/stnava/ANTs.git
 mkdir antsbin
 cd antsbin
 cmake -G "Ninja" -DCMAKE_BUILD_TYPE=Release ../ANTs/
 ninja
+
+sudo apt-get install python-pip
+cd
+git clone git@github.com:Danielhiversen/NeuroImageRegistration.git
+cd NeuroImageRegistration/
+virtualenv venv
+source venv/bin/activate
+sudo pip install --upgrade setuptools
+sudo pip install --upgrade distribute
+pip install -r requirements.txt
+
+To download data:
+    ipython
+        from nilearn import datasets
+        data = datasets.fetch_icbm152_2009()
+        TEMPLATE_VOLUME = data.get("t1")
 
 """
 # pylint: disable= redefined-builtin
@@ -115,6 +126,23 @@ def setup(argv):
         TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
+    elif hostname == 'ingerid-PC':
+        if dataset == "HGG":
+            DATA_PATH = '/home/daniel/data/HGG/'
+        elif dataset == "LGG_PRE":
+            DATA_PATH = '/home/daniel/data/LGG_PRE/'
+        elif dataset == "LGG_POST":
+            DATA_PATH = '/home/daniel/data/LGG_POST/'
+        else:
+            print("Unkown dataset")
+            raise Exception
+
+        DATA_OUT_PATH = '/home/daniel/data_out' + data_folder
+        TEMPLATE_VOLUME = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
+        TEMPLATE_MASK = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
+        # path to ANTs bin folder
+        os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
+
     else:
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
@@ -124,7 +152,7 @@ def setup(argv):
 
 
 def prepare_template():
-    """ prepare template volume"""
+    """ prepare template volumemoving"""
     mult = ants.MultiplyImages()
     mult.inputs.dimension = 3
     mult.inputs.first_input = TEMPLATE_VOLUME
@@ -135,18 +163,28 @@ def prepare_template():
 
 def pre_process(data):
     """ Pre process the data"""
-    resampled_file = TEMP_FOLDER_PATH + splitext(basename(data))[0]\
+    n4_file = TEMP_FOLDER_PATH + splitext(basename(data))[0]\
+        + '_n4.nii'
+    resampled_file = TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
         + '_resample.nii'
     out_file = TEMP_FOLDER_PATH +\
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
-    if os.path.exists(out_file):
-        return out_file
+    n4bias = ants.N4BiasFieldCorrection()
+    n4bias.inputs.dimension = 3
+    n4bias.inputs.input_image = data
+    n4bias.inputs.output_image = n4_file
+    n4bias.run()
 
     target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
     img_3d_affine = resample_img(data, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
+
+    # pylint: disable= using-constant-test
+    if False:
+        brain_extraction(resampled_file, out_file)
+        return
 
     # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
     bet = fsl.BET(command="fsl5.0-bet")
@@ -154,7 +192,7 @@ def pre_process(data):
     # pylint: disable= pointless-string-statement
     """ fractional intensity threshold (0->1); default=0.5;
     smaller values give larger brain outline estimates"""
-    bet.inputs.frac = 0.45
+    bet.inputs.frac = 0.25
     """ vertical gradient in fractional intensity threshold (-1->1);
     default=0; positive values give larger brain outline at bottom,
     smaller at top """
@@ -168,8 +206,50 @@ def pre_process(data):
     bet.inputs.out_file = out_file
 
     bet.run()
-    print(TEMP_FOLDER_PATH + splitext(basename(data))[0] + '_bet.nii.gz')
+    print(out_file)
+
+    generate_image(out_file, resampled_file)
+
     return bet.inputs.out_file
+
+
+def brain_extraction(in_file, out_file):
+    """ Brain extraction."""
+    reg = ants.Registration()
+    reg.inputs.collapse_output_transforms = True
+    reg.inputs.fixed_image = TEMPLATE_VOLUME
+    reg.inputs.moving_image = in_file
+    reg.inputs.initial_moving_transform_com = True
+    reg.inputs.num_threads = 1
+    reg.inputs.transforms = ['Rigid']
+    reg.inputs.winsorize_lower_quantile = 0.005
+    reg.inputs.winsorize_upper_quantile = 0.995
+    reg.inputs.convergence_threshold = [1e-06]
+    reg.inputs.convergence_window_size = [10]
+    reg.inputs.metric = ['MI', 'MI', 'CC']
+    reg.inputs.metric_weight = [1.0]*3
+    reg.inputs.number_of_iterations = [[1000, 500, 250, 100]]
+    reg.inputs.radius_or_number_of_bins = [32]
+    reg.inputs.sampling_strategy = ['Regular']
+    reg.inputs.sampling_percentage = [0.25]
+    reg.inputs.shrink_factors = [[8, 4, 2, 1]]
+    reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]
+    reg.inputs.sigma_units = ['vox']
+    reg.inputs.transform_parameters = [(0.1,)]
+    reg.inputs.use_histogram_matching = True
+    reg.inputs.write_composite_transform = True
+    name = splitext(splitext(basename(in_file))[0])[0]
+    reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + "output_"+name+'_'
+    reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_regRigid.nii'
+    reg.run()
+    generate_image(reg.inputs.output_warped_image)
+
+    mult = ants.MultiplyImages()
+    mult.inputs.dimension = 3
+    mult.inputs.first_input = TEMP_FOLDER_PATH + name + '_regRigid.nii'
+    mult.inputs.second_input = TEMPLATE_MASK
+    mult.inputs.output_product_image = out_file
+    mult.run()
 
 
 def registration(moving, fixed):
@@ -352,10 +432,10 @@ def move_segmentations(transforms):
     return result
 
 
-def generate_image(path):
+def generate_image(path, path2=TEMPLATE_VOLUME):
     """ generate png images"""
     img = nib.load(path).get_data()
-    img_template = nib.load(TEMPLATE_VOLUME).get_data()
+    img_template = nib.load(path2).get_data()
 
     def show_slices(slices, layers):
         """ Show 2d slices"""
