@@ -171,6 +171,9 @@ def pre_process(data):
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
+    if os.path.exists(out_file):
+        return out_file
+
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
     n4bias.inputs.input_image = data
