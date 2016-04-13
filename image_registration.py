@@ -137,7 +137,7 @@ def setup(argv):
             print("Unkown dataset")
             raise Exception
 
-        DATA_OUT_PATH = '/home/daniel/data_out' + data_folder
+        DATA_OUT_PATH = '/home/daniel/data_out/' + data_folder
         TEMPLATE_VOLUME = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         # path to ANTs bin folder
