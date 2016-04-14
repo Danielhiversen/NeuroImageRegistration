@@ -180,6 +180,8 @@ def pre_process(data):
     n4bias.inputs.output_image = n4_file
     n4bias.run()
 
+    # normalization [0,100], same as template
+
     target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
     img_3d_affine = resample_img(data, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
@@ -192,7 +194,7 @@ def pre_process(data):
     # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
     bet = fsl.BET(command="fsl5.0-bet")
     bet.inputs.in_file = resampled_file
-    # pylint: disable= pointless-string-statement
+    # pylint: disable= pointless-Falsestring-statement
     """ fractional intensity threshold (0->1); default=0.5;
     smaller values give larger brain outline estimates"""
     bet.inputs.frac = 0.25
@@ -245,7 +247,6 @@ def brain_extraction(in_file, out_file):
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + "output_"+name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_regRigid.nii'
     reg.run()
-    generate_image(reg.inputs.output_warped_image)
 
     mult = ants.MultiplyImages()
     mult.inputs.dimension = 3
@@ -280,7 +281,7 @@ def registration(moving, fixed):
     reg.inputs.sampling_strategy = ['Regular', 'Regular', None]
     reg.inputs.sampling_percentage = [0.25, 0.25, 1]
     reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
-    reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]*3
+    reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]*3 #[8 4 2 0 ]
     reg.inputs.sigma_units = ['vox']*3
     reg.inputs.transform_parameters = [(0.1,),
                                        (0.1,),
@@ -294,10 +295,11 @@ def registration(moving, fixed):
 
     result = reg.inputs.output_transform_prefix + 'Composite.h5'
     if os.path.exists(result):
+        generate_image(reg.inputs.output_warped_image, TEMPLATE_VOLUME)
         return result
     reg.run()
-    generate_image(reg.inputs.output_warped_image)
-
+    generate_image(reg.inputs.output_warped_image, TEMPLATE_VOLUME)
+write_composite_transform
     return result
 
 
@@ -325,7 +327,7 @@ def move_data(moving, transform):
     # print(apply_transforms.cmdline)
     apply_transforms.run()
 
-    generate_image(apply_transforms.inputs.output_image)
+    generate_image(apply_transforms.inputs.output_image, TEMPLATE_VOLUME)
 
     return apply_transforms.inputs.output_image
 
@@ -354,7 +356,7 @@ def post_calculation(images, label):
     result_img.to_filename(path)
     print(np.amax(average))
     print(np.amin(average))
-    generate_image(path)
+    generate_image(path, TEMPLATE_VOLUME)
 
 
 def find_moving_images():
@@ -435,7 +437,7 @@ def move_segmentations(transforms):
     return result
 
 
-def generate_image(path, path2=TEMPLATE_VOLUME):
+def generate_image(path, path2):
     """ generate png images"""
     img = nib.load(path).get_data()
     img_template = nib.load(path2).get_data()
@@ -468,6 +470,7 @@ def generate_image(path, path2=TEMPLATE_VOLUME):
     show_slices(slices, slices_template)
     name = splitext(splitext(basename(path))[0])[0]
     plt.suptitle(name)
+
     plt.savefig(splitext(splitext(path)[0])[0] + ".png")
 
 # pylint: disable= invalid-name
