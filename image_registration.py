@@ -184,7 +184,7 @@ def pre_process(input_file):
 
     # normalization [0,100], same as template
     img = nib.load(n4_file)
-    result_img = nib.Nifti1Image(img/np.amax(img.get_data())*100, img.affine, img.header)
+    result_img = nib.Nifti1Image(img.get_data()/np.amax(img.get_data())*100, img.affine, img.header)
     result_img.to_filename(norm_file)
 
     target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
@@ -220,7 +220,7 @@ def pre_process(input_file):
 
     generate_image(out_file, resampled_file)
 
-    return bet.inputs.out_file
+    return out_file
 
 
 def brain_extraction(in_file, out_file):
@@ -400,8 +400,8 @@ def process_dataset(moving):
     print(moving)
     num_tries = 3
     for k in range(num_tries):
+        moving_pre_processed = pre_process(moving)
         try:
-            moving_pre_processed = pre_process(moving)
             transform = registration(moving_pre_processed,
                                      TEMP_FOLDER_PATH + "masked_template.nii")
             return (moving, transform)
