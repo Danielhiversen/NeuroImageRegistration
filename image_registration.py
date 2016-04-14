@@ -161,11 +161,13 @@ def prepare_template():
     mult.run()
 
 
-def pre_process(data):
+def pre_process(input_file):
     """ Pre process the data"""
-    n4_file = TEMP_FOLDER_PATH + splitext(basename(data))[0]\
+    n4_file = TEMP_FOLDER_PATH + splitext(basename(input_file))[0]\
         + '_n4.nii'
-    resampled_file = TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
+    norm_file = TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
+        + '_norm.nii'
+    resampled_file = TEMP_FOLDER_PATH + splitext(basename(norm_file))[0]\
         + '_resample.nii'
     out_file = TEMP_FOLDER_PATH +\
         splitext(basename(resampled_file))[0] +\
@@ -176,14 +178,17 @@ def pre_process(data):
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
-    n4bias.inputs.input_image = data
+    n4bias.inputs.input_image = input_file
     n4bias.inputs.output_image = n4_file
     n4bias.run()
 
     # normalization [0,100], same as template
+    img = nib.load(n4_file)
+    result_img = nib.Nifti1Image(img/np.amax(img.get_data())*100, img.affine, img.header)
+    result_img.to_filename(norm_file)
 
     target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
-    img_3d_affine = resample_img(data, target_affine=target_affine_3x3)
+    img_3d_affine = resample_img(norm_file, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
 
     # pylint: disable= using-constant-test
@@ -194,7 +199,7 @@ def pre_process(data):
     # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
     bet = fsl.BET(command="fsl5.0-bet")
     bet.inputs.in_file = resampled_file
-    # pylint: disable= pointless-Falsestring-statement
+    # pylint: disable= pointless-string-statement
     """ fractional intensity threshold (0->1); default=0.5;
     smaller values give larger brain outline estimates"""
     bet.inputs.frac = 0.25
