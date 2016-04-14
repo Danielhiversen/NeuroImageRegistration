@@ -281,7 +281,7 @@ def registration(moving, fixed):
     reg.inputs.sampling_strategy = ['Regular', 'Regular', None]
     reg.inputs.sampling_percentage = [0.25, 0.25, 1]
     reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
-    reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]*3 #[8 4 2 0 ]
+    reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]*3  # [8 4 2 0 ]
     reg.inputs.sigma_units = ['vox']*3
     reg.inputs.transform_parameters = [(0.1,),
                                        (0.1,),
@@ -299,7 +299,7 @@ def registration(moving, fixed):
         return result
     reg.run()
     generate_image(reg.inputs.output_warped_image, TEMPLATE_VOLUME)
-write_composite_transform
+
     return result
 
 
