@@ -63,6 +63,10 @@ TEMPLATE_VOLUME = ""
 TEMPLATE_MASK = ""
 DEFORMATION = False
 
+RIGID = 'rigid'
+AFFINE = 'affine'
+SYN = 'syn'
+
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
@@ -151,17 +155,17 @@ def setup(argv):
     print("Setup: \n\n Datapath: " + DATA_PATH + "\n Data out: " + DATA_OUT_PATH + "\n Deformation in registration: " + str(DEFORMATION) + "\n\n")
 
 
-def prepare_template():
+def prepare_template(template_vol, template_mask):
     """ prepare template volumemoving"""
     mult = ants.MultiplyImages()
     mult.inputs.dimension = 3
-    mult.inputs.first_input = TEMPLATE_VOLUME
-    mult.inputs.second_input = TEMPLATE_MASK
+    mult.inputs.first_input = template_vol
+    mult.inputs.second_input = template_mask
     mult.inputs.output_product_image = TEMP_FOLDER_PATH + "masked_template.nii"
     mult.run()
 
 
-def pre_process(input_file):
+def pre_process(input_file, do_bet=True):
     """ Pre process the data"""
     n4_file = TEMP_FOLDER_PATH + splitext(basename(input_file))[0]\
         + '_n4.nii'
@@ -191,10 +195,13 @@ def pre_process(input_file):
     img_3d_affine = resample_img(norm_file, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
 
+    if not do_bet:
+        return resampled_file
+
     # pylint: disable= using-constant-test
     if False:
         brain_extraction(resampled_file, out_file)
-        return
+        return out_file
 
     # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
     bet = fsl.BET(command="fsl5.0-bet")
@@ -261,7 +268,7 @@ def brain_extraction(in_file, out_file):
     mult.run()
 
 
-def registration(moving, fixed):
+def registration(moving, fixed, reg_type):
     """Image2Image registration """
     reg = ants.Registration()
     reg.inputs.collapse_output_transforms = True
@@ -269,10 +276,14 @@ def registration(moving, fixed):
     reg.inputs.moving_image = moving
     reg.inputs.initial_moving_transform_com = True
     reg.inputs.num_threads = 1
-    if DEFORMATION:
+    if reg_type == RIGID:
+        reg.inputs.transforms = ['Rigid']
+    elif reg_type == AFFINE:
+        reg.inputs.transforms = ['Rigid', 'Affine']
+    elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
     else:
-        reg.inputs.transforms = ['Rigid', 'Affine']
+        raise "Wrong registration format"
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_threshold = [1e-06]
@@ -364,11 +375,11 @@ def post_calculation(images, label):
     generate_image(path, TEMPLATE_VOLUME)
 
 
-def find_moving_images():
+def find_moving_images(data_path):
     """ Find T1 image for registration """
     result = []
     for pattern in T1_PATTERN:
-        result.extend(glob.glob(DATA_PATH + '*' + pattern + '*'))
+        result.extend(glob.glob(data_path + '*' + pattern + '*'))
     return result
 
 
@@ -402,8 +413,13 @@ def process_dataset(moving):
     for k in range(num_tries):
         moving_pre_processed = pre_process(moving)
         try:
+            if DEFORMATION:
+                reg_type = SYN
+            else:
+                reg_type = AFFINE
             transform = registration(moving_pre_processed,
-                                     TEMP_FOLDER_PATH + "masked_template.nii")
+                                     TEMP_FOLDER_PATH + "masked_template.nii",
+                                     reg_type)
             return (moving, transform)
         # pylint: disable=  broad-except
         except Exception as exp:
@@ -411,7 +427,7 @@ def process_dataset(moving):
                   str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
 
 
-def move_dataset(moving_dataset):
+def move_dataset(moving_dataset, process_dataset_func=process_dataset):
     """ move dataset """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
@@ -419,11 +435,11 @@ def move_dataset(moving_dataset):
         else:
             pool = Pool(MULTITHREAD)
         # http://stackoverflow.com/a/1408476/636384
-        result = pool.map_async(process_dataset, moving_dataset).get(999999999)
+        result = pool.map_async(process_dataset_func, moving_dataset).get(999999999)
         pool.close()
         pool.join()
     else:
-        result = list(map(process_dataset, moving_dataset))
+        result = list(map(process_dataset_func, moving_dataset))
     return result
 
 
@@ -490,9 +506,9 @@ if __name__ == "__main__":
     if not os.path.exists(DATA_OUT_PATH):
         os.makedirs(DATA_OUT_PATH)
 
-    prepare_template()
+    prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
-    moving_datasets = find_moving_images()
+    moving_datasets = find_moving_images(DATA_PATH)
     data_transforms = move_dataset(moving_datasets)
     results = move_segmentations(data_transforms)
 
