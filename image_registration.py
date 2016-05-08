@@ -53,7 +53,7 @@ import numpy as np
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+# MULTITHREAD = "max"
 
 DATA_PATH = ""
 T1_PATTERN = []
@@ -331,6 +331,9 @@ def move_data(moving, transform):
     img_3d_affine = resample_img(moving, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
 
+    if not isinstance(transform, list):
+        transform = [transform]
+
     apply_transforms = ants.ApplyTransforms()
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = resampled_file
@@ -338,8 +341,8 @@ def move_data(moving, transform):
     apply_transforms.inputs.output_image = result
     apply_transforms.inputs.interpolation = 'NearestNeighbor'
     apply_transforms.inputs.default_value = 0
-    apply_transforms.inputs.transforms = [transform]
-    apply_transforms.inputs.invert_transform_flags = [False]
+    apply_transforms.inputs.transforms = transform
+    apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
     # print(apply_transforms.cmdline)
     apply_transforms.run()
 
