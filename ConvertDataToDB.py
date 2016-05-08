@@ -165,7 +165,7 @@ def convert_lisa_data(path, qol):
         os.remove(volume_label)
 
         conn.commit()
-    cursor.close()    
+    cursor.close()
     conn.close()
 
 
@@ -232,15 +232,15 @@ def convert_annelise_data(path):
 
 
 if __name__ == "__main__":
-#    try:
-#        shutil.rmtree(OUT_FOLDER)
-#        os.remove("volume_label.nrrd")
-#        os.remove("volume.nrrd")
-#    except OSError:
-#        pass
-#    mkdir_p(OUT_FOLDER)
-#    create_db(DB_PATH)
+    """    try:
+        shutil.rmtree(OUT_FOLDER)
+        os.remove("volume_label.nrrd")
+        os.remove("volume.nrrd")
+    except OSError:
+        pass
+    mkdir_p(OUT_FOLDER)
+    create_db(DB_PATH)
 
- #   convert_lisa_data(DATA_PATH_LISA, False)
- #   convert_lisa_data(DATA_PATH_LISA_QOL, True)
+    convert_lisa_data(DATA_PATH_LISA, False)
+    convert_lisa_data(DATA_PATH_LISA_QOL, True)"""
     convert_annelise_data(DATA_PATH_ANNE_LISE)
