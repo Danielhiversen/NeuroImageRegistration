@@ -120,6 +120,9 @@ def convert_lisa_data(path, qol):
         volume_label = glob.glob(data_path + '/*label.nrrd')
         if len(volume_label) == 0:
             volume_label = glob.glob(data_path + '/*label_1.nrrd')
+        if len(volume_label) == 0:
+            volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
+
         if len(volume_label) > 1:
             print("Warning!!\n\n More than one file with label found \n", volume_label)
             continue
