@@ -74,7 +74,7 @@ def setup(argv):
     # pylint: disable= too-many-branches, global-statement, line-too-long, too-many-statements
     """setup for current computer """
     global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK, DEFORMATION
-    hostname = os.uname()[1]image_registration.
+    hostname = os.uname()[1]
 
     dataset = argv[0]
 
