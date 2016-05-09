@@ -140,7 +140,7 @@ def convert_lisa_data(path, qol):
 
         cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
         exist = cursor.fetchone()
-        if exist is None:        
+        if exist is None:
             cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
 
         cursor.execute('''INSERT INTO Surgery(pid, date) VALUES(?,?)''', (pid, date))
@@ -196,7 +196,7 @@ def convert_annelise_data(path):
         date = convert_table[case_id][1]
         cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
         exist = cursor.fetchone()
-        if exist is None:        
+        if exist is None:
             cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
         cursor.execute('''INSERT INTO Surgery(pid, date) VALUES(?,?)''', (pid, date))
         mkdir_p(OUT_FOLDER + str(pid))
