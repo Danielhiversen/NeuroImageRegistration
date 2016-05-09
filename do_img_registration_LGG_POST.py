@@ -54,7 +54,6 @@ def move_segmentations(transforms):
 if __name__ == "__main__":
     os.nice(19)
     image_registration.setup(["LGG_POST"])
-    image_registration.setup(sys.argv[1:])
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
     if not os.path.exists(image_registration.DATA_OUT_PATH):
