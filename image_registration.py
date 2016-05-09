@@ -74,7 +74,7 @@ def setup(argv):
     # pylint: disable= too-many-branches, global-statement, line-too-long, too-many-statements
     """setup for current computer """
     global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK, DEFORMATION
-    hostname = os.uname()[1]
+    hostname = os.uname()[1]image_registration.
 
     dataset = argv[0]
 
@@ -141,7 +141,7 @@ def setup(argv):
             print("Unkown dataset")
             raise Exception
 
-        DATA_OUT_PATH = '/home/daniel/data_out/' + data_folder
+        DATA_OUT_PATH = '/home/daniel/data_out_3/' + data_folder
         TEMPLATE_VOLUME = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         # path to ANTs bin folder
