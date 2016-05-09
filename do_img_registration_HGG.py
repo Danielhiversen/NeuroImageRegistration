@@ -15,6 +15,7 @@ import image_registration
 DATA_FOLDER = "/mnt/dokumneter/data/test/"
 DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
+image_registration.MULTITHREAD = "max"
 
 def find_images_qol():
     """ Find images for registration """

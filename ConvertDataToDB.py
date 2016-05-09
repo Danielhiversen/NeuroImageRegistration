@@ -138,7 +138,11 @@ def convert_lisa_data(path, qol):
         volume_label = "volume_label.nrrd"
         volume = "volume.nrrd"
 
-        cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
+        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
+        exist = cursor.fetchone()
+        if exist is None:        
+            cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
+
         cursor.execute('''INSERT INTO Surgery(pid, date) VALUES(?,?)''', (pid, date))
         cursor.execute('''INSERT INTO Images(pid, modality, diag_pre_post) VALUES(?,?,?)''', (pid, 'MR', 'pre'))
         img_id = cursor.lastrowid
@@ -190,7 +194,10 @@ def convert_annelise_data(path):
             pid = -case_id+10000
             continue
         date = convert_table[case_id][1]
-        cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
+        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
+        exist = cursor.fetchone()
+        if exist is None:        
+            cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
         cursor.execute('''INSERT INTO Surgery(pid, date) VALUES(?,?)''', (pid, date))
         mkdir_p(OUT_FOLDER + str(pid))
         img_out_folder = OUT_FOLDER + str(pid) + "/NIFTI/"
@@ -232,7 +239,7 @@ def convert_annelise_data(path):
 
 
 if __name__ == "__main__":
-    """    try:
+    try:
         shutil.rmtree(OUT_FOLDER)
         os.remove("volume_label.nrrd")
         os.remove("volume.nrrd")
@@ -242,5 +249,5 @@ if __name__ == "__main__":
     create_db(DB_PATH)
 
     convert_lisa_data(DATA_PATH_LISA, False)
-    convert_lisa_data(DATA_PATH_LISA_QOL, True)"""
+    convert_lisa_data(DATA_PATH_LISA_QOL, True)
     convert_annelise_data(DATA_PATH_ANNE_LISE)
