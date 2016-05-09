@@ -17,6 +17,7 @@ DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
 image_registration.MULTITHREAD = "max"
 
+
 def find_images_qol():
     """ Find images for registration """
     conn = sqlite3.connect(DB_PATH)
