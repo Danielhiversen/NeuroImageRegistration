@@ -6,17 +6,46 @@ Created on Wed Apr 20 15:02:02 2016
 """
 
 import os
-import sys
+import sqlite3
 
 import image_registration
 
 
-def process_dataset(post_image):
+def find_images_lgg_post():
+    """ Find images for registration """
+    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from Patient where diagnose = ?''', ('LGG',))
+    ids = []
+    for row in cursor:
+        cursor2 = conn.execute('''SELECT id, transform from Images where pid = ? AND diag_pre_post = ?''', (row[0], "post"))
+        for (_id, _transform) in cursor2:
+            if _transform is not None:
+                continue
+            ids.append(_id)
+        cursor2.close()
+
+    cursor.close()
+    conn.close()
+    print(ids)
+    return ids
+
+
+def process_dataset((moving_image_id, reg_type), num_tries=3):
     """ pre process and registrate volume"""
-    num_tries = 3
-    pre_image = post_image.replace("post", "pre")
-    pre_image = pre_image.replace("POST", "PRE")
+    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))
+    post_image = image_registration.DATA_FOLDER + cursor.fetchone()[0]
+
+    cursor = conn.execute('''SELECT pid from Images where id = ?''', (moving_image_id,))
+    pid = cursor.fetchone()[0]
+    cursor = conn.execute('''SELECT filepath from Images where pid = ? AND diag_pre_post = ?''', (pid, "pre"))
+    pre_image = image_registration.DATA_FOLDER + cursor.fetchone()[0]
     print(pre_image, post_image)
+
+    cursor.close()
+    conn.close()
 
     for k in range(num_tries):
         pre_image_pre = image_registration.pre_process(pre_image, False)
@@ -33,8 +62,8 @@ def process_dataset(post_image):
             return (post_image, [trans2, trans1])
         # pylint: disable=  broad-except
         except Exception as exp:
-            print('Crashed during processing of ' + post_image + '. Try ' +
-                  str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
+            raise Exception('Crashed during processing of ' + post_image + '. Try ' +
+                            str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
 
 
 def move_segmentations(transforms):
@@ -53,24 +82,13 @@ def move_segmentations(transforms):
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup(["LGG_POST"])
+    image_registration.setup("LGG_POST")
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
-    if not os.path.exists(image_registration.DATA_OUT_PATH):
-        os.makedirs(image_registration.DATA_OUT_PATH)
 
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
                                         image_registration.TEMPLATE_MASK)
 
-    post_images = image_registration.find_moving_images(image_registration.DATA_PATH)
+    post_images = find_images_lgg_post()[:5]
 
-    data_transforms = image_registration.move_dataset(post_images, process_dataset)
-    results = move_segmentations(data_transforms)
-
-    for label_i in results:
-        image_registration.post_calculation(results[label_i], label_i)
-
-    if sys.argv[1] == "test":
-        print(len(results))
-        print(len(data_transforms))
-        print(len(results))
+    data_transforms = image_registration.get_transforms(post_images, process_dataset_func=process_dataset)

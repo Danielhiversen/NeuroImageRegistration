@@ -33,12 +33,12 @@ To download data:
 # import nipype.interfaces.dipy as dipy
 from __future__ import print_function
 from __future__ import division
-import glob
 import sys
 from multiprocessing import Pool
 import os
 from os.path import basename
 from os.path import splitext
+import sqlite3
 from builtins import map
 from builtins import str
 from builtins import range
@@ -53,15 +53,24 @@ import numpy as np
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-# MULTITHREAD = "max"
+MULTITHREAD = "max"
 
-DATA_PATH = ""
-T1_PATTERN = []
-DATA_OUT_PATH = ""
 TEMP_FOLDER_PATH = ""
 TEMPLATE_VOLUME = ""
+DATA_FOLDER = ""
+DB_PATH = ""
 TEMPLATE_MASK = ""
-DEFORMATION = False
+
+DWICONVERT_PATH = ""
+DATA_PATH_LISA = ""
+PID_LISA = ""
+DATA_PATH_LISA_QOL = ""
+DATA_PATH_ANNE_LISE = ""
+PID_ANNE_LISE = ""
+DATA_PATH_LGG = ""
+
+OUT_FOLDER = ""
+DB_PATH = ""
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -70,89 +79,66 @@ SYN = 'syn'
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
-def setup(argv):
-    # pylint: disable= too-many-branches, global-statement, line-too-long, too-many-statements
+def setup(temp_path):
     """setup for current computer """
-    global DATA_PATH, T1_PATTERN, DATA_OUT_PATH, TEMP_FOLDER_PATH, TEMPLATE_VOLUME, TEMPLATE_MASK, DEFORMATION
+    global TEMP_FOLDER_PATH
+    TEMP_FOLDER_PATH = temp_path
+    setup_paths()
+
+
+def setup_paths():
+    """setup for current computer """
+    # pylint: disable= global-statement, line-too-long
+    global TEMPLATE_VOLUME, TEMPLATE_MASK, DATA_FOLDER, DB_PATH
+    global DWICONVERT_PATH, DATA_PATH_LISA, PID_LISA, DATA_PATH_LISA_QOL, DATA_PATH_ANNE_LISE, PID_ANNE_LISE, DATA_PATH_LGG
     hostname = os.uname()[1]
-
-    dataset = argv[0]
-
-    if dataset == "HGG":
-        T1_PATTERN = ['T1_diag', 'T1_preop']
-        data_folder = 'out_HGG/'
-    elif dataset == "LGG_PRE":
-        T1_PATTERN = ['_pre.nii']
-        data_folder = 'out_LGG_PRE/'
-    elif dataset == "LGG_POST":
-        T1_PATTERN = ['_post.nii']
-        data_folder = 'out_LGG_POST/'
-    else:
-        print("Unkown dataset: ", dataset)
-        raise Exception
-
-    if len(argv) > 1 and argv[1] == "DEF":
-        DEFORMATION = True
-        data_folder = data_folder[:-1] + "_def/"
-    else:
-        DEFORMATION = False
-
-    TEMP_FOLDER_PATH = "temp_" + data_folder
-
     if hostname == 'dahoiv-Alienware-15':
-        if dataset == "HGG":
-            DATA_PATH = '/home/dahoiv/disk/data/tumor_segmentation/'
-        elif dataset == "LGG_PRE":
-            DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/PRE/'
-        elif dataset == "LGG_POST":
-            DATA_PATH = '/home/dahoiv/disk/data/LGG_kart/POST/'
-        else:
-            print("Unkown dataset")
-            raise Exception
-        DATA_OUT_PATH = '/home/dahoiv/disk/sintef/NeuroImageRegistration/' + data_folder
         TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
-    elif hostname == 'dahoiv-Precision-M6500':
-        if dataset == "HGG":
-            DATA_PATH = '/mnt/dokumenter/data/tumor_segmentation/'
-        elif dataset == "LGG_PRE":
-            DATA_PATH = '/mnt/dokumenter/data/LGG_kart/PRE/'
-        elif dataset == "LGG_POST":
-            DATA_PATH = '/mnt/dokumenter/data/LGG_kart/POST/'
-        else:
-            print("Unkown dataset")
-            raise Exception
 
-        DATA_OUT_PATH = '/mnt/dokumenter/NeuroImageRegistration/' + data_folder
+        DATA_FOLDER = "/mnt/dokumneter/data/test/"
+        DB_PATH = DATA_FOLDER + "brainSegmentation.db"
+
+        DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
+
+        main_folder = "/mnt/sintef/NevroData/Segmentations/"
+        DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
+        PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
+        DATA_PATH_LISA_QOL = main_folder + "Med QoL/"
+        DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
+        PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
+        DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
+
+    elif hostname == 'dahoiv-Precision-M6500':
         TEMPLATE_VOLUME = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
-        if dataset == "HGG":
-            DATA_PATH = '/home/daniel/data/HGG/'
-        elif dataset == "LGG_PRE":
-            DATA_PATH = '/home/daniel/data/LGG_PRE/'
-        elif dataset == "LGG_POST":
-            DATA_PATH = '/home/daniel/data/LGG_POST/'
-        else:
-            print("Unkown dataset")
-            raise Exception
-
-        DATA_OUT_PATH = '/home/daniel/data_out_3/' + data_folder
         TEMPLATE_VOLUME = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
 
+        DATA_FOLDER = "/home/daniel/database/"
+        DB_PATH = DATA_FOLDER + "brainSegmentation.db"
+
+        DWICONVERT_PATH = "/home/daniel/Slicer-4.5.0-1-linux-amd64/lib/Slicer-4.5/cli-modules/DWIConvert"
+
+        main_folder = "/home/daniel/Sintef/NevroData/Segmentations/"
+        DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
+        PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
+        DATA_PATH_LISA_QOL = main_folder + "Med QoL/"
+        DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
+        PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
+        DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
+
     else:
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
         raise Exception
-
-    print("Setup: \n\n Datapath: " + DATA_PATH + "\n Data out: " + DATA_OUT_PATH + "\n Deformation in registration: " + str(DEFORMATION) + "\n\n")
 
 
 def prepare_template(template_vol, template_mask):
@@ -167,7 +153,7 @@ def prepare_template(template_vol, template_mask):
 
 def pre_process(input_file, do_bet=True):
     """ Pre process the data"""
-    n4_file = TEMP_FOLDER_PATH + splitext(basename(input_file))[0]\
+    n4_file = TEMP_FOLDER_PATH + splitext(splitext(basename(input_file))[0])[0]\
         + '_n4.nii'
     norm_file = TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
         + '_norm.nii'
@@ -243,7 +229,7 @@ def brain_extraction(in_file, out_file):
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_threshold = [1e-06]
     reg.inputs.convergence_window_size = [10]
-    reg.inputs.metric = ['MI', 'MI', 'CC']
+    reg.inputs.metric = ['CC']
     reg.inputs.metric_weight = [1.0]*3
     reg.inputs.number_of_iterations = [[1000, 500, 250, 100]]
     reg.inputs.radius_or_number_of_bins = [32]
@@ -255,6 +241,7 @@ def brain_extraction(in_file, out_file):
     reg.inputs.transform_parameters = [(0.1,)]
     reg.inputs.use_histogram_matching = True
     reg.inputs.write_composite_transform = True
+
     name = splitext(splitext(basename(in_file))[0])[0]
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + "output_"+name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_regRigid.nii'
@@ -278,24 +265,32 @@ def registration(moving, fixed, reg_type):
     reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
+        reg.inputs.sampling_strategy = [None]
+        reg.inputs.sampling_percentage = [1]
+        reg.inputs.metric = ['CC']
+        reg.inputs.radius_or_number_of_bins = [4]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
+        reg.inputs.sampling_strategy = ['Regular', None]
+        reg.inputs.sampling_percentage = [0.25, 1]
+        reg.inputs.metric = ['MI', 'CC']
+        reg.inputs.radius_or_number_of_bins = [32, 4]
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
+        reg.inputs.sampling_strategy = ['Regular', 'Regular', None]
+        reg.inputs.sampling_percentage = [0.25, 0.25, 1]
+        reg.inputs.metric = ['MI', 'MI', 'CC']
+        reg.inputs.radius_or_number_of_bins = [32, 32, 4]
     else:
-        raise "Wrong registration format"
+        raise Exception("Wrong registration format " + reg_type)
+    reg.inputs.metric_weight = [1.0]*3
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_threshold = [1e-06]
     reg.inputs.convergence_window_size = [10]
-    reg.inputs.metric = ['MI', 'MI', 'CC']
-    reg.inputs.metric_weight = [1.0]*3
     reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
                                        [1000, 500, 250, 100],
                                        [100, 70, 50, 20]]
-    reg.inputs.radius_or_number_of_bins = [32, 32, 4]
-    reg.inputs.sampling_strategy = ['Regular', 'Regular', None]
-    reg.inputs.sampling_percentage = [0.25, 0.25, 1]
     reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
     reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]*3  # [8 4 2 0 ]
     reg.inputs.sigma_units = ['vox']*3
@@ -306,7 +301,7 @@ def registration(moving, fixed, reg_type):
     reg.inputs.write_composite_transform = True
 
     name = splitext(splitext(basename(moving))[0])[0]
-    reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + "output_"+name+'_'
+    reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
 
     result = reg.inputs.output_transform_prefix + 'Composite.h5'
@@ -323,7 +318,7 @@ def move_data(moving, transform):
     """ Move data with transform """
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0]\
         + '_resample.nii'
-    result = DATA_OUT_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
+    result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
     if os.path.exists(result):
         return result
 
@@ -353,7 +348,7 @@ def move_data(moving, transform):
 
 def post_calculation(images, label):
     """ Calculate average volumes """
-    path = DATA_OUT_PATH + 'avg_' + label + '.nii'
+    path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
 #    avg = ants.AverageImages()
@@ -378,59 +373,46 @@ def post_calculation(images, label):
     generate_image(path, TEMPLATE_VOLUME)
 
 
-def find_moving_images(data_path):
-    """ Find T1 image for registration """
-    result = []
-    for pattern in T1_PATTERN:
-        result.extend(glob.glob(data_path + '*' + pattern + '*'))
-    return result
-
-
-def find_seg_images(moving):
-    """ find corresponding images"""
-    pattern = ''
-
-    for char in basename(moving)[1:]:
-        if char == '-':
-            break
-        pattern += str(char)
-    result = glob.glob(os.path.dirname(moving) + '/k' + pattern + '*.nii')
-    if len(result) == 0:  # LGG
-        pattern = os.path.splitext(os.path.basename(moving))[0]
-        result = glob.glob(os.path.dirname(moving) + '/'+pattern + '*.nii')
-#    result .remove(moving)
-    return result
-
-
-def find_label(path):
-    """Find label in file path """
-    label = splitext(basename(path))[0]
-    label = '_'.join(label.split("_")[1:])
-    return label
-
-
-def process_dataset(moving):
+def process_dataset((moving_image_id, reg_type), num_tries=3):
     """ pre process and registrate volume"""
-    print(moving)
-    num_tries = 3
+
+    print(moving_image_id, reg_type)
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))
+    moving = DATA_FOLDER + cursor.fetchone()[0]
+    cursor.close()
+    conn.close()
+
     for k in range(num_tries):
         moving_pre_processed = pre_process(moving)
+        transform = registration(moving_pre_processed,
+                                 TEMP_FOLDER_PATH + "masked_template.nii",
+                                 reg_type)
         try:
-            if DEFORMATION:
-                reg_type = SYN
-            else:
-                reg_type = AFFINE
-            transform = registration(moving_pre_processed,
-                                     TEMP_FOLDER_PATH + "masked_template.nii",
-                                     reg_type)
-            return (moving, transform)
+            return (moving_image_id, transform)
         # pylint: disable=  broad-except
         except Exception as exp:
-            print('Crashed during processing of ' + moving + '. Try ' +
-                  str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
+            print(exp)
+            raise Exception('Crashed during processing of ' + moving + '. Try ' +
+                            str(k+1) + ' of ' + str(num_tries) + ' \n' + exp.message)
 
 
-def move_dataset(moving_dataset, process_dataset_func=process_dataset):
+def find_seg_images(moving_image_id):
+    """ Find segmentation images"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT filepath from Labels where image_id = ? ''', (moving_image_id,))
+    images = []
+    for row in cursor:
+        images.append(DATA_FOLDER + row)
+
+    cursor.close()
+    conn.close()
+    return images
+
+
+def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
     """ move dataset """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
@@ -438,26 +420,11 @@ def move_dataset(moving_dataset, process_dataset_func=process_dataset):
         else:
             pool = Pool(MULTITHREAD)
         # http://stackoverflow.com/a/1408476/636384
-        result = pool.map_async(process_dataset_func, moving_dataset).get(999999999)
+        result = pool.map_async(process_dataset_func, zip(moving_dataset_image_ids, [reg_type]*len(moving_dataset_image_ids))).get(999999999)
         pool.close()
         pool.join()
     else:
-        result = list(map(process_dataset_func, moving_dataset))
-    return result
-
-
-def move_segmentations(transforms):
-    """ move label image with transforms """
-    result = dict()
-    for moving, transform in transforms:
-        for segmentation in find_seg_images(moving):
-            print("         ", segmentation, transform)
-            temp = move_data(segmentation, transform)
-            label = find_label(temp)
-            if label in result:
-                result[label].append(temp)
-            else:
-                result[label] = [temp]
+        result = list(map(process_dataset_func, zip(moving_dataset_image_ids, [reg_type]*len(moving_dataset_image_ids))))
     return result
 
 
@@ -496,30 +463,4 @@ def generate_image(path, path2):
     plt.suptitle(name)
 
     plt.savefig(splitext(splitext(path)[0])[0] + ".png")
-
-# pylint: disable= invalid-name
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print("Usage: python " + __file__ + " dataset")
-        exit(1)
-    os.nice(19)
-    setup(sys.argv[1:])
-    if not os.path.exists(TEMP_FOLDER_PATH):
-        os.makedirs(TEMP_FOLDER_PATH)
-    if not os.path.exists(DATA_OUT_PATH):
-        os.makedirs(DATA_OUT_PATH)
-
-    prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
-
-    moving_datasets = find_moving_images(DATA_PATH)
-    data_transforms = move_dataset(moving_datasets)
-    results = move_segmentations(data_transforms)
-
-    for label_i in results:
-        post_calculation(results[label_i], label_i)
-
-    if sys.argv[1] == "test":
-        print(len(results))
-        print(len(moving_datasets))
-        print(len(data_transforms))
-        print(len(results))
+    plt.close()

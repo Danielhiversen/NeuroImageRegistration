@@ -8,26 +8,21 @@ Created on Wed Apr 20 15:02:02 2016
 import os
 import sqlite3
 
-import ConvertDataToDB
 import image_registration
 
 
-image_registration.MULTITHREAD = "max"
-image_registration.DEFORMATION = False
-
-
-def find_images_hgg():
+def find_images_lgg_pre():
     """ Find images for registration """
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
-    cursor = conn.execute('''SELECT pid from Patient where diagnose = ?''', ('HGG',))
+    cursor = conn.execute('''SELECT pid from Patient where diagnose = ?''', ('LGG',))
     ids = []
     for row in cursor:
-        cursor2 = conn.execute('''SELECT id, transform from Images where pid = ?''', (row[0], ))
+        cursor2 = conn.execute('''SELECT id, transform from Images where pid = ? AND diag_pre_post = ?''', (row[0], "pre"))
         for (_id, _transform) in cursor2:
             if _transform is not None:
                 continue
-            ids.append(_id)
+            ids.append(_id[0])
         cursor2.close()
 
     cursor.close()
@@ -35,24 +30,16 @@ def find_images_hgg():
     print(ids)
     return ids
 
-
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("HGG_def")
+    image_registration.setup("LGG_PRE")
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
                                         image_registration.TEMPLATE_MASK)
 
-    moving_datasets_pids = find_images_hgg()[:5]
+    pre_images = find_images_lgg_pre()[:5]
 
-    data_transforms = image_registration.get_transforms(moving_datasets_pids, image_registration.SYN)
-
-    ConvertDataToDB.save_transform_to_database(data_transforms)
-
-#    results = image_registration.move_segmentations(data_transforms)
-
-#   for label_i in results:
-#       image_registration.post_calculation(results[label_i], label_i)
+    data_transforms = image_registration.get_transforms(pre_images, image_registration.SYN)
