@@ -421,8 +421,9 @@ def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func
         else:
             pool = Pool(MULTITHREAD)
         # http://stackoverflow.com/a/1408476/636384
-        result = pool.map_async(process_dataset_func, zip(moving_dataset_image_ids,
-                                                          [reg_type]*len(moving_dataset_image_ids))).get(999999999)
+        result = pool.map_async(process_dataset_func,
+                                zip(moving_dataset_image_ids, 
+                                    [reg_type]*len(moving_dataset_image_ids))).get(999999999)
         pool.close()
         pool.join()
     else:
