@@ -39,7 +39,7 @@ def find_images_hgg():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("HGG_def")
+    image_registration.setup("HGG/")
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 

@@ -53,7 +53,7 @@ import numpy as np
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-#MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 TEMP_FOLDER_PATH = ""
 TEMPLATE_VOLUME = ""
@@ -263,7 +263,7 @@ def registration(moving, fixed, reg_type):
     reg.inputs.fixed_image = fixed
     reg.inputs.moving_image = moving
     reg.inputs.initial_moving_transform_com = True
-    reg.inputs.num_threads = 8
+    reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
         reg.inputs.sampling_strategy = [None]

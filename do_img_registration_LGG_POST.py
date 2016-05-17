@@ -82,7 +82,7 @@ def move_segmentations(transforms):
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("LGG_POST")
+    image_registration.setup("LGG_POST/")
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 

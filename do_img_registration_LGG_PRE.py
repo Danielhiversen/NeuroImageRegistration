@@ -33,7 +33,7 @@ def find_images_lgg_pre():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("LGG_PRE")
+    image_registration.setup("LGG_PRE/")
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 

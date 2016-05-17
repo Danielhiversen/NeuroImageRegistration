@@ -331,12 +331,12 @@ def save_transform_to_database(data_transforms):
 if __name__ == "__main__":
     image_registration.setup_paths()
 
-    try:
-        shutil.rmtree(image_registration.DATA_FOLDER)
-        os.remove("volume_label.nrrd")
-        os.remove("volume.nrrd")
-    except OSError:
-        pass
+#    try:
+#        shutil.rmtree(image_registration.DATA_FOLDER)
+#        os.remove("volume_label.nrrd")
+#        os.remove("volume.nrrd")
+#    except OSError:
+#        pass
     mkdir_p(image_registration.DATA_FOLDER)
     create_db(image_registration.DB_PATH)
 
