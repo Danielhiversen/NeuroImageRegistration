@@ -22,7 +22,7 @@ def find_images_lgg_pre():
         for (_id, _transform) in cursor2:
             if _transform is not None:
                 continue
-            ids.append(_id[0])
+            ids.append(_id)
         cursor2.close()
 
     cursor.close()
