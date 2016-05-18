@@ -396,7 +396,7 @@ def process_dataset(args, num_tries=3):
         except Exception as exp:
             print(exp)
             raise Exception('Crashed during processing of ' + moving + '. Try ' +
-                            str(k+1) + ' of ' + str(num_tries) + ' \n' + exp.message)
+                            str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
 
 
 def find_seg_images(moving_image_id):
