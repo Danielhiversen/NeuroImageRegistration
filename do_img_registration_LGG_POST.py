@@ -31,8 +31,9 @@ def find_images_lgg_post():
     return ids
 
 
-def process_dataset((moving_image_id, reg_type), num_tries=3):
+def process_dataset(args, num_tries=3):
     """ pre process and registrate volume"""
+    (moving_image_id, reg_type) = args
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))

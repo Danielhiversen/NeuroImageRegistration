@@ -107,7 +107,7 @@ def setup_paths():
         main_folder = "/mnt/sintef/NevroData/Segmentations/"
         DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
         PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
-        DATA_PATH_LISA_QOL = main_folder + "Med QoL/"
+        DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
         DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
         PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
         DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
@@ -131,7 +131,7 @@ def setup_paths():
         main_folder = "/home/daniel/Sintef/NevroData/Segmentations/"
         DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
         PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
-        DATA_PATH_LISA_QOL = main_folder + "Med QoL/"
+        DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
         DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
         PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
         DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
@@ -374,9 +374,9 @@ def post_calculation(images, label):
     generate_image(path, TEMPLATE_VOLUME)
 
 
-def process_dataset((moving_image_id, reg_type), num_tries=3):
+def process_dataset(args, num_tries=3):
     """ pre process and registrate volume"""
-
+    (moving_image_id, reg_type) = args
     print(moving_image_id, reg_type)
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
