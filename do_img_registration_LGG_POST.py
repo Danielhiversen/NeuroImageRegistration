@@ -7,7 +7,7 @@ Created on Wed Apr 20 15:02:02 2016
 
 import os
 import sqlite3
-
+import ConvertDataToDB
 import image_registration
 
 
@@ -90,6 +90,8 @@ if __name__ == "__main__":
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
                                         image_registration.TEMPLATE_MASK)
 
-    post_images = find_images_lgg_post()[:5]
+    post_images = find_images_lgg_post()
 
     data_transforms = image_registration.get_transforms(post_images, process_dataset_func=process_dataset)
+
+    ConvertDataToDB.save_transform_to_database(data_transforms)
