@@ -95,4 +95,3 @@ if __name__ == "__main__":
     data_transforms = image_registration.get_transforms(post_images, process_dataset_func=process_dataset)
 
     ConvertDataToDB.save_transform_to_database(data_transforms)
-    
