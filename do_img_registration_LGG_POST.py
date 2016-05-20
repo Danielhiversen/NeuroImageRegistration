@@ -54,6 +54,8 @@ def process_dataset(args, num_tries=3):
         trans1 = image_registration.registration(post_image_pre, pre_image_pre,
                                                  image_registration.RIGID)
 
+        print("Finished 1 of 2")
+
         pre_image_pre2 = image_registration.pre_process(pre_image)
         trans2 = image_registration.registration(pre_image_pre2,
                                                  image_registration.TEMP_FOLDER_PATH +
