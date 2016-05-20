@@ -265,11 +265,11 @@ def registration(moving, fixed, reg_type):
     reg.inputs.initial_moving_transform_com = True
     reg.inputs.num_threads = 1
     if reg_type == RIGID:
-        reg.inputs.transforms = ['Rigid']
-        reg.inputs.sampling_strategy = [None]
-        reg.inputs.sampling_percentage = [1]
-        reg.inputs.metric = ['CC']
-        reg.inputs.radius_or_number_of_bins = [4]
+        reg.inputs.transforms = ['Rigid', 'Rigid']
+        reg.inputs.sampling_strategy = ['Regular', None]
+        reg.inputs.sampling_percentage = [0.25, 1]
+        reg.inputs.metric = ['MI', 'CC']
+        reg.inputs.radius_or_number_of_bins = [32, 4]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.sampling_strategy = ['Regular', None]

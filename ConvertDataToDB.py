@@ -340,14 +340,14 @@ def vacuum_db():
 if __name__ == "__main__":
     image_registration.setup_paths()
 
-    try:
-        shutil.rmtree(image_registration.DATA_FOLDER)
-        os.remove("volume_label.nrrd")
-        os.remove("volume.nrrd")
-    except OSError:
-        pass
-    mkdir_p(image_registration.DATA_FOLDER)
-    create_db(image_registration.DB_PATH)
+#    try:
+#        shutil.rmtree(image_registration.DATA_FOLDER)
+#        os.remove("volume_label.nrrd")
+#        os.remove("volume.nrrd")
+#    except OSError:
+#        pass
+#    mkdir_p(image_registration.DATA_FOLDER)
+#    create_db(image_registration.DB_PATH)
 
     convert_lisa_data(image_registration.DATA_PATH_LISA, False)
     convert_lisa_data(image_registration.DATA_PATH_LISA_QOL, True)
