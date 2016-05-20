@@ -299,9 +299,9 @@ def convert_lgg_data(path):
 
 def save_transform_to_database(data_transforms):
 
+    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn.text_factory = str
     for moving_image_id, transform in data_transforms:
-        conn = sqlite3.connect(image_registration.DB_PATH)
-        conn.text_factory = str
         print("-----", moving_image_id, transform)
 
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (moving_image_id,))
@@ -325,7 +325,16 @@ def save_transform_to_database(data_transforms):
 
         cursor.close()
         cursor2.close()
-        conn.close()
+
+    conn.close()
+    vacuum_db()
+
+
+def vacuum_db():
+    conn = sqlite3.connect(image_registration.DB_PATH)
+    cursor = conn.execute('''VACUUM; ''')
+    cursor.close()
+    conn.close()
 
 
 if __name__ == "__main__":
@@ -346,3 +355,4 @@ if __name__ == "__main__":
 
     convert_lgg_data(image_registration.DATA_PATH_LGG + "PRE_OP/")
     convert_lgg_data(image_registration.DATA_PATH_LGG + "POST/")
+    vacuum_db()
