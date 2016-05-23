@@ -18,10 +18,8 @@ def find_images_lgg_pre():
     cursor = conn.execute('''SELECT pid from Patient where diagnose = ?''', ('LGG',))
     ids = []
     for row in cursor:
-        cursor2 = conn.execute('''SELECT id, transform from Images where pid = ? AND diag_pre_post = ?''', (row[0], "pre"))
-        for (_id, _transform) in cursor2:
-            if _transform is not None:
-                continue
+        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (row[0], "pre"))
+        for _id in cursor2:
             ids.append(_id)
         cursor2.close()
 

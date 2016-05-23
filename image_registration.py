@@ -315,7 +315,95 @@ def registration(moving, fixed, reg_type):
     return result
 
 
-def move_data(moving, transform):
+def process_dataset(args, num_tries=3):
+    """ pre process and registrate volume"""
+    (moving_image_id, reg_type) = args
+    print(moving_image_id, reg_type)
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))
+    moving = DATA_FOLDER + cursor.fetchone()[0]
+    cursor.close()
+    conn.close()
+
+    for k in range(num_tries):
+        moving_pre_processed = pre_process(moving)
+        transform = registration(moving_pre_processed,
+                                 TEMP_FOLDER_PATH + "masked_template.nii",
+                                 reg_type)
+        try:
+            return (moving_image_id, transform)
+        # pylint: disable=  broad-except
+        except Exception as exp:
+            print(exp)
+            raise Exception('Crashed during processing of ' + moving + '. Try ' +
+                            str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
+
+
+def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
+    """ move dataset """
+    if MULTITHREAD > 1:
+        if MULTITHREAD == 'max':
+            pool = Pool()
+        else:
+            pool = Pool(MULTITHREAD)
+        # http://stackoverflow.com/a/1408476/636384
+        result = pool.map_async(process_dataset_func,
+                                zip(moving_dataset_image_ids,
+                                    [reg_type]*len(moving_dataset_image_ids))).get(999999999)
+        pool.close()
+        pool.join()
+    else:
+        result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
+                                                    [reg_type]*len(moving_dataset_image_ids))))
+    return result
+
+
+def post_calculations(moving_dataset_image_ids):
+    """ Transform images and calculate avg"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    result = dict()
+    for _id in moving_dataset_image_ids:
+        cursor = conn.execute('''SELECT transform, file_path from Images where id = ? ''', (_id,))
+        transform = DATA_FOLDER + cursor.fetchone()[0]
+        img = DATA_FOLDER + cursor.fetchone()[1]
+
+        temp = move_vol(img, transform)
+        label = "img"
+        if label in result:
+            result[label].append(temp)
+        else:
+            result[label] = [temp]
+
+        for (segmentation, label) in find_seg_images(_id):
+            temp = move_vol(segmentation, transform)
+            if label in result:
+                result[label].append(temp)
+            else:
+                result[label] = [temp]
+
+    cursor.close()
+    conn.close()
+
+    return result
+
+
+def find_seg_images(moving_image_id):
+    """ Find segmentation images"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT filepath, description from Labels where image_id = ? ''', (moving_image_id,))
+    images = []
+    for (row, label) in cursor:
+        images.append((DATA_FOLDER + row, label))
+
+    cursor.close()
+    conn.close()
+    return images
+
+
+def move_vol(moving, transform):
     """ Move data with transform """
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0]\
         + '_resample.nii'
@@ -347,18 +435,10 @@ def move_data(moving, transform):
     return apply_transforms.inputs.output_image
 
 
-def post_calculation(images, label):
+def avg_calculation(images, label):
     """ Calculate average volumes """
     path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
-
-#    avg = ants.AverageImages()
-#    avg.inputs.dimension = 3
-#    avg.inputs.output_average_image = path
-#    avg.inputs.normalize = True
-#    avg.inputs.images = images
-#    print(avg.cmdline)
-#    avg.run()
 
     average = None
     for file_name in images:
@@ -366,70 +446,11 @@ def post_calculation(images, label):
         if average is None:
             average = np.zeros(img.get_data().shape)
         average = average + np.array(img.get_data())
-    average = average
+    average = average / float(len(images))
     result_img = nib.Nifti1Image(average, img.affine)
     result_img.to_filename(path)
-    print(np.amax(average))
-    print(np.amin(average))
+
     generate_image(path, TEMPLATE_VOLUME)
-
-
-def process_dataset(args, num_tries=3):
-    """ pre process and registrate volume"""
-    (moving_image_id, reg_type) = args
-    print(moving_image_id, reg_type)
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-    cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))
-    moving = DATA_FOLDER + cursor.fetchone()[0]
-    cursor.close()
-    conn.close()
-
-    for k in range(num_tries):
-        moving_pre_processed = pre_process(moving)
-        transform = registration(moving_pre_processed,
-                                 TEMP_FOLDER_PATH + "masked_template.nii",
-                                 reg_type)
-        try:
-            return (moving_image_id, transform)
-        # pylint: disable=  broad-except
-        except Exception as exp:
-            print(exp)
-            raise Exception('Crashed during processing of ' + moving + '. Try ' +
-                            str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
-
-
-def find_seg_images(moving_image_id):
-    """ Find segmentation images"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-    cursor = conn.execute('''SELECT filepath from Labels where image_id = ? ''', (moving_image_id,))
-    images = []
-    for row in cursor:
-        images.append(DATA_FOLDER + row)
-
-    cursor.close()
-    conn.close()
-    return images
-
-
-def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
-    """ move dataset """
-    if MULTITHREAD > 1:
-        if MULTITHREAD == 'max':
-            pool = Pool()
-        else:
-            pool = Pool(MULTITHREAD)
-        # http://stackoverflow.com/a/1408476/636384
-        result = pool.map_async(process_dataset_func,
-                                zip(moving_dataset_image_ids,
-                                    [reg_type]*len(moving_dataset_image_ids))).get(999999999)
-        pool.close()
-        pool.join()
-    else:
-        result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
-                                                    [reg_type]*len(moving_dataset_image_ids))))
-    return result
 
 
 def generate_image(path, path2):

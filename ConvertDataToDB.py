@@ -308,6 +308,7 @@ def save_transform_to_database(data_transforms):
         pid = cursor.fetchone()[0]
 
         folder = image_registration.DATA_FOLDER + str(pid) + "/registration/"
+        shutil.rmtree(folder, True)
         mkdir_p(folder)
 
         if not isinstance(transform, list):

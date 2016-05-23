@@ -23,10 +23,8 @@ def find_images_hgg():
     cursor = conn.execute('''SELECT pid from Patient where diagnose = ?''', ('HGG',))
     ids = []
     for row in cursor:
-        cursor2 = conn.execute('''SELECT id, transform from Images where pid = ?''', (row[0], ))
-        for (_id, _transform) in cursor2:
-            if _transform is not None:
-                continue
+        cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
+        for _id in cursor2:
             ids.append(_id)
         cursor2.close()
 

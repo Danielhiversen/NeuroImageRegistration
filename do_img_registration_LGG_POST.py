@@ -18,10 +18,8 @@ def find_images_lgg_post():
     cursor = conn.execute('''SELECT pid from Patient where diagnose = ?''', ('LGG',))
     ids = []
     for row in cursor:
-        cursor2 = conn.execute('''SELECT id, transform from Images where pid = ? AND diag_pre_post = ?''', (row[0], "post"))
-        for (_id, _transform) in cursor2:
-            if _transform is not None:
-                continue
+        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (row[0], "post"))
+        for _id in cursor2:
             ids.append(_id)
         cursor2.close()
 
@@ -33,7 +31,7 @@ def find_images_lgg_post():
 
 def process_dataset(args, num_tries=3):
     """ pre process and registrate volume"""
-    (moving_image_id, reg_type) = args
+    moving_image_id = args[0]
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))
@@ -56,11 +54,14 @@ def process_dataset(args, num_tries=3):
 
         print("Finished 1 of 2")
 
-        pre_image_pre2 = image_registration.pre_process(pre_image)
+        pre_image_pre2 = image_registration.pre_process(pre_image, True)
         trans2 = image_registration.registration(pre_image_pre2,
                                                  image_registration.TEMP_FOLDER_PATH +
                                                  "masked_template.nii",
                                                  image_registration.AFFINE)
+
+        print("Finished 2 of 2")
+
         try:
             return (post_image, [trans2, trans1])
         # pylint: disable=  broad-except
@@ -68,19 +69,6 @@ def process_dataset(args, num_tries=3):
             raise Exception('Crashed during processing of ' + post_image + '. Try ' +
                             str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
 
-
-def move_segmentations(transforms):
-    """ move label image with transforms """
-    result = dict()
-    for moving, transform in transforms:
-        for segmentation in image_registration.find_seg_images(moving):
-            temp = image_registration.move_data(segmentation, transform)
-            label = image_registration.find_label(temp)
-            if label in result:
-                result[label].append(temp)
-            else:
-                result[label] = [temp]
-    return result
 
 # pylint: disable= invalid-name
 if __name__ == "__main__":
