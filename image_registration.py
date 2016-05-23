@@ -393,7 +393,8 @@ def find_seg_images(moving_image_id):
     """ Find segmentation images"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
-    cursor = conn.execute('''SELECT filepath, description from Labels where image_id = ? ''', (moving_image_id,))
+    cursor = conn.execute('''SELECT filepath, description from Labels where image_id = ? ''',
+                          (moving_image_id,))
     images = []
     for (row, label) in cursor:
         images.append((DATA_FOLDER + row, label))
