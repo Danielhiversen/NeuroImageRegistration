@@ -386,7 +386,8 @@ def post_calculations(moving_dataset_image_ids):
     cursor.close()
     conn.close()
 
-    return result
+    for label, images in result.iteritems():
+        avg_calculation(images, label)
 
 
 def find_seg_images(moving_image_id):

@@ -16,7 +16,7 @@ image_registration.MULTITHREAD = "max"
 image_registration.DEFORMATION = False
 
 
-def find_images_hgg():
+def find_images():
     """ Find images for registration """
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
                                         image_registration.TEMPLATE_MASK)
 
-    moving_datasets_pids = find_images_hgg()
+    moving_datasets_pids = find_images()
 
     data_transforms = image_registration.get_transforms(moving_datasets_pids, image_registration.SYN)
 

@@ -11,7 +11,7 @@ import ConvertDataToDB
 import image_registration
 
 
-def find_images_lgg_pre():
+def find_images():
     """ Find images for registration """
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
@@ -38,7 +38,7 @@ if __name__ == "__main__":
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
                                         image_registration.TEMPLATE_MASK)
 
-    pre_images = find_images_lgg_pre()
+    pre_images = find_images()
 
     data_transforms = image_registration.get_transforms(pre_images, image_registration.SYN)
 

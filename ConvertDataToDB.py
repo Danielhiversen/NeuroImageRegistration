@@ -298,7 +298,7 @@ def convert_lgg_data(path):
 
 
 def save_transform_to_database(data_transforms):
-
+    """ Save data transforms to database"""
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
     for moving_image_id, transform in data_transforms:
@@ -317,7 +317,7 @@ def save_transform_to_database(data_transforms):
         transform_paths = ""
         for _transform in transform:
             shutil.move(_transform, folder)
-            shutil.move(_transform.replace("InverseComposite.h5", ".png"), folder)
+            shutil.move(_transform.replace("Composite.h5", ".png"), folder)
             transform_paths += str(pid) + "/registration/" + _transform + ", "
 
         transform_paths = transform_paths[:-2]
@@ -332,11 +332,28 @@ def save_transform_to_database(data_transforms):
 
 
 def vacuum_db():
+    """ Clean up database"""
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.execute('''VACUUM; ''')
     cursor.close()
     conn.close()
 
+
+def get_image_paths(image_ids):
+    """ get image paths """
+    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn.text_factory = str
+
+    res = []
+    for _id in image_ids:
+        cursor = conn.execute('''SELECT transform from Images where id = ? ''', (_id,))
+        transform = cursor.fetchone()[0]
+        for _transform in transform:
+            res.append(_transform)
+    cursor.close()
+    conn.close()
+
+    return res
 
 if __name__ == "__main__":
     image_registration.setup_paths()
