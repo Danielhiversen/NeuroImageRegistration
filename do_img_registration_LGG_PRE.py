@@ -20,7 +20,7 @@ def find_images():
     for row in cursor:
         cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (row[0], "pre"))
         for _id in cursor2:
-            ids.append(_id)
+            ids.append(_id[0])
         cursor2.close()
 
     cursor.close()

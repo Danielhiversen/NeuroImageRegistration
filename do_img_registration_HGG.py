@@ -25,7 +25,7 @@ def find_images():
     for row in cursor:
         cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
         for _id in cursor2:
-            ids.append(_id)
+            ids.append(_id[0])
         cursor2.close()
 
     cursor.close()
