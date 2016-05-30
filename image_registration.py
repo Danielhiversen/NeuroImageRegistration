@@ -123,7 +123,7 @@ def setup_paths():
         # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
 
-        DATA_FOLDER = "/home/daniel/database/"
+        DATA_FOLDER = "/media/ingerid/data/daniel/database/"
         DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
         DWICONVERT_PATH = "/home/daniel/Slicer-4.5.0-1-linux-amd64/lib/Slicer-4.5/cli-modules/DWIConvert"
