@@ -28,4 +28,3 @@ if __name__ == "__main__":
         transform = transform.split(",")
         for _transform in transform:
             shutil.copy(_transform, image_registration.TEMP_FOLDER_PATH)
-            shutil.copy(_transform.replace("Composite.h5", ".png"), image_registration.TEMP_FOLDER_PATH)
