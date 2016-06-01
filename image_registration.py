@@ -115,6 +115,10 @@ def setup_paths():
     elif hostname == 'dahoiv-Precision-M6500':
         TEMPLATE_VOLUME = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
+
+        DATA_FOLDER = "/mnt/dokumenter/daniel/database/"
+        DB_PATH = DATA_FOLDER + "brainSegmentation.db"
+
         # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
