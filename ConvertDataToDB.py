@@ -326,6 +326,7 @@ def save_transform_to_database(data_transforms):
 
         cursor.close()
         cursor2.close()
+        conn.commit()
 
     conn.close()
     vacuum_db()
