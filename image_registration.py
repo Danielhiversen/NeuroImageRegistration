@@ -99,7 +99,7 @@ def setup_paths():
         # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
 
-        DATA_FOLDER = "/mnt/dokumneter/data/test/"
+        DATA_FOLDER = "/mnt/dokumneter/data/database/"
         DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
         DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
@@ -365,7 +365,8 @@ def post_calculations(moving_dataset_image_ids):
     conn.text_factory = str
     result = dict()
     for _id in moving_dataset_image_ids:
-        cursor = conn.execute('''SELECT transform, file_path from Images where id = ? ''', (_id,))
+        cursor = conn.execute('''SELECT transform, filepath from Images where id = ? ''', (_id,))
+        print(_id, cursor.fetchone())
         transform = DATA_FOLDER + cursor.fetchone()[0]
         img = DATA_FOLDER + cursor.fetchone()[1]
 
