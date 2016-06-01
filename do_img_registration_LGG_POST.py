@@ -63,7 +63,7 @@ def process_dataset(args, num_tries=3):
         print("Finished 2 of 2")
 
         try:
-            return (post_image, [trans2, trans1])
+            return (moving_image_id, [trans2, trans1])
         # pylint: disable=  broad-except
         except Exception as exp:
             raise Exception('Crashed during processing of ' + post_image + '. Try ' +
