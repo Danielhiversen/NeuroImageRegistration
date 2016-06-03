@@ -24,7 +24,7 @@ if __name__ == "__main__":
     image_registration.post_calculations(image_ids)
 
     transforms = ConvertDataToDB.get_image_paths(image_ids)
-    for transform in transforms:
-        transform = transform.split(",")
-        for _transform in transform:
+    for img_transforms in transforms:
+        img_transforms = img_transforms.split(",")
+        for _transform in img_transforms:
             shutil.copy(_transform, image_registration.TEMP_FOLDER_PATH)
