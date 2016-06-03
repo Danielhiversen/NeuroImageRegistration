@@ -309,7 +309,8 @@ def registration(moving, fixed, reg_type):
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
 
-    result = reg.inputs.output_transform_prefix + 'Composite.h5'
+    result = reg.inputs.output_transform_prefix + 'InverseComposite.h5'
+    print(result)
     if os.path.exists(result):
         generate_image(reg.inputs.output_warped_image, TEMPLATE_VOLUME)
         return result

@@ -323,9 +323,9 @@ def save_transform_to_database(data_transforms):
         cursor2 = conn.execute('''UPDATE Images SET transform = ? ''', (transform_paths,))
         cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? ''', (-1,))
 
+        conn.commit()
         cursor.close()
         cursor2.close()
-        conn.commit()
 
     conn.close()
     vacuum_db()
