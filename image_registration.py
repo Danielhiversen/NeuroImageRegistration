@@ -371,9 +371,10 @@ def post_calculations(moving_dataset_image_ids):
     result = dict()
     for _id in moving_dataset_image_ids:
         cursor = conn.execute('''SELECT transform, filepath from Images where id = ? ''', (_id,))
-        print(_id, cursor.fetchone())
-        transform = DATA_FOLDER + cursor.fetchone()[0]
-        img = DATA_FOLDER + cursor.fetchone()[1]
+        db_temp = cursor.fetchone()
+        print(db_temp)
+        transform = DATA_FOLDER + db_temp[0]
+        img = DATA_FOLDER + db_temp[1]
 
         temp = move_vol(img, transform)
         label = "img"
@@ -435,7 +436,6 @@ def move_vol(moving, transform):
     apply_transforms.inputs.default_value = 0
     apply_transforms.inputs.transforms = transform
     apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
-    # print(apply_transforms.cmdline)
     apply_transforms.run()
 
     generate_image(apply_transforms.inputs.output_image, TEMPLATE_VOLUME)
