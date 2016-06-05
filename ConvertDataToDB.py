@@ -317,7 +317,7 @@ def save_transform_to_database(data_transforms):
 
         transform_paths = ""
         for _transform in transform:
-            shutil.move(_transform, folder)
+            shutil.copy(_transform, folder)
             transform_paths += str(pid) + "/registration/" + basename(_transform) + ", "
 
         transform_paths = transform_paths[:-2]
