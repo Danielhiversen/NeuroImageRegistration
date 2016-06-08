@@ -374,7 +374,7 @@ def post_calculations(moving_dataset_image_ids):
         db_temp = cursor.fetchone()
         print(db_temp)
         img = DATA_FOLDER + db_temp[1]
-        
+
         img_transforms = db_temp[0].split(",")
         transforms = []
         for _transform in img_transforms:

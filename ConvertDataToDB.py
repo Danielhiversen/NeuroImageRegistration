@@ -353,7 +353,8 @@ def copy_transforms(image_ids, dest_path):
             dst_file = dest_path + _transform
             if os.path.exists(dst_file):
                 os.remove(dst_file)
-            shutil.copy(image_registration.DATA_FOLDER + _transform, dest_path)
+            print(image_registration.DATA_FOLDER + _transform, dst_file)
+            shutil.copy(image_registration.DATA_FOLDER + _transform, dst_file)
 
         conn_dest_db.commit()
         cursor.close()

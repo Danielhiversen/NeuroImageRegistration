@@ -19,4 +19,3 @@ if __name__ == "__main__":
 
     image_ids = do_img_registration.find_images()
     image_registration.post_calculations(image_ids)
-
