@@ -6,9 +6,6 @@ Created on Tue May 24 10:41:50 2016
 """
 
 import os
-import shutil
-
-import ConvertDataToDB
 import image_registration
 
 if __name__ == "__main__":
@@ -23,8 +20,3 @@ if __name__ == "__main__":
     image_ids = do_img_registration.find_images()
     image_registration.post_calculations(image_ids)
 
-    transforms = ConvertDataToDB.get_image_paths(image_ids)
-    for img_transforms in transforms:
-        img_transforms = img_transforms.split(",")
-        for _transform in img_transforms:
-            shutil.copy(_transform, image_registration.TEMP_FOLDER_PATH)

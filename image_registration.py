@@ -373,10 +373,14 @@ def post_calculations(moving_dataset_image_ids):
         cursor = conn.execute('''SELECT transform, filepath from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         print(db_temp)
-        transform = DATA_FOLDER + db_temp[0]
         img = DATA_FOLDER + db_temp[1]
+        
+        img_transforms = db_temp[0].split(",")
+        transforms = []
+        for _transform in img_transforms:
+            transforms.append(DATA_FOLDER + _transform)
 
-        temp = move_vol(img, transform)
+        temp = move_vol(img, transforms)
         label = "img"
         if label in result:
             result[label].append(temp)
@@ -384,7 +388,7 @@ def post_calculations(moving_dataset_image_ids):
             result[label] = [temp]
 
         for (segmentation, label) in find_seg_images(_id):
-            temp = move_vol(segmentation, transform)
+            temp = move_vol(segmentation, transforms)
             if label in result:
                 result[label].append(temp)
             else:

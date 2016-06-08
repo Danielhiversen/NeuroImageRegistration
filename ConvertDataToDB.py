@@ -335,6 +335,36 @@ def save_transform_to_database(data_transforms):
     vacuum_db()
 
 
+def copy_transforms(image_ids, dest_path):
+    conn_org_db = sqlite3.connect(image_registration.DB_PATH)
+    conn_org_db.text_factory = str
+
+    conn_dest_db = sqlite3.connect(dest_path + "brainSegmentation.db")
+    conn_dest_db.text_factory = str
+
+    for _id in image_ids:
+        cursor = conn_org_db.execute('''SELECT transform from Images where id = ? ''', (_id,))
+        transform_paths = cursor.fetchone()[0]
+        print(transform_paths)
+        cursor2 = conn_dest_db.execute('''UPDATE Images SET transform = ? WHERE id = ?''', (transform_paths, _id))
+
+        img_transforms = transform_paths.split(",")
+        for _transform in img_transforms:
+            dst_file = dest_path + _transform
+            if os.path.exists(dst_file):
+                os.remove(dst_file)
+            shutil.copy(image_registration.DATA_FOLDER + _transform, dest_path)
+
+        conn_dest_db.commit()
+        cursor.close()
+        cursor2.close()
+
+    cursor2 = conn_dest_db.execute('''VACUUM; ''')
+    cursor2.close()
+    conn_dest_db.close()
+    conn_org_db.close()
+
+
 def vacuum_db():
     """ Clean up database"""
     conn = sqlite3.connect(image_registration.DB_PATH)
@@ -342,22 +372,6 @@ def vacuum_db():
     cursor.close()
     conn.close()
 
-
-def get_image_paths(image_ids):
-    """ get image paths """
-    conn = sqlite3.connect(image_registration.DB_PATH)
-    conn.text_factory = str
-
-    res = []
-    for _id in image_ids:
-        cursor = conn.execute('''SELECT transform from Images where id = ? ''', (_id,))
-        transform = cursor.fetchone()[0]
-        for _transform in transform:
-            res.append(_transform)
-    cursor.close()
-    conn.close()
-
-    return res
 
 if __name__ == "__main__":
     image_registration.setup_paths()
