@@ -312,10 +312,10 @@ def registration(moving, fixed, reg_type):
     result = reg.inputs.output_transform_prefix + 'InverseComposite.h5'
     print(result)
     if os.path.exists(result):
-        generate_image(reg.inputs.output_warped_image, TEMPLATE_VOLUME)
+        generate_image(reg.inputs.output_warped_image, fixed)
         return result
     reg.run()
-    generate_image(reg.inputs.output_warped_image, TEMPLATE_VOLUME)
+    generate_image(reg.inputs.output_warped_image, fixed)
 
     return result
 
@@ -378,7 +378,7 @@ def post_calculations(moving_dataset_image_ids):
         img_transforms = db_temp[0].split(",")
         transforms = []
         for _transform in img_transforms:
-            transforms.append(DATA_FOLDER + _transform)
+            transforms.append(DATA_FOLDER + _transform.strip())
 
         temp = move_vol(img, transforms)
         label = "img"
