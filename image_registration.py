@@ -182,17 +182,17 @@ def pre_process(input_file, do_bet=True):
     result_img = nib.Nifti1Image(img.get_data()/np.amax(img.get_data())*100, img.affine, img.header)
     result_img.to_filename(norm_file)
 
-    target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
+    # resample volume to 1 mm slices
+    target_affine_3x3 = np.eye(3) * 1
     img_3d_affine = resample_img(norm_file, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
 
     if not do_bet:
         return resampled_file
 
-    # pylint: disable= using-constant-test
-    if False:
-        brain_extraction(resampled_file, out_file)
-        return out_file
+
+    # brain_extraction(resampled_file, out_file)
+    # return out_file
 
     # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
     bet = fsl.BET(command="fsl5.0-bet")
@@ -220,7 +220,7 @@ def pre_process(input_file, do_bet=True):
 
     return out_file
 
-
+# Not used for the moment
 def brain_extraction(in_file, out_file):
     """ Brain extraction."""
     reg = ants.Registration()
@@ -309,14 +309,15 @@ def registration(moving, fixed, reg_type):
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
 
-    result = reg.inputs.output_transform_prefix + 'InverseComposite.h5'
+    result = reg.inputs.output_transform_prefix + 'Composite.h5'
     print(result)
     if os.path.exists(result):
         generate_image(reg.inputs.output_warped_image, fixed)
         return result
-    reg.run()
+    outputs = reg.run()
     generate_image(reg.inputs.output_warped_image, fixed)
 
+    print(outputs)
     return result
 
 
@@ -372,7 +373,7 @@ def post_calculations(moving_dataset_image_ids):
     for _id in moving_dataset_image_ids:
         cursor = conn.execute('''SELECT transform, filepath from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
-        print(db_temp)
+        print(_id, db_temp)
         img = DATA_FOLDER + db_temp[1]
 
         img_transforms = db_temp[0].split(",")
@@ -418,18 +419,11 @@ def find_seg_images(moving_image_id):
 
 def move_vol(moving, transform):
     """ Move data with transform """
-    resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0]\
-        + '_resample.nii'
+
+    resampled_file = pre_process(moving, False)
     result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
-    if os.path.exists(result):
-        return result
-
-    target_affine_3x3 = np.eye(3) * 1  # 1 mm slices
-    img_3d_affine = resample_img(moving, target_affine=target_affine_3x3)
-    nib.save(img_3d_affine, resampled_file)
-
-    if not isinstance(transform, list):
-        transform = [transform]
+#    if os.path.exists(result):
+#        return result
 
     apply_transforms = ants.ApplyTransforms()
     apply_transforms.inputs.dimension = 3
@@ -440,7 +434,10 @@ def move_vol(moving, transform):
     apply_transforms.inputs.default_value = 0
     apply_transforms.inputs.transforms = transform
     apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
+    print(apply_transforms.cmdline)
     apply_transforms.run()
+
+    print(apply_transforms.inputs.output_image, result)
 
     generate_image(apply_transforms.inputs.output_image, TEMPLATE_VOLUME)
 
