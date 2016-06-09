@@ -117,6 +117,7 @@ def setup_paths():
         TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
 
         DATA_FOLDER = "/mnt/dokumenter/daniel/database/"
+        DATA_FOLDER = "/home/dahoiv/ingerid-pc/media/ingerid/data/daniel/database/"
         DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
         # path to ANTs bin folder
@@ -309,7 +310,7 @@ def registration(moving, fixed, reg_type):
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
 
-    result = reg.inputs.output_transform_prefix + 'Composite.h5'
+    result = TEMP_FOLDER_PATH + name + '_' + 'Composite.h5'
     print(result)
     if os.path.exists(result):
         generate_image(reg.inputs.output_warped_image, fixed)
