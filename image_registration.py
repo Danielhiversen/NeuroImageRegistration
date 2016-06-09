@@ -190,7 +190,6 @@ def pre_process(input_file, do_bet=True):
     if not do_bet:
         return resampled_file
 
-
     # brain_extraction(resampled_file, out_file)
     # return out_file
 
@@ -219,6 +218,7 @@ def pre_process(input_file, do_bet=True):
     generate_image(out_file, resampled_file)
 
     return out_file
+
 
 # Not used for the moment
 def brain_extraction(in_file, out_file):
