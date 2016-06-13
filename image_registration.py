@@ -310,15 +310,14 @@ def registration(moving, fixed, reg_type):
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name+'_'
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
 
-    result = TEMP_FOLDER_PATH + name + '_' + 'Composite.h5'
+    result = TEMP_FOLDER_PATH + name + '_reg_Composite.h5'
     print(result)
     if os.path.exists(result):
         generate_image(reg.inputs.output_warped_image, fixed)
         return result
-    outputs = reg.run()
+    reg.run()
     generate_image(reg.inputs.output_warped_image, fixed)
 
-    print(outputs)
     return result
 
 
@@ -334,11 +333,11 @@ def process_dataset(args, num_tries=3):
     conn.close()
 
     for k in range(num_tries):
-        moving_pre_processed = pre_process(moving)
-        transform = registration(moving_pre_processed,
-                                 TEMP_FOLDER_PATH + "masked_template.nii",
-                                 reg_type)
         try:
+            moving_pre_processed = pre_process(moving)
+            transform = registration(moving_pre_processed,
+                                     TEMP_FOLDER_PATH + "masked_template.nii",
+                                     reg_type)
             return (moving_image_id, transform)
         # pylint: disable=  broad-except
         except Exception as exp:

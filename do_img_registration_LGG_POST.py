@@ -47,22 +47,22 @@ def process_dataset(args, num_tries=3):
     conn.close()
 
     for k in range(num_tries):
-        pre_image_pre = image_registration.pre_process(pre_image, False)
-        post_image_pre = image_registration.pre_process(post_image, False)
-        trans1 = image_registration.registration(post_image_pre, pre_image_pre,
-                                                 image_registration.RIGID)
-
-        print("Finished 1 of 2")
-
-        pre_image_pre2 = image_registration.pre_process(pre_image, True)
-        trans2 = image_registration.registration(pre_image_pre2,
-                                                 image_registration.TEMP_FOLDER_PATH +
-                                                 "masked_template.nii",
-                                                 image_registration.AFFINE)
-
-        print("Finished 2 of 2")
-
         try:
+            pre_image_pre = image_registration.pre_process(pre_image, False)
+            post_image_pre = image_registration.pre_process(post_image, False)
+            trans1 = image_registration.registration(post_image_pre, pre_image_pre,
+                                                     image_registration.RIGID)
+
+            print("Finished 1 of 2")
+
+            pre_image_pre2 = image_registration.pre_process(pre_image, True)
+            trans2 = image_registration.registration(pre_image_pre2,
+                                                     image_registration.TEMP_FOLDER_PATH +
+                                                     "masked_template.nii",
+                                                     image_registration.AFFINE)
+
+            print("Finished 2 of 2")
+
             return (moving_image_id, [trans2, trans1])
         # pylint: disable=  broad-except
         except Exception as exp:
