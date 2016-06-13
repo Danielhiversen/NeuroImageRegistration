@@ -216,7 +216,7 @@ def pre_process(input_file, do_bet=True):
     bet.run()
     print(out_file)
 
-    generate_image(out_file, resampled_file)
+    # generate_image(out_file, resampled_file)
 
     return out_file
 
@@ -313,10 +313,10 @@ def registration(moving, fixed, reg_type):
     result = TEMP_FOLDER_PATH + name + '_reg_Composite.h5'
     print(result)
     if os.path.exists(result):
-        generate_image(reg.inputs.output_warped_image, fixed)
+        # generate_image(reg.inputs.output_warped_image, fixed)
         return result
     reg.run()
-    generate_image(reg.inputs.output_warped_image, fixed)
+    # generate_image(reg.inputs.output_warped_image, fixed)
 
     return result
 
