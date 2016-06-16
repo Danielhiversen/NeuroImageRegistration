@@ -306,11 +306,11 @@ def registration(moving, fixed, reg_type):
     reg.inputs.use_histogram_matching = True
     reg.inputs.write_composite_transform = True
 
-    name = splitext(splitext(basename(moving))[0])[0]
-    reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name+'_'
-    reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
+    name = splitext(splitext(basename(moving))[0])[0] + '_reg'
+    reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
+    reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
-    result = TEMP_FOLDER_PATH + name + '_reg_Composite.h5'
+    result = TEMP_FOLDER_PATH + name + '_Composite.h5'
     print(result)
     if os.path.exists(result):
         # generate_image(reg.inputs.output_warped_image, fixed)
