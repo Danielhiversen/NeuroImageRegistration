@@ -383,6 +383,7 @@ def get_transforms_from_db(img_id, conn):
 
     return transforms
 
+
 def post_calculations(moving_dataset_image_ids):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH)

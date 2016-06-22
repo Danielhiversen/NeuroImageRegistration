@@ -79,7 +79,7 @@ if __name__ == "__main__":
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
-    #image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+    #  image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
     #                                    image_registration.TEMPLATE_MASK)
     post_images = find_images()[:4]
 
