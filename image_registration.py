@@ -376,10 +376,12 @@ def get_transforms_from_db(img_id, conn):
         transforms = get_transforms_from_db(fixed_image_id, conn)
     else:
         transforms = []
- 
+
     img_transforms = db_temp[0].split(",")
     for _transform in img_transforms:
         transforms.append(DATA_FOLDER + _transform.strip())
+
+    return transforms
 
 def post_calculations(moving_dataset_image_ids):
     """ Transform images and calculate avg"""
@@ -389,7 +391,7 @@ def post_calculations(moving_dataset_image_ids):
     for _id in moving_dataset_image_ids:
         transforms = get_transforms_from_db(_id, conn)
         cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (_id,))
-        db_temp = cursor.fetchone()    
+        db_temp = cursor.fetchone()
         img = DATA_FOLDER + db_temp[0]
 
         temp = move_vol(img, transforms)
