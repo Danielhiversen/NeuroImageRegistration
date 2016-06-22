@@ -306,7 +306,7 @@ def registration(moving, fixed, reg_type):
     reg.inputs.use_histogram_matching = True
     reg.inputs.write_composite_transform = True
 
-    name = splitext(splitext(basename(moving))[0])[0] + '_reg'
+    name = splitext(splitext(basename(moving))[0])[0] + '_reg' + reg_type
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
@@ -338,7 +338,7 @@ def process_dataset(args, num_tries=3):
             transform = registration(moving_pre_processed,
                                      TEMP_FOLDER_PATH + "masked_template.nii",
                                      reg_type)
-            return (moving_image_id, transform)
+            return (moving_image_id, transform, -1)
         # pylint: disable=  broad-except
         except Exception as exp:
             print(exp)
@@ -347,7 +347,8 @@ def process_dataset(args, num_tries=3):
 
 
 def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
-    """ move dataset """
+    """Calculate transforms """
+    print(moving_dataset_image_ids)
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
             pool = Pool()
@@ -365,21 +366,31 @@ def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func
     return result
 
 
+def get_transforms_from_db(img_id, conn):
+    """Get transforms from the database """
+    cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (img_id,))
+    db_temp = cursor.fetchone()
+
+    fixed_image_id = db_temp[1]
+    if fixed_image_id > 0:
+        transforms = get_transforms_from_db(fixed_image_id, conn)
+    else:
+        transforms = []
+ 
+    img_transforms = db_temp[0].split(",")
+    for _transform in img_transforms:
+        transforms.append(DATA_FOLDER + _transform.strip())
+
 def post_calculations(moving_dataset_image_ids):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     result = dict()
     for _id in moving_dataset_image_ids:
-        cursor = conn.execute('''SELECT transform, filepath from Images where id = ? ''', (_id,))
-        db_temp = cursor.fetchone()
-        print(_id, db_temp)
-        img = DATA_FOLDER + db_temp[1]
-
-        img_transforms = db_temp[0].split(",")
-        transforms = []
-        for _transform in img_transforms:
-            transforms.append(DATA_FOLDER + _transform.strip())
+        transforms = get_transforms_from_db(_id, conn)
+        cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (_id,))
+        db_temp = cursor.fetchone()    
+        img = DATA_FOLDER + db_temp[0]
 
         temp = move_vol(img, transforms)
         label = "img"

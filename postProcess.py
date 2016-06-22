@@ -13,10 +13,10 @@ if __name__ == "__main__":
     if False:
         import do_img_registration_LGG_POST as do_img_registration
         image_registration.setup("LGG_POST_RES/")
-    elif False:
+    elif True:
         import do_img_registration_LGG_PRE as do_img_registration
         image_registration.setup("LGG_PRE_RES/")
-    elif True:
+    elif False:
         import do_img_registration_HGG as do_img_registration
         image_registration.setup("HGG_RES/")
 

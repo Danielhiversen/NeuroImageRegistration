@@ -39,8 +39,10 @@ def process_dataset(args, num_tries=3):
 
     cursor = conn.execute('''SELECT pid from Images where id = ?''', (moving_image_id,))
     pid = cursor.fetchone()[0]
-    cursor = conn.execute('''SELECT filepath from Images where pid = ? AND diag_pre_post = ?''', (pid, "pre"))
-    pre_image = image_registration.DATA_FOLDER + cursor.fetchone()[0]
+    cursor = conn.execute('''SELECT filepath, id from Images where pid = ? AND diag_pre_post = ?''', (pid, "pre"))
+    db_temp = cursor.fetchone()
+    pre_image = image_registration.DATA_FOLDER + db_temp[0]
+    pre_image_id = db_temp[1]
     print(pre_image, post_image)
 
     cursor.close()
@@ -53,17 +55,17 @@ def process_dataset(args, num_tries=3):
             trans1 = image_registration.registration(post_image_pre, pre_image_pre,
                                                      image_registration.RIGID)
 
-            print("Finished 1 of 2")
+#            print("Finished 1 of 2")
+#
+#            pre_image_pre2 = image_registration.pre_process(pre_image, True)
+#            trans2 = image_registration.registration(pre_image_pre2,
+#                                                     image_registration.TEMP_FOLDER_PATH +
+#                                                     "masked_template.nii",
+#                                                     image_registration.AFFINE)
+#
+#            print("Finished 2 of 2")
 
-            pre_image_pre2 = image_registration.pre_process(pre_image, True)
-            trans2 = image_registration.registration(pre_image_pre2,
-                                                     image_registration.TEMP_FOLDER_PATH +
-                                                     "masked_template.nii",
-                                                     image_registration.AFFINE)
-
-            print("Finished 2 of 2")
-
-            return (moving_image_id, [trans2, trans1])
+            return (moving_image_id, trans1, pre_image_id)
         # pylint: disable=  broad-except
         except Exception as exp:
             raise Exception('Crashed during processing of ' + post_image + '. Try ' +
@@ -77,10 +79,10 @@ if __name__ == "__main__":
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
+    #image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+    #                                    image_registration.TEMPLATE_MASK)
 
-    post_images = find_images()
+    post_images = find_images()[:4]
 
     data_transforms = image_registration.get_transforms(post_images, process_dataset_func=process_dataset)
 
