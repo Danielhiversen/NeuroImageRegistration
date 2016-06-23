@@ -270,11 +270,11 @@ def registration(moving, fixed, reg_type):
     reg.inputs.initial_moving_transform_com = True
     reg.inputs.num_threads = 1
     if reg_type == RIGID:
-        reg.inputs.transforms = ['Rigid', 'Rigid']
-        reg.inputs.sampling_strategy = ['Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 1]
-        reg.inputs.metric = ['MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 4]
+        reg.inputs.transforms = ['Rigid']
+        reg.inputs.sampling_strategy = [None]
+        reg.inputs.sampling_percentage = [1]
+        reg.inputs.metric = ['CC']
+        reg.inputs.radius_or_number_of_bins = [4]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.sampling_strategy = ['Regular', None]
@@ -298,7 +298,7 @@ def registration(moving, fixed, reg_type):
                                        [1000, 500, 250, 100],
                                        [100, 70, 50, 20]]
     reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
-    reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]*3  # [8 4 2 0 ]
+    reg.inputs.smoothing_sigmas = [[8, 4, 1, 0]]*3
     reg.inputs.sigma_units = ['vox']*3
     reg.inputs.transform_parameters = [(0.1,),
                                        (0.1,),
@@ -306,7 +306,7 @@ def registration(moving, fixed, reg_type):
     reg.inputs.use_histogram_matching = True
     reg.inputs.write_composite_transform = True
 
-    name = splitext(splitext(basename(moving))[0])[0] + '_reg' + reg_type
+    name = splitext(splitext(basename(moving))[0])[0] + '_' + reg_type
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
