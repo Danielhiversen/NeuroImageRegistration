@@ -302,7 +302,7 @@ def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
-    for moving_image_id, transform in data_transforms:
+    for moving_image_id, transform, fixed_imag_id in data_transforms:
         print("-----", moving_image_id, transform)
 
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (moving_image_id,))
@@ -325,7 +325,7 @@ def save_transform_to_database(data_transforms):
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''', (transform_paths, moving_image_id))
-        cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''', (-1, moving_image_id))
+        cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''', (fixed_imag_id, moving_image_id))
 
         conn.commit()
         cursor.close()
