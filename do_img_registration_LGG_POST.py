@@ -81,7 +81,7 @@ if __name__ == "__main__":
 
     #  image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
     #                                    image_registration.TEMPLATE_MASK)
-    post_images = find_images()[:4]
+    post_images = find_images()
 
     data_transforms = image_registration.get_transforms(post_images, process_dataset_func=process_dataset)
 
