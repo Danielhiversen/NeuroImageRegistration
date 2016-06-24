@@ -348,7 +348,6 @@ def process_dataset(args, num_tries=3):
 
 def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
     """Calculate transforms """
-    print(moving_dataset_image_ids)
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
             pool = Pool()
