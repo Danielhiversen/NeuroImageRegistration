@@ -500,8 +500,10 @@ def save_transform_to_database(data_transforms):
             transform_paths += str(pid) + "/registration/" + basename(_transform) + ", "
         transform_paths = transform_paths[:-2]
 
-        cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''', (transform_paths, moving_image_id))
-        cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''', (fixed_imag_id, moving_image_id))
+        cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
+                               (transform_paths, moving_image_id))
+        cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''',
+                               (fixed_imag_id, moving_image_id))
 
         conn.commit()
         cursor.close()
