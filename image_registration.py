@@ -274,7 +274,7 @@ def registration(moving, fixed, reg_type):
         reg.inputs.sampling_strategy = ['Regular', None]
         reg.inputs.sampling_percentage = [0.25, 1]
         reg.inputs.metric = ['MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 4]        
+        reg.inputs.radius_or_number_of_bins = [32, 4]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.sampling_strategy = ['Regular', None]

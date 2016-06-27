@@ -317,6 +317,7 @@ def convert_hgg_data(path):
     conn.close()
     print(number)
 
+
 def convert_lgg_data(path):
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.cursor()
@@ -466,12 +467,12 @@ if __name__ == "__main__":
 #    mkdir_p(image_registration.DATA_FOLDER)
 #    create_db(image_registration.DB_PATH)
 
-   # convert_lisa_data(image_registration.DATA_PATH_LISA, False)
-   # convert_lisa_data(image_registration.DATA_PATH_LISA_QOL, True)
-   # convert_annelise_data(image_registration.DATA_PATH_ANNE_LISE)
-
-   # convert_lgg_data(image_registration.DATA_PATH_LGG + "PRE_OP/")
-   # convert_lgg_data(image_registration.DATA_PATH_LGG + "POST/")
+#    convert_lisa_data(image_registration.DATA_PATH_LISA, False)
+#    convert_lisa_data(image_registration.DATA_PATH_LISA_QOL, True)
+#    convert_annelise_data(image_registration.DATA_PATH_ANNE_LISE)
+#
+#    convert_lgg_data(image_registration.DATA_PATH_LGG + "PRE_OP/")
+#    convert_lgg_data(image_registration.DATA_PATH_LGG + "POST/")
 
     convert_hgg_data()
     vacuum_db()
