@@ -25,7 +25,7 @@ def find_images():
 
     cursor.close()
     conn.close()
-    print(ids)
+    print("------------", ids)
     return ids
 
 # pylint: disable= invalid-name

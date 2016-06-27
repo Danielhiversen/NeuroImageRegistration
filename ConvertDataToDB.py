@@ -6,7 +6,6 @@ Created on Tue Apr 19 15:19:49 2016
 """
 # pylint: disable= line-too-long
 from __future__ import print_function
-from os.path import basename
 
 import errno
 import glob
@@ -16,6 +15,16 @@ import shutil
 import sqlite3
 
 import image_registration
+
+main_folder = "/mnt/sintef/NevroData/Segmentations/"
+DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
+PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
+DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
+DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
+PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
+DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
+
+DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
 
 
 def create_db(path):
@@ -52,12 +61,6 @@ def create_db(path):
     `qol`    INTEGER NOT NULL,
     `time`    INTEGER,
     FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
-    cursor.execute('''CREATE TABLE "Surgery" (
-    `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-    `pid`    TEXT NOT NULL,
-    `date`    INTEGER,
-    `comments`    TEXT,
-    FOREIGN KEY(`pid`) REFERENCES Patient ( pid ))''')
 
     conn.commit()
     cursor.close()
@@ -98,7 +101,7 @@ def get_convert_table(path):
 def convert_lisa_data(path, qol):
     """Convert data from lisa"""
     # pylint: disable= too-many-locals
-    convert_table = get_convert_table(image_registration.PID_LISA)
+    convert_table = get_convert_table(PID_LISA)
 
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.cursor()
@@ -160,8 +163,8 @@ def convert_lisa_data(path, qol):
         cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
         cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''', (volume_label_out_db, label_id))
 
-        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
-        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " + volume_label_out + " --conversionMode NrrdToFSL")
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " + volume_label_out + " --conversionMode NrrdToFSL")
         os.remove(volume)
         os.remove(volume_label)
 
@@ -173,7 +176,7 @@ def convert_lisa_data(path, qol):
 def convert_annelise_data(path):
     """Convert data from anne lise"""
     # pylint: disable= too-many-locals
-    convert_table = get_convert_table(image_registration.PID_ANNE_LISE)
+    convert_table = get_convert_table(PID_ANNE_LISE)
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.cursor()
 
@@ -211,7 +214,7 @@ def convert_annelise_data(path):
             img_id = cursor.lastrowid
 
             volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_types[image_type] + ".nii.gz"
-            os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
+            os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
             volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
             cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
 
@@ -226,7 +229,7 @@ def convert_annelise_data(path):
 
                 volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_types[image_type]\
                     + "_label_" + labels[label_type] + ".nii.gz"
-                os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
+                os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
                           volume_label_out + " --conversionMode NrrdToFSL")
                 volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
                 cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
@@ -250,7 +253,7 @@ def convert_hgg_data(path):
             continue
 
         print(data_path)
-        pid = "mnhr_" + str(case_id)
+        pid = str(case_id)
 
         data_path = path + str(case_id) + "/"
         if not os.path.exists(data_path):
@@ -307,8 +310,8 @@ def convert_hgg_data(path):
         cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
         cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''', (volume_label_out_db, label_id))
 
-        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
-        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " + volume_label_out + " --conversionMode NrrdToFSL")
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " + volume_label_out + " --conversionMode NrrdToFSL")
         os.remove(volume)
         os.remove(volume_label)
 
@@ -333,7 +336,7 @@ def convert_lgg_data(path):
             continue
         print(volume, image_type)
 
-        pid = "lgg_" + str(case_id)
+        pid = str(case_id)
 
         cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
         exist = cursor.fetchone()
@@ -350,7 +353,7 @@ def convert_lgg_data(path):
 
         volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
         print("--->", volume_out)
-        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
         volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
         cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
 
@@ -367,7 +370,7 @@ def convert_lgg_data(path):
 
         volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type\
             + "_label_all.nii.gz"
-        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
                   volume_label_out + " --conversionMode NrrdToFSL")
         volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
         cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
@@ -377,73 +380,6 @@ def convert_lgg_data(path):
 
     cursor.close()
     conn.close()
-
-
-def save_transform_to_database(data_transforms):
-    """ Save data transforms to database"""
-    conn = sqlite3.connect(image_registration.DB_PATH)
-    conn.text_factory = str
-    for moving_image_id, transform, fixed_imag_id in data_transforms:
-        print("-----", moving_image_id, transform)
-
-        cursor = conn.execute('''SELECT pid from Images where id = ? ''', (moving_image_id,))
-        pid = cursor.fetchone()[0]
-
-        folder = image_registration.DATA_FOLDER + str(pid) + "/registration/"
-        mkdir_p(folder)
-
-        if not isinstance(transform, list):
-            transform = [transform]
-
-        transform_paths = ""
-        for _transform in transform:
-            dst_file = folder + str(pid) + "/registration/" + basename(_transform)
-            if os.path.exists(dst_file):
-                os.remove(dst_file)
-            shutil.copy(_transform, folder)
-            transform_paths += str(pid) + "/registration/" + basename(_transform) + ", "
-        transform_paths = transform_paths[:-2]
-
-        cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''', (transform_paths, moving_image_id))
-        cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''', (fixed_imag_id, moving_image_id))
-
-        conn.commit()
-        cursor.close()
-        cursor2.close()
-
-    conn.close()
-    vacuum_db()
-
-
-def copy_transforms(image_ids, dest_path):
-    conn_org_db = sqlite3.connect(image_registration.DB_PATH)
-    conn_org_db.text_factory = str
-
-    conn_dest_db = sqlite3.connect(dest_path + "brainSegmentation.db")
-    conn_dest_db.text_factory = str
-
-    for _id in image_ids:
-        cursor = conn_org_db.execute('''SELECT transform from Images where id = ? ''', (_id,))
-        transform_paths = cursor.fetchone()[0]
-        print(transform_paths)
-        cursor2 = conn_dest_db.execute('''UPDATE Images SET transform = ? WHERE id = ?''', (transform_paths, _id))
-
-        img_transforms = transform_paths.split(",")
-        for _transform in img_transforms:
-            dst_file = dest_path + _transform
-            if os.path.exists(dst_file):
-                os.remove(dst_file)
-            print(image_registration.DATA_FOLDER + _transform, dst_file)
-            shutil.copy(image_registration.DATA_FOLDER + _transform, dst_file)
-
-        conn_dest_db.commit()
-        cursor.close()
-        cursor2.close()
-
-    cursor2 = conn_dest_db.execute('''VACUUM; ''')
-    cursor2.close()
-    conn_dest_db.close()
-    conn_org_db.close()
 
 
 def vacuum_db():

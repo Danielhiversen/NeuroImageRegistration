@@ -34,11 +34,13 @@ To download data:
 from __future__ import print_function
 from __future__ import division
 import sys
+import errno
 from multiprocessing import Pool
 import os
 from os.path import basename
 from os.path import splitext
 import sqlite3
+import shutil
 from builtins import map
 from builtins import str
 from builtins import range
@@ -61,17 +63,6 @@ DATA_FOLDER = ""
 DB_PATH = ""
 TEMPLATE_MASK = ""
 
-DWICONVERT_PATH = ""
-DATA_PATH_LISA = ""
-PID_LISA = ""
-DATA_PATH_LISA_QOL = ""
-DATA_PATH_ANNE_LISE = ""
-PID_ANNE_LISE = ""
-DATA_PATH_LGG = ""
-
-OUT_FOLDER = ""
-DB_PATH = ""
-
 RIGID = 'rigid'
 AFFINE = 'affine'
 SYN = 'syn'
@@ -91,60 +82,31 @@ def setup_paths():
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long
     global TEMPLATE_VOLUME, TEMPLATE_MASK, DATA_FOLDER, DB_PATH
-    global DWICONVERT_PATH, DATA_PATH_LISA, PID_LISA, DATA_PATH_LISA_QOL, DATA_PATH_ANNE_LISE, PID_ANNE_LISE, DATA_PATH_LGG
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
         TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-        # path to ANTs bin folder
-        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
-
         DATA_FOLDER = "/mnt/dokumneter/data/database/"
-        DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
-        DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
-
-        main_folder = "/mnt/sintef/NevroData/Segmentations/"
-        DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
-        PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
-        DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
-        DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
-        PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
-        DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
-
+        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         TEMPLATE_VOLUME = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-
         DATA_FOLDER = "/mnt/dokumenter/daniel/database/"
-        DATA_FOLDER = "/home/dahoiv/ingerid-pc/media/ingerid/data/daniel/database/"
-        DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
-        # path to ANTs bin folder
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
         TEMPLATE_VOLUME = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-        # path to ANTs bin folder
-        os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
-
         DATA_FOLDER = "/media/ingerid/data/daniel/database/"
-        DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
-        DWICONVERT_PATH = "/home/daniel/Slicer-4.5.0-1-linux-amd64/lib/Slicer-4.5/cli-modules/DWIConvert"
-
-        main_folder = "/home/daniel/Sintef/NevroData/Segmentations/"
-        DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
-        PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
-        DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
-        DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
-        PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
-        DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
-
+        os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
     else:
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
         raise Exception
+
+    DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
 
 def prepare_template(template_vol, template_mask):
@@ -390,10 +352,10 @@ def post_calculations(moving_dataset_image_ids):
     result = dict()
     for _id in moving_dataset_image_ids:
         transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (_id,))
+        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         img = DATA_FOLDER + db_temp[0]
-
+        print(img, transforms)
         temp = move_vol(img, transforms)
         label = "img"
         if label in result:
@@ -511,3 +473,50 @@ def generate_image(path, path2):
 
     plt.savefig(splitext(splitext(path)[0])[0] + ".png")
     plt.close()
+
+
+def save_transform_to_database(data_transforms):
+    """ Save data transforms to database"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    for moving_image_id, transform, fixed_imag_id in data_transforms:
+        print("-----", moving_image_id, transform)
+
+        cursor = conn.execute('''SELECT pid from Images where id = ? ''', (moving_image_id,))
+        pid = cursor.fetchone()[0]
+
+        folder = DATA_FOLDER + str(pid) + "/registration/"
+        mkdir_p(folder)
+
+        if not isinstance(transform, list):
+            transform = [transform]
+
+        transform_paths = ""
+        for _transform in transform:
+            dst_file = folder + str(pid) + "/registration/" + basename(_transform)
+            if os.path.exists(dst_file):
+                os.remove(dst_file)
+            shutil.copy(_transform, folder)
+            transform_paths += str(pid) + "/registration/" + basename(_transform) + ", "
+        transform_paths = transform_paths[:-2]
+
+        cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''', (transform_paths, moving_image_id))
+        cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''', (fixed_imag_id, moving_image_id))
+
+        conn.commit()
+        cursor.close()
+        cursor2.close()
+
+    cursor = conn.execute('''VACUUM; ''')
+    conn.close()
+
+
+def mkdir_p(path):
+    """Make new folder if not exits"""
+    try:
+        os.makedirs(path)
+    except OSError as exc:  # Python >2.5
+        if exc.errno == errno.EEXIST and os.path.isdir(path):
+            pass
+        else:
+            raise
