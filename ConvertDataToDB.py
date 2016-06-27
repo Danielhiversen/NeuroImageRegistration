@@ -237,6 +237,86 @@ def convert_annelise_data(path):
     conn.close()
 
 
+def convert_hgg_data(path):
+    """Convert hgg data """
+    # pylint: disable= too-many-locals
+    conn = sqlite3.connect(image_registration.DB_PATH)
+    cursor = conn.cursor()
+
+    number = 0
+    for case_id in range(2000):
+        data_path = path + str(case_id) + "/"
+        if not os.path.exists(data_path):
+            continue
+
+        print(data_path)
+        pid = "mnhr_" + str(case_id)
+
+        data_path = path + str(case_id) + "/"
+        if not os.path.exists(data_path):
+            continue
+
+        print(data_path)
+        volume_label = glob.glob(data_path + '/*label.nrrd')
+        if len(volume_label) == 0:
+            volume_label = glob.glob(data_path + '/*label_1.nrrd')
+        if len(volume_label) == 0:
+            volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
+
+        if len(volume_label) > 1:
+            print("Warning!!\n\n More than one file with label found \n", volume_label)
+            continue
+        volume_label = volume_label[0]
+        volume = volume_label.replace("-label", "")
+        if not os.path.exists(volume):
+            volume = glob.glob(data_path + '*.nrrd')
+            volume.remove(volume_label)
+            if len(volume) > 1:
+                print("Warning!!\n\n More than one file with volume found \n", volume)
+                continue
+            volume = volume[0]
+
+        shutil.copy(volume_label, "volume_label.nrrd")
+        shutil.copy(volume, "volume.nrrd")
+        volume_label = "volume_label.nrrd"
+        volume = "volume.nrrd"
+
+        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
+        exist = cursor.fetchone()
+        if exist is None:
+            cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
+        else:
+            continue
+
+        number += 1
+
+        cursor.execute('''INSERT INTO Images(pid, modality, diag_pre_post) VALUES(?,?,?)''', (pid, 'MR', 'pre'))
+        img_id = cursor.lastrowid
+        cursor.execute('''INSERT INTO Labels(image_id, segmented_by, description) VALUES(?,?,?)''', (img_id, '?', 'all'))
+        label_id = cursor.lastrowid
+
+        mkdir_p(image_registration.DATA_FOLDER + str(pid))
+        img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/NIFTI/"
+        mkdir_p(img_out_folder)
+
+        volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_PRE.nii.gz"
+        volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_PRE_label_" + ".nii.gz"
+
+        volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
+        volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
+        cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
+        cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''', (volume_label_out_db, label_id))
+
+        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
+        os.system(image_registration.DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " + volume_label_out + " --conversionMode NrrdToFSL")
+        os.remove(volume)
+        os.remove(volume_label)
+
+        conn.commit()
+    cursor.close()
+    conn.close()
+    print(number)
+
 def convert_lgg_data(path):
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.cursor()
@@ -386,10 +466,12 @@ if __name__ == "__main__":
 #    mkdir_p(image_registration.DATA_FOLDER)
 #    create_db(image_registration.DB_PATH)
 
-    convert_lisa_data(image_registration.DATA_PATH_LISA, False)
-    convert_lisa_data(image_registration.DATA_PATH_LISA_QOL, True)
-    convert_annelise_data(image_registration.DATA_PATH_ANNE_LISE)
+   # convert_lisa_data(image_registration.DATA_PATH_LISA, False)
+   # convert_lisa_data(image_registration.DATA_PATH_LISA_QOL, True)
+   # convert_annelise_data(image_registration.DATA_PATH_ANNE_LISE)
 
-    convert_lgg_data(image_registration.DATA_PATH_LGG + "PRE_OP/")
-    convert_lgg_data(image_registration.DATA_PATH_LGG + "POST/")
+   # convert_lgg_data(image_registration.DATA_PATH_LGG + "PRE_OP/")
+   # convert_lgg_data(image_registration.DATA_PATH_LGG + "POST/")
+
+    convert_hgg_data()
     vacuum_db()
