@@ -404,7 +404,8 @@ def move_vol(moving, transform, label_img=False):
     if label_img:
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
-        img_3d_affine = resample_img(moving, target_affine=target_affine_3x3, interpolation='nearest')
+        img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
+                                     interpolation='nearest')
         resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0] + '_resample.nii'
         nib.save(img_3d_affine, resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
