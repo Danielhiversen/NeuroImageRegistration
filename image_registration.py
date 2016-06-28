@@ -441,9 +441,7 @@ def avg_calculation(images, label):
         if average is None:
             average = np.zeros(img.get_data().shape)
         average = average + np.array(img.get_data())
-    print(np.amax(average))
     average = average / float(len(images))
-    print(np.amax(average))
     result_img = nib.Nifti1Image(average, img.affine)
     result_img.to_filename(path)
 
