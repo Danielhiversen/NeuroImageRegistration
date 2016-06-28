@@ -20,7 +20,7 @@ def find_images():
     """ Find images for registration """
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
-    cursor = conn.execute('''SELECT pid from Patient where diagnose = ?''', ('HGG',))
+    cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
         cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
@@ -37,7 +37,7 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("HGG/")
+    image_registration.setup("GBM/", "GBM")
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
