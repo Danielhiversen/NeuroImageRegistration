@@ -12,10 +12,10 @@ if __name__ == "__main__":
     os.nice(19)
     if True:
         import do_img_registration_LGG_POST as do_img_registration
-        image_registration.setup("LGG_POST_RES/","LGG")
+        image_registration.setup("LGG_POST_RES/", "LGG")
     elif False:
         import do_img_registration_LGG_PRE as do_img_registration
-        image_registration.setup("LGG_PRE_RES/","LGG")
+        image_registration.setup("LGG_PRE_RES/", "LGG")
     elif False:
         import do_img_registration_GBM as do_img_registration
         image_registration.setup("HGG_RES/", "GBM")

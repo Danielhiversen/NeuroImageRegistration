@@ -84,13 +84,13 @@ def setup_paths(datatype):
     if datatype not in ["LGG", "GBM"]:
         print("Unkown datatype " + datatype)
         raise Exception
-    
+
     global TEMPLATE_VOLUME, TEMPLATE_MASK, DATA_FOLDER, DB_PATH
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
         TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-        DATA_FOLDER = "/mnt/dokumneter/data/database/"
+        DATA_FOLDER = "/mnt/dokumneter/data/database2/"
 
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
@@ -110,7 +110,7 @@ def setup_paths(datatype):
         print("Add your host name path to " + sys.argv[0])
         raise Exception
 
-#    DATA_FOLDER = DATA_FOLDER + datatype + "/"
+    DATA_FOLDER = DATA_FOLDER + datatype + "/"
     DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
 
@@ -361,6 +361,7 @@ def post_calculations(moving_dataset_image_ids):
         db_temp = cursor.fetchone()
         img = DATA_FOLDER + db_temp[0]
         temp = move_vol(img, transforms)
+        print(img)
         label = "img"
         if label in result:
             result[label].append(temp)
@@ -396,7 +397,7 @@ def find_seg_images(moving_image_id):
     return images
 
 
-def move_vol(moving, transform, label_img = False):
+def move_vol(moving, transform, label_img=False):
     """ Move data with transform """
     apply_transforms = ants.ApplyTransforms()
 
@@ -410,7 +411,6 @@ def move_vol(moving, transform, label_img = False):
     else:
         resampled_file = pre_process(moving, False)
         apply_transforms.inputs.interpolation = 'Linear'
-        
 
     result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
 #    if os.path.exists(result):
@@ -443,7 +443,7 @@ def avg_calculation(images, label):
         average = average + np.array(img.get_data())
     print(np.amax(average))
     average = average / float(len(images))
-    print(np.amax(average))    
+    print(np.amax(average))
     result_img = nib.Nifti1Image(average, img.affine)
     result_img.to_filename(path)
 
