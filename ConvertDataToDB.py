@@ -15,13 +15,13 @@ import sqlite3
 
 import image_registration
 
-main_folder = "/mnt/sintef/NevroData/Segmentations/"
-DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
-PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
-DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
-DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
-PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
-DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
+main_folder = "/home/dahoiv/nevro_data/Segmentations/"
+# DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
+# PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
+# DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
+# DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
+# PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
+# DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
 
 DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
 
@@ -46,7 +46,6 @@ def create_db(path):
     `image_id`    INTEGER NOT NULL,
     `description`    TEXT,
     `filepath`    TEXT,
-    `segmented_by`    TEXT,
     `comments`    TEXT,
     FOREIGN KEY(`image_id`) REFERENCES `Images`(`id`))''')
     cursor.execute('''CREATE TABLE "Patient" (
@@ -241,9 +240,52 @@ def mkdir_p(path):
 # ==============================================================================
 
 
+def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
+    mkdir_p(image_registration.DATA_FOLDER + str(pid))
+    img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/NIFTI/"
+    mkdir_p(img_out_folder)
+
+    cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
+    exist = cursor.fetchone()
+    if exist is None:
+        cursor.execute('''INSERT INTO Patient(pid) VALUES(?)''', (pid, ))
+
+    cursor.execute('''INSERT INTO Images(pid, modality, diag_pre_post) VALUES(?,?,?)''',
+                   (pid, 'MR', image_type))
+    img_id = cursor.lastrowid
+
+    shutil.copy(volume, "volume.nrrd")
+    volume = "volume.nrrd"
+
+    volume_out = img_out_folder + str(pid) + "_MR_T1_" + image_type + ".nii.gz"
+    print("--->", volume_out)
+    os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
+    volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
+    cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
+    os.remove(volume)
+
+    for volume_label in volume_labels:
+        shutil.copy(volume_label, "volume_label.nrrd")
+        volume_label = "volume_label.nrrd"
+
+        cursor.execute('''INSERT INTO Labels(image_id, description) VALUES(?,?)''',
+                       (img_id, 'all'))
+        label_id = cursor.lastrowid
+
+        volume_label_out = img_out_folder + str(pid) + "_MR_T1_" + image_type\
+            + "_label_all.nii.gz"
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
+                  volume_label_out + " --conversionMode NrrdToFSL")
+        volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
+        cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
+                       (volume_label_out_db, label_id))
+        os.remove(volume_label)
+
+
 def convert_gbm_data(path):
     """Convert gbm data """
     # pylint: disable= too-many-locals
+
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.cursor()
 
@@ -252,7 +294,6 @@ def convert_gbm_data(path):
         if not os.path.exists(data_path):
             continue
 
-        print(data_path)
         pid = str(case_id)
 
         data_path = path + str(case_id) + "/"
@@ -260,58 +301,41 @@ def convert_gbm_data(path):
             continue
 
         print(data_path)
+
+        file_type_nrrd = True
         volume_label = glob.glob(data_path + '/*label.nrrd')
         if len(volume_label) == 0:
             volume_label = glob.glob(data_path + '/*label_1.nrrd')
         if len(volume_label) == 0:
             volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
-
         if len(volume_label) > 1:
             print("Warning!!\n\n More than one file with label found \n", volume_label)
             continue
-        volume_label = volume_label[0]
-        volume = volume_label.replace("-label", "")
-        if not os.path.exists(volume):
-            volume = glob.glob(data_path + '*.nrrd')
-            volume.remove(volume_label)
-            if len(volume) > 1:
-                print("Warning!!\n\n More than one file with volume found \n", volume)
-                continue
-            volume = volume[0]
+        if len(volume_label) == 0:
+            file_type_nrrd = False
+            volume = data_path + "k" + pid + "-T1_" + "preop" + ".nii"
+            if not os.path.exists(volume):
+                print("Warning!!\n\n No volumes found \n", data_path, volume)
 
-        shutil.copy(volume_label, "volume_label.nrrd")
-        shutil.copy(volume, "volume.nrrd")
-        volume_label = "volume_label.nrrd"
-        volume = "volume.nrrd"
+            volume_label = data_path + "k" + pid + "_" + "preop" + "_" + "hele-label" + ".nii"
+            if not os.path.exists(volume_label):
+                print("Warning!!\n\n No label found \n", data_path, volume_label)
 
-        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
-        exist = cursor.fetchone()
-        if exist is None:
-            cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
-        else:
-            continue
+        if file_type_nrrd:
+            volume_label = volume_label[0]
+            volume = volume_label.replace("-label", "")
+            if not os.path.exists(volume):
+                volume = glob.glob(data_path + '*.nrrd')
+                volume.remove(volume_label)
+                if len(volume) == 0:
+                    volume = glob.glob(data_path + '*.nii')
+                if len(volume) > 1:
+                    print("Warning!!\n\n More than one file with volume found \n", volume)
+                if len(volume) == 0:
+                    print("Warning!!\n\n No volume found \n", data_path)
+                volume = volume[0]
 
-        cursor.execute('''INSERT INTO Images(pid, modality, diag_pre_post) VALUES(?,?,?)''', (pid, 'MR', 'pre'))
-        img_id = cursor.lastrowid
-        cursor.execute('''INSERT INTO Labels(image_id, description) VALUES(?,?,?)''', (img_id, 'all'))
-        label_id = cursor.lastrowid
-
-        mkdir_p(image_registration.DATA_FOLDER + str(pid))
-        img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/NIFTI/"
-        mkdir_p(img_out_folder)
-
-        volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_PRE.nii.gz"
-        volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_PRE_label_" + ".nii.gz"
-
-        volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
-        volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
-        cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
-        cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''', (volume_label_out_db, label_id))
-
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " + volume_label_out + " --conversionMode NrrdToFSL")
-        os.remove(volume)
-        os.remove(volume_label)
+        convert_and_save_dataset(pid, cursor, "pre", [volume_label], volume)
 
         conn.commit()
     cursor.close()
@@ -335,25 +359,6 @@ def convert_lgg_data(path):
 
         pid = str(case_id)
 
-        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
-        exist = cursor.fetchone()
-        if exist is None:
-            cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'LGG'))
-
-        mkdir_p(image_registration.DATA_FOLDER + str(pid))
-        img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/NIFTI/"
-        mkdir_p(img_out_folder)
-
-        cursor.execute('''INSERT INTO Images(pid, modality, diag_pre_post) VALUES(?,?,?)''',
-                       (pid, 'MR', image_type))
-        img_id = cursor.lastrowid
-
-        volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
-        print("--->", volume_out)
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
-        volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
-        cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
-
         if image_type == 'post':
             volume_label = path + '%02d' % case_id + '_post-label.nii'
         elif image_type == 'pre':
@@ -361,18 +366,7 @@ def convert_lgg_data(path):
         if not os.path.exists(volume):
             continue
 
-        cursor.execute('''INSERT INTO Labels(image_id, segmented_by, description) VALUES(?,?,?)''',
-                       (img_id, 'Hans Kristian', 'all'))
-        label_id = cursor.lastrowid
-
-        volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type\
-            + "_label_all.nii.gz"
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
-                  volume_label_out + " --conversionMode NrrdToFSL")
-        volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
-        cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
-                       (volume_label_out_db, label_id))
-
+        convert_and_save_dataset(pid, cursor, image_type, [volume_label], volume)
         conn.commit()
 
     cursor.close()
@@ -396,7 +390,7 @@ if __name__ == "__main__":
         pass
     mkdir_p(image_registration.DATA_FOLDER)
     create_db(image_registration.DB_PATH)
-    convert_gbm_data()
+    convert_gbm_data(main_folder + "Segmenteringer_GBM/")
 
     vacuum_db()
 
@@ -408,6 +402,6 @@ if __name__ == "__main__":
         pass
     mkdir_p(image_registration.DATA_FOLDER)
     create_db(image_registration.DB_PATH)
-    convert_lgg_data()
+    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/")
 
     vacuum_db()
