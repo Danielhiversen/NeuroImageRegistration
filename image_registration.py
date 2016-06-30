@@ -43,7 +43,6 @@ import sqlite3
 import shutil
 from builtins import map
 from builtins import str
-from builtins import range
 from nilearn.image import resample_img
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -52,10 +51,12 @@ import nipype.interfaces.fsl as fsl
 import nibabel as nib
 import numpy as np
 
+from img_data import img_data
+
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+#MULTITHREAD = "max"
 
 TEMP_FOLDER_PATH = ""
 TEMPLATE_VOLUME = ""
@@ -66,6 +67,9 @@ TEMPLATE_MASK = ""
 RIGID = 'rigid'
 AFFINE = 'affine'
 SYN = 'syn'
+
+
+BET_METHOD = 0
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
@@ -124,20 +128,22 @@ def prepare_template(template_vol, template_mask):
     mult.run()
 
 
-def pre_process(input_file, do_bet=True):
+def pre_process(img, do_bet=True):
     """ Pre process the data"""
+
+    input_file = img.img_filepath
     n4_file = TEMP_FOLDER_PATH + splitext(splitext(basename(input_file))[0])[0]\
         + '_n4.nii'
     norm_file = TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
         + '_norm.nii'
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(norm_file))[0]\
         + '_resample.nii'
-    out_file = TEMP_FOLDER_PATH +\
+    img.bet_filepath = TEMP_FOLDER_PATH +\
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
-    if os.path.exists(out_file):
-        return out_file
+    if os.path.exists(img.bet_filepath):
+        return img.bet_filepath
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
@@ -146,8 +152,8 @@ def pre_process(input_file, do_bet=True):
     n4bias.run()
 
     # normalization [0,100], same as template
-    img = nib.load(n4_file)
-    result_img = nib.Nifti1Image(img.get_data()/np.amax(img.get_data())*100, img.affine, img.header)
+    normalize_img = nib.load(n4_file)
+    result_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100, normalize_img.affine, normalize_img.header)
     result_img.to_filename(norm_file)
 
     # resample volume to 1 mm slices
@@ -158,83 +164,89 @@ def pre_process(input_file, do_bet=True):
     if not do_bet:
         return resampled_file
 
-    # brain_extraction(resampled_file, out_file)
-    # return out_file
+    if BET_METHOD == 0:
+        name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
+        reg = ants.Registration()
+        reg.inputs.collapse_output_transforms = True
+        reg.inputs.fixed_image = TEMPLATE_VOLUME
+        reg.inputs.moving_image = resampled_file
+        reg.inputs.initial_moving_transform_com = True
+        reg.inputs.num_threads = 1
+        reg.inputs.transforms = ['Rigid', 'Affine']
+        reg.inputs.sampling_strategy = ['Regular', None]
+        reg.inputs.sampling_percentage = [0.25, 1]
+        reg.inputs.metric = ['MI', 'CC']
+        reg.inputs.radius_or_number_of_bins = [32, 4]
+        reg.inputs.metric_weight = [1.0]*3
+        reg.inputs.winsorize_lower_quantile = 0.005
+        reg.inputs.winsorize_upper_quantile = 0.995
+        reg.inputs.convergence_window_size = [10]
+        reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
+                                           [1000, 500, 250, 100],
+                                           [100, 70, 50, 20]]
+        reg.inputs.convergence_threshold = [1e-06]
+        reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
+        reg.inputs.smoothing_sigmas = [[8, 4, 1, 0]]*3
+        reg.inputs.sigma_units = ['vox']*3
+        reg.inputs.transform_parameters = [(0.1,),
+                                           (0.1,),
+                                           (0.2, 3.0, 0.0)]
+        reg.inputs.use_histogram_matching = True
+        reg.inputs.write_composite_transform = True
+        #reg.inputs.moving_image_mask = img.label_filepath
+        
+        reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
+        reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
+        reg.run()
 
-    # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
-    bet = fsl.BET(command="fsl5.0-bet")
-    bet.inputs.in_file = resampled_file
-    # pylint: disable= pointless-string-statement
-    """ fractional intensity threshold (0->1); default=0.5;
-    smaller values give larger brain outline estimates"""
-    bet.inputs.frac = 0.25
-    """ vertical gradient in fractional intensity threshold (-1->1);
-    default=0; positive values give larger brain outline at bottom,
-    smaller at top """
-    bet.inputs.vertical_gradient = 0
-    """  This attempts to reduce image bias, and residual neck voxels.
-    This can be useful when running SIENA or SIENAX, for example.
-    Various stages involving FAST segmentation-based bias field removal
-    and standard-space masking are combined to produce a result which
-    can often give better results than just running bet2."""
-    bet.inputs.reduce_bias = True
-    bet.inputs.out_file = out_file
+        mult = ants.MultiplyImages()
+        mult.inputs.dimension = 3
+        mult.inputs.first_input = TEMP_FOLDER_PATH + name + '_reg.nii'
+        mult.inputs.second_input = TEMPLATE_MASK
+        mult.inputs.output_product_image = img.bet_filepath
+        mult.run()
 
-    bet.run()
-    print(out_file)
+        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
 
-    # generate_image(out_file, resampled_file)
+    elif BET_METHOD == 1:
+        # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
+        bet = fsl.BET(command="fsl5.0-bet")
+        bet.inputs.in_file = resampled_file
+        # pylint: disable= pointless-string-statement
+        """ fractional intensity threshold (0->1); default=0.5;
+        smaller values give larger brain outline estimates"""
+        bet.inputs.frac = 0.25
+        """ vertical gradient in fractional intensity threshold (-1->1);
+        default=0; positive values give larger brain outline at bottom,
+        smaller at top """
+        bet.inputs.vertical_gradient = 0
+        """  This attempts to reduce image bias, and residual neck voxels.
+        This can be useful when running SIENA or SIENAX, for example.
+        Various stages involving FAST segmentation-based bias field removal
+        and standard-space masking are combined to produce a result which
+        can often give better results than just running bet2."""
+        bet.inputs.reduce_bias = True
+        bet.inputs.out_file = img.bet_filepath
 
-    return out_file
-
-
-# Not used for the moment
-def brain_extraction(in_file, out_file):
-    """ Brain extraction."""
-    reg = ants.Registration()
-    reg.inputs.collapse_output_transforms = True
-    reg.inputs.fixed_image = TEMPLATE_VOLUME
-    reg.inputs.moving_image = in_file
-    reg.inputs.initial_moving_transform_com = True
-    reg.inputs.num_threads = 1
-    reg.inputs.transforms = ['Rigid']
-    reg.inputs.winsorize_lower_quantile = 0.005
-    reg.inputs.winsorize_upper_quantile = 0.995
-    reg.inputs.convergence_threshold = [1e-06]
-    reg.inputs.convergence_window_size = [10]
-    reg.inputs.metric = ['CC']
-    reg.inputs.metric_weight = [1.0]*3
-    reg.inputs.number_of_iterations = [[1000, 500, 250, 100]]
-    reg.inputs.radius_or_number_of_bins = [32]
-    reg.inputs.sampling_strategy = ['Regular']
-    reg.inputs.sampling_percentage = [0.25]
-    reg.inputs.shrink_factors = [[8, 4, 2, 1]]
-    reg.inputs.smoothing_sigmas = [[3, 2, 1, 0]]
-    reg.inputs.sigma_units = ['vox']
-    reg.inputs.transform_parameters = [(0.1,)]
-    reg.inputs.use_histogram_matching = True
-    reg.inputs.write_composite_transform = True
-
-    name = splitext(splitext(basename(in_file))[0])[0]
-    reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + "output_"+name+'_'
-    reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_regRigid.nii'
-    reg.run()
-
-    mult = ants.MultiplyImages()
-    mult.inputs.dimension = 3
-    mult.inputs.first_input = TEMP_FOLDER_PATH + name + '_regRigid.nii'
-    mult.inputs.second_input = TEMPLATE_MASK
-    mult.inputs.output_product_image = out_file
-    mult.run()
+        bet.run()
+    print("---BET", img.bet_filepath)
+    return img
 
 
-def registration(moving, fixed, reg_type):
+def registration(moving_img, fixed, reg_type):
     """Image2Image registration """
+    name = splitext(splitext(basename(moving_img.img_filepath))[0])[0] + '_' + reg_type
+
     reg = ants.Registration()
     reg.inputs.collapse_output_transforms = True
     reg.inputs.fixed_image = fixed
-    reg.inputs.moving_image = moving
-    reg.inputs.initial_moving_transform_com = True
+    reg.inputs.moving_image = moving_img.img_filepath
+    init_moving_transform = moving_img.init_transform
+    if os.path.exists(init_moving_transform):
+        reg.inputs.initial_moving_transform = init_moving_transform
+        print("Found initial transform")
+    else:
+        reg.inputs.initial_moving_transform_com = True
     reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid']
@@ -255,15 +267,15 @@ def registration(moving, fixed, reg_type):
         reg.inputs.metric = ['MI', 'MI', 'CC']
         reg.inputs.radius_or_number_of_bins = [32, 32, 4]
     else:
-        raise Exception("Wrong registration format " + reg_type)
+        raise Exception("Wrong registration type " + reg_type)
     reg.inputs.metric_weight = [1.0]*3
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
-    reg.inputs.convergence_threshold = [1e-06]
     reg.inputs.convergence_window_size = [10]
     reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
                                        [1000, 500, 250, 100],
                                        [100, 70, 50, 20]]
+    reg.inputs.convergence_threshold = [1e-06]
     reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
     reg.inputs.smoothing_sigmas = [[8, 4, 1, 0]]*3
     reg.inputs.sigma_units = ['vox']*3
@@ -272,8 +284,9 @@ def registration(moving, fixed, reg_type):
                                        (0.2, 3.0, 0.0)]
     reg.inputs.use_histogram_matching = True
     reg.inputs.write_composite_transform = True
+    #reg.inputs.moving_image_mask = moving_img.label_filepath
 
-    name = splitext(splitext(basename(moving))[0])[0] + '_' + reg_type
+
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
@@ -292,25 +305,14 @@ def process_dataset(args, num_tries=3):
     """ pre process and registrate volume"""
     (moving_image_id, reg_type) = args
     print(moving_image_id, reg_type)
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-    cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))
-    moving = DATA_FOLDER + cursor.fetchone()[0]
-    cursor.close()
-    conn.close()
 
-    for k in range(num_tries):
-        try:
-            moving_pre_processed = pre_process(moving)
-            transform = registration(moving_pre_processed,
-                                     TEMP_FOLDER_PATH + "masked_template.nii",
-                                     reg_type)
-            return (moving_image_id, transform, -1)
-        # pylint: disable=  broad-except
-        except Exception as exp:
-            print(exp)
-            raise Exception('Crashed during processing of ' + moving + '. Try ' +
-                            str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
+    img = img_data(moving_image_id, DATA_FOLDER)
+    img = pre_process(img)
+    transform = registration(img,
+                             TEMP_FOLDER_PATH + "masked_template.nii",
+                             reg_type)
+    return (moving_image_id, transform, -1)
+
 
 
 def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
@@ -342,6 +344,9 @@ def get_transforms_from_db(img_id, conn):
         transforms = get_transforms_from_db(fixed_image_id, conn)
     else:
         transforms = []
+
+    if db_temp[0] is None:
+        return []
 
     img_transforms = db_temp[0].split(",")
     for _transform in img_transforms:
