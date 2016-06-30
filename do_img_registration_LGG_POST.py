@@ -7,7 +7,6 @@ Created on Wed Apr 20 15:02:02 2016
 
 import os
 import sqlite3
-import ConvertDataToDB
 import image_registration
 
 
@@ -85,4 +84,4 @@ if __name__ == "__main__":
 
     data_transforms = image_registration.get_transforms(post_images, process_dataset_func=process_dataset)
 
-    ConvertDataToDB.save_transform_to_database(data_transforms)
+    image_registration.save_transform_to_database(data_transforms)
