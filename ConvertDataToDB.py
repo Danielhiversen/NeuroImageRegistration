@@ -12,10 +12,10 @@ import glob
 import os
 import shutil
 import sqlite3
+import pyexcel_xlsx
 
 import image_registration
 
-main_folder = "/home/dahoiv/nevro_data/Segmentations/"
 # DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
 # PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
 # DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
@@ -23,6 +23,7 @@ main_folder = "/home/dahoiv/nevro_data/Segmentations/"
 # PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
 # DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
 
+main_folder = "/home/dahoiv/nevro_data/Segmentations/"
 DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
 
 
@@ -33,7 +34,7 @@ def create_db(path):
 
     cursor.execute('''CREATE TABLE "Images" (
     `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-    `pid`    TEXT,
+    `pid`    INTEGER,
     `modality`    TEXT,
     `diag_pre_post`    TEXT,
     `filepath`    TEXT,
@@ -49,14 +50,19 @@ def create_db(path):
     `comments`    TEXT,
     FOREIGN KEY(`image_id`) REFERENCES `Images`(`id`))''')
     cursor.execute('''CREATE TABLE "Patient" (
-    `pid`    TEXT NOT NULL UNIQUE,
+    `pid`    INTEGER NOT NULL UNIQUE,
     `comments`    TEXT,
     PRIMARY KEY(pid))''')
     cursor.execute('''CREATE TABLE "QualityOfLife" (
     `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-    `pid`    TEXT NOT NULL,
-    `qol`    INTEGER NOT NULL,
-    `time`    INTEGER,
+    `pid`    INTEGER NOT NULL,
+    'Index_value'     REAL,
+    'Global_index'    INTEGER,
+    'Mobility'    INTEGER,
+    'Selfcare'    INTEGER,
+    'Activity'    INTEGER,
+    'Pain'    INTEGER,
+    'Anxiety'    INTEGER,
     FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
 
     conn.commit()
@@ -242,7 +248,7 @@ def mkdir_p(path):
 
 def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
     mkdir_p(image_registration.DATA_FOLDER + str(pid))
-    img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/NIFTI/"
+    img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/volumes_labels/"
     mkdir_p(img_out_folder)
 
     cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
@@ -254,32 +260,34 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
                    (pid, 'MR', image_type))
     img_id = cursor.lastrowid
 
-    shutil.copy(volume, "volume.nrrd")
-    volume = "volume.nrrd"
+    filename, file_extension = os.path.splitext(volume)
+    volume_temp = "volume" + file_extension
+    shutil.copy(volume, volume_temp)
 
-    volume_out = img_out_folder + str(pid) + "_MR_T1_" + image_type + ".nii.gz"
+    volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
     print("--->", volume_out)
-    os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
+    os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out + " --conversionMode NrrdToFSL")
     volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
     cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
-    os.remove(volume)
+    os.remove(volume_temp)
 
     for volume_label in volume_labels:
-        shutil.copy(volume_label, "volume_label.nrrd")
-        volume_label = "volume_label.nrrd"
+        filename, file_extension = os.path.splitext(volume_label)
+        volume_label_temp = "volume_label"+ file_extension
+        shutil.copy(volume_label, volume_label_temp)
 
         cursor.execute('''INSERT INTO Labels(image_id, description) VALUES(?,?)''',
                        (img_id, 'all'))
         label_id = cursor.lastrowid
 
-        volume_label_out = img_out_folder + str(pid) + "_MR_T1_" + image_type\
+        volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type\
             + "_label_all.nii.gz"
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label_temp + " -o " +
                   volume_label_out + " --conversionMode NrrdToFSL")
         volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
         cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
                        (volume_label_out_db, label_id))
-        os.remove(volume_label)
+        os.remove(volume_label_temp)
 
 
 def convert_gbm_data(path):
@@ -342,10 +350,57 @@ def convert_gbm_data(path):
     conn.close()
 
 
-def convert_lgg_data(path):
+def qol_to_db():
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.cursor()
 
+    cursor.executescript('drop table if exists QualityOfLife;')
+    cursor.execute('''CREATE TABLE "QualityOfLife" (
+        `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+        `pid`    INTEGER NOT NULL,
+        'Index_value'     REAL,
+        'Global_index'    INTEGER,
+        'Mobility'    INTEGER,
+        'Selfcare'    INTEGER,
+        'Activity'    INTEGER,
+        'Pain'    INTEGER,
+        'Anxiety'    INTEGER,
+        FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
+
+    data = pyexcel_xlsx.get_data('/home/dahoiv/Desktop/Indexverdier_atlas.xlsx')['Ark2']
+
+    for row in data[3:]:
+        print(row)
+        if not row:
+             continue
+
+        if row[1] is None:
+            gl_idx = None
+        elif row[1] > 0.85:
+            gl_idx = 1
+        elif row[1] > 0.50:
+            gl_idx = 2
+        else:
+            gl_idx = 3
+
+            
+        val = [None]*8
+        idx = 0
+        for _val in row[:8]:
+            val[idx] = _val
+            idx += 1
+        cursor.execute('''INSERT INTO QualityOfLife(pid, Index_value, Global_index, Mobility, Selfcare, Activity, Pain, Anxiety) VALUES(?,?,?,?,?,?,?,?)''',
+                       (val[0], val[1], gl_idx, val[2], val[3], val[4], val[5], val[6]))
+        conn.commit()
+       
+    cursor.close()
+    conn.close()
+
+
+def convert_lgg_data(path):
+    conn = sqlite3.connect(image_registration.DB_PATH)
+    cursor = conn.cursor()
+    
     ids = range(350)
     for case_id in ids:
         volume = path + '%02d' % case_id + '_post.nii'
@@ -383,25 +438,26 @@ def vacuum_db():
 
 if __name__ == "__main__":
     image_registration.setup_paths('GBM')
+#    try:
+#        shutil.rmtree(image_registration.DATA_FOLDER)
+#    except OSError:
+#        pass
+#    mkdir_p(image_registration.DATA_FOLDER)
+#    create_db(image_registration.DB_PATH)
+#    convert_gbm_data(main_folder + "Segmenteringer_GBM/")
 
-    try:
-        shutil.rmtree(image_registration.DATA_FOLDER)
-    except OSError:
-        pass
-    mkdir_p(image_registration.DATA_FOLDER)
-    create_db(image_registration.DB_PATH)
-    convert_gbm_data(main_folder + "Segmenteringer_GBM/")
-
-    vacuum_db()
+    #qol_to_db()
+    #vacuum_db()
 
     image_registration.setup_paths('LGG')
-
     try:
         shutil.rmtree(image_registration.DATA_FOLDER)
     except OSError:
         pass
     mkdir_p(image_registration.DATA_FOLDER)
     create_db(image_registration.DB_PATH)
-    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/")
+    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
+    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
 
     vacuum_db()
+

@@ -495,7 +495,7 @@ def save_transform_to_database(data_transforms):
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (moving_image_id,))
         pid = cursor.fetchone()[0]
 
-        folder = DATA_FOLDER + str(pid) + "/registration/"
+        folder = DATA_FOLDER + str(pid) + "/registration_transforms/"
         mkdir_p(folder)
 
         if not isinstance(transform, list):
@@ -503,11 +503,11 @@ def save_transform_to_database(data_transforms):
 
         transform_paths = ""
         for _transform in transform:
-            dst_file = folder + str(pid) + "/registration/" + basename(_transform)
+            dst_file = folder + basename(_transform)
             if os.path.exists(dst_file):
                 os.remove(dst_file)
             shutil.copy(_transform, folder)
-            transform_paths += str(pid) + "/registration/" + basename(_transform) + ", "
+            transform_paths += str(pid) + "/registration_transforms/" + basename(_transform) + ", "
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
