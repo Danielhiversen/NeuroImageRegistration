@@ -273,7 +273,7 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
 
     for volume_label in volume_labels:
         filename, file_extension = os.path.splitext(volume_label)
-        volume_label_temp = "volume_label"+ file_extension
+        volume_label_temp = "volume_label" + file_extension
         shutil.copy(volume_label, volume_label_temp)
 
         cursor.execute('''INSERT INTO Labels(image_id, description) VALUES(?,?)''',
@@ -372,7 +372,7 @@ def qol_to_db():
     for row in data[3:]:
         print(row)
         if not row:
-             continue
+            continue
 
         if row[1] is None:
             gl_idx = None
@@ -383,7 +383,6 @@ def qol_to_db():
         else:
             gl_idx = 3
 
-            
         val = [None]*8
         idx = 0
         for _val in row[:8]:
@@ -392,7 +391,7 @@ def qol_to_db():
         cursor.execute('''INSERT INTO QualityOfLife(pid, Index_value, Global_index, Mobility, Selfcare, Activity, Pain, Anxiety) VALUES(?,?,?,?,?,?,?,?)''',
                        (val[0], val[1], gl_idx, val[2], val[3], val[4], val[5], val[6]))
         conn.commit()
-       
+
     cursor.close()
     conn.close()
 
@@ -400,7 +399,7 @@ def qol_to_db():
 def convert_lgg_data(path):
     conn = sqlite3.connect(image_registration.DB_PATH)
     cursor = conn.cursor()
-    
+
     ids = range(350)
     for case_id in ids:
         volume = path + '%02d' % case_id + '_post.nii'
@@ -438,16 +437,16 @@ def vacuum_db():
 
 if __name__ == "__main__":
     image_registration.setup_paths('GBM')
-#    try:
-#        shutil.rmtree(image_registration.DATA_FOLDER)
-#    except OSError:
-#        pass
-#    mkdir_p(image_registration.DATA_FOLDER)
-#    create_db(image_registration.DB_PATH)
-#    convert_gbm_data(main_folder + "Segmenteringer_GBM/")
+    try:
+        shutil.rmtree(image_registration.DATA_FOLDER)
+    except OSError:
+        pass
+    mkdir_p(image_registration.DATA_FOLDER)
+    create_db(image_registration.DB_PATH)
+    convert_gbm_data(main_folder + "Segmenteringer_GBM/")
 
-    #qol_to_db()
-    #vacuum_db()
+    qol_to_db()
+    vacuum_db()
 
     image_registration.setup_paths('LGG')
     try:
@@ -460,4 +459,3 @@ if __name__ == "__main__":
     convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
 
     vacuum_db()
-

@@ -90,7 +90,7 @@ def setup_paths(datatype):
     if hostname == 'dahoiv-Alienware-15':
         TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
         TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-        DATA_FOLDER = "/mnt/dokumneter/data/database2/"
+        DATA_FOLDER = "/mnt/dokumneter/data/database/"
 
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
