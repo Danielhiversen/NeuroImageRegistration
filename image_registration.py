@@ -70,17 +70,21 @@ SYN = 'syn'
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
-def setup(temp_path):
+def setup(temp_path, datatype):
     """setup for current computer """
     # pylint: disable= global-statement
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
-    setup_paths()
+    setup_paths(datatype)
 
 
-def setup_paths():
+def setup_paths(datatype):
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long
+    if datatype not in ["LGG", "GBM"]:
+        print("Unkown datatype " + datatype)
+        raise Exception
+
     global TEMPLATE_VOLUME, TEMPLATE_MASK, DATA_FOLDER, DB_PATH
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
@@ -106,6 +110,7 @@ def setup_paths():
         print("Add your host name path to " + sys.argv[0])
         raise Exception
 
+    DATA_FOLDER = DATA_FOLDER + datatype + "/"
     DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
 
@@ -355,8 +360,8 @@ def post_calculations(moving_dataset_image_ids):
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         img = DATA_FOLDER + db_temp[0]
-        print(img, transforms)
         temp = move_vol(img, transforms)
+        print(img)
         label = "img"
         if label in result:
             result[label].append(temp)
@@ -364,7 +369,7 @@ def post_calculations(moving_dataset_image_ids):
             result[label] = [temp]
 
         for (segmentation, label) in find_seg_images(_id):
-            temp = move_vol(segmentation, transforms)
+            temp = move_vol(segmentation, transforms, True)
             if label in result:
                 result[label].append(temp)
             else:
@@ -392,27 +397,34 @@ def find_seg_images(moving_image_id):
     return images
 
 
-def move_vol(moving, transform):
+def move_vol(moving, transform, label_img=False):
     """ Move data with transform """
+    apply_transforms = ants.ApplyTransforms()
 
-    resampled_file = pre_process(moving, False)
+    if label_img:
+        # resample volume to 1 mm slices
+        target_affine_3x3 = np.eye(3) * 1
+        img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
+                                     interpolation='nearest')
+        resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0] + '_resample.nii'
+        nib.save(img_3d_affine, resampled_file)
+        apply_transforms.inputs.interpolation = 'NearestNeighbor'
+    else:
+        resampled_file = pre_process(moving, False)
+        apply_transforms.inputs.interpolation = 'Linear'
+
     result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
 #    if os.path.exists(result):
 #        return result
 
-    apply_transforms = ants.ApplyTransforms()
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = resampled_file
     apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
     apply_transforms.inputs.output_image = result
-    apply_transforms.inputs.interpolation = 'NearestNeighbor'
     apply_transforms.inputs.default_value = 0
     apply_transforms.inputs.transforms = transform
     apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
-    print(apply_transforms.cmdline)
     apply_transforms.run()
-
-    print(apply_transforms.inputs.output_image, result)
 
     generate_image(apply_transforms.inputs.output_image, TEMPLATE_VOLUME)
 
@@ -480,12 +492,10 @@ def save_transform_to_database(data_transforms):
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     for moving_image_id, transform, fixed_imag_id in data_transforms:
-        print("-----", moving_image_id, transform)
-
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (moving_image_id,))
         pid = cursor.fetchone()[0]
 
-        folder = DATA_FOLDER + str(pid) + "/registration/"
+        folder = DATA_FOLDER + str(pid) + "/registration_transforms/"
         mkdir_p(folder)
 
         if not isinstance(transform, list):
@@ -493,11 +503,11 @@ def save_transform_to_database(data_transforms):
 
         transform_paths = ""
         for _transform in transform:
-            dst_file = folder + str(pid) + "/registration/" + basename(_transform)
+            dst_file = folder + basename(_transform)
             if os.path.exists(dst_file):
                 os.remove(dst_file)
             shutil.copy(_transform, folder)
-            transform_paths += str(pid) + "/registration/" + basename(_transform) + ", "
+            transform_paths += str(pid) + "/registration_transforms/" + basename(_transform) + ", "
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
