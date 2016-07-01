@@ -301,10 +301,10 @@ def registration(moving_img, fixed, reg_type):
     result = TEMP_FOLDER_PATH + name + 'Composite.h5'
     print(result)
     if os.path.exists(result):
-        generate_image(reg.inputs.output_warped_image, fixed)
+#        generate_image(reg.inputs.output_warped_image, fixed)
         return result
     reg.run()
-    generate_image(reg.inputs.output_warped_image, fixed)
+#    generate_image(reg.inputs.output_warped_image, fixed)
 
     return result
 
