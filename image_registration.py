@@ -56,7 +56,7 @@ from img_data import img_data
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-#MULTITHREAD = "max"
+# MULTITHREAD = "max"
 
 TEMP_FOLDER_PATH = ""
 TEMPLATE_VOLUME = ""
@@ -196,14 +196,13 @@ def pre_process(img, do_bet=True):
                                            (0.2, 3.0, 0.0)]
         reg.inputs.use_histogram_matching = True
         reg.inputs.write_composite_transform = True
-        #reg.inputs.fixed_image_mask = img.label_inv_filepath
-        
+        # reg.inputs.fixed_image_mask = img.label_inv_filepath
+
         reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
         reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_betReg.nii'
         print("starting bet registration")
         reg.run()
         print("Finished bet registration")
-
 
         img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
 
@@ -213,7 +212,6 @@ def pre_process(img, do_bet=True):
         mult.inputs.second_input = TEMPLATE_MASK
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
-
 
     elif BET_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
@@ -319,7 +317,6 @@ def process_dataset(args, num_tries=3):
                              TEMP_FOLDER_PATH + "masked_template.nii",
                              reg_type)
     return (moving_image_id, transform, -1)
-
 
 
 def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):

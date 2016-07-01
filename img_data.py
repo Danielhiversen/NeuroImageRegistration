@@ -18,53 +18,53 @@ class img_data(object):
         self.image_id = image_id
         self.data_path = data_path
         self.temp_data_path = temp_data_path
-        
+
         self.pre_processed_filepath = None
         self.init_transform = None
-        
+
         self._img_filepath = None
         self._label_filepath = None
         self._label__inv_filepath = None
-        
+
     @property
     def img_filepath(self):
-        if not self._img_filepath is None:
+        if self._img_filepath is not None:
             return self._img_filepath
         conn = sqlite3.connect(self.db_path)
         conn.text_factory = str
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (self.image_id,))
-        self._img_filepath =  self.data_path + cursor.fetchone()[0]
+        self._img_filepath = self.data_path + cursor.fetchone()[0]
         cursor.close()
         conn.close()
 
         return self._img_filepath
-        
+
     @property
     def label_filepath(self):
-        if not self._label_filepath is None:
+        if self._label_filepath is not None:
             return self._label_filepath
-        
+
         conn = sqlite3.connect(self.db_path)
         conn.text_factory = str
         cursor = conn.execute('''SELECT filepath from Labels where image_id = ? ''',
                               (self.image_id,))
-        self._label_filepath =  self.data_path + cursor.fetchone()[0]
+        self._label_filepath = self.data_path + cursor.fetchone()[0]
         cursor.close()
-        conn.close()    
-        
+        conn.close()
+
         return self._label_filepath
-        
+
     @property
     def label_inv_filepath(self):
-        if not self._label_filepath is None:
+        if self._label_filepath is not None:
             return self._label_filepath
-            
+
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
         img_3d_affine = resample_img(self.label_filepath, target_affine=target_affine_3x3)
-        
+
         temp_img = img_3d_affine.get_data()
-        temp_img[temp_img>0] = 1
+        temp_img[temp_img > 0] = 1
         temp_img = 1 - temp_img
         result_img = nib.Nifti1Image(temp_img, img_3d_affine.affine, img_3d_affine.header)
 
@@ -72,11 +72,10 @@ class img_data(object):
         nib.save(result_img, self._label_filepath)
 
         return self._label_filepath
-    
-    @property        
+
+    @property
     def db_path(self):
         return self.data_path + "brainSegmentation.db"
-    
-    
+
     def set_img_filepath(self, filepath):
         self._img_filepath = filepath
