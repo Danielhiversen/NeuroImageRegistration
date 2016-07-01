@@ -129,6 +129,7 @@ def prepare_template(template_vol, template_mask):
 
 
 def pre_process(img, do_bet=True):
+    # pylint: disable= too-many-statements
     """ Pre process the data"""
 
     input_file = img.img_filepath
@@ -153,7 +154,8 @@ def pre_process(img, do_bet=True):
 
     # normalization [0,100], same as template
     normalize_img = nib.load(n4_file)
-    result_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100, normalize_img.affine, normalize_img.header)
+    result_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100,
+                                 normalize_img.affine, normalize_img.header)
     result_img.to_filename(norm_file)
 
     # resample volume to 1 mm slices
@@ -239,6 +241,7 @@ def pre_process(img, do_bet=True):
 
 
 def registration(moving_img, fixed, reg_type):
+    # pylint: disable= too-many-statements
     """Image2Image registration """
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
 
@@ -306,7 +309,7 @@ def registration(moving_img, fixed, reg_type):
     return result
 
 
-def process_dataset(args, num_tries=3):
+def process_dataset(args):
     """ pre process and registrate volume"""
     (moving_image_id, reg_type) = args
     print(moving_image_id, reg_type)
