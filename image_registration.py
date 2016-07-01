@@ -138,12 +138,12 @@ def pre_process(img, do_bet=True):
         + '_norm.nii'
     resampled_file = TEMP_FOLDER_PATH + splitext(basename(norm_file))[0]\
         + '_resample.nii'
-    img.bet_filepath = TEMP_FOLDER_PATH +\
+    img.pre_processed_filepath = TEMP_FOLDER_PATH +\
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
-    if os.path.exists(img.bet_filepath):
-        return img.bet_filepath
+    if os.path.exists(img.pre_processed_filepath):
+        return img
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
@@ -162,16 +162,19 @@ def pre_process(img, do_bet=True):
     nib.save(img_3d_affine, resampled_file)
 
     if not do_bet:
-        return resampled_file
+        img.pre_processed_filepath = resampled_file
+        return img
 
     if BET_METHOD == 0:
+        print("Doing registration for bet")
         name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
         reg = ants.Registration()
+        reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
         reg.inputs.initial_moving_transform_com = True
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 8
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.sampling_strategy = ['Regular', None]
         reg.inputs.sampling_percentage = [0.25, 1]
@@ -193,20 +196,24 @@ def pre_process(img, do_bet=True):
                                            (0.2, 3.0, 0.0)]
         reg.inputs.use_histogram_matching = True
         reg.inputs.write_composite_transform = True
-        #reg.inputs.moving_image_mask = img.label_filepath
+        #reg.inputs.fixed_image_mask = img.label_inv_filepath
         
         reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
-        reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_reg.nii'
+        reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_betReg.nii'
+        print("starting bet registration")
         reg.run()
+        print("Finished bet registration")
+
+
+        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
 
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
-        mult.inputs.first_input = TEMP_FOLDER_PATH + name + '_reg.nii'
+        mult.inputs.first_input = reg.inputs.output_warped_image
         mult.inputs.second_input = TEMPLATE_MASK
-        mult.inputs.output_product_image = img.bet_filepath
+        mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
-        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
 
     elif BET_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
@@ -226,28 +233,29 @@ def pre_process(img, do_bet=True):
         and standard-space masking are combined to produce a result which
         can often give better results than just running bet2."""
         bet.inputs.reduce_bias = True
-        bet.inputs.out_file = img.bet_filepath
+        bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
-    print("---BET", img.bet_filepath)
+    print("---BET", img.pre_processed_filepath)
     return img
 
 
 def registration(moving_img, fixed, reg_type):
     """Image2Image registration """
-    name = splitext(splitext(basename(moving_img.img_filepath))[0])[0] + '_' + reg_type
+    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
 
     reg = ants.Registration()
+    reg.inputs.args = "--verbose 1"
     reg.inputs.collapse_output_transforms = True
+    reg.inputs.moving_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image = fixed
-    reg.inputs.moving_image = moving_img.img_filepath
     init_moving_transform = moving_img.init_transform
-    if os.path.exists(init_moving_transform):
+    if init_moving_transform is not None and os.path.exists(init_moving_transform):
         reg.inputs.initial_moving_transform = init_moving_transform
         print("Found initial transform")
     else:
         reg.inputs.initial_moving_transform_com = True
-    reg.inputs.num_threads = 1
+    reg.inputs.num_threads = 8
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid']
         reg.inputs.sampling_strategy = ['Regular', None]
@@ -283,9 +291,8 @@ def registration(moving_img, fixed, reg_type):
                                        (0.1,),
                                        (0.2, 3.0, 0.0)]
     reg.inputs.use_histogram_matching = True
-    reg.inputs.write_composite_transform = True
-    #reg.inputs.moving_image_mask = moving_img.label_filepath
-
+    reg.inputs.collapse_output_transforms = True
+#    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
 
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
@@ -293,10 +300,10 @@ def registration(moving_img, fixed, reg_type):
     result = TEMP_FOLDER_PATH + name + 'Composite.h5'
     print(result)
     if os.path.exists(result):
-        # generate_image(reg.inputs.output_warped_image, fixed)
+        generate_image(reg.inputs.output_warped_image, fixed)
         return result
     reg.run()
-    # generate_image(reg.inputs.output_warped_image, fixed)
+    generate_image(reg.inputs.output_warped_image, fixed)
 
     return result
 
@@ -306,7 +313,7 @@ def process_dataset(args, num_tries=3):
     (moving_image_id, reg_type) = args
     print(moving_image_id, reg_type)
 
-    img = img_data(moving_image_id, DATA_FOLDER)
+    img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
     img = pre_process(img)
     transform = registration(img,
                              TEMP_FOLDER_PATH + "masked_template.nii",
@@ -415,7 +422,9 @@ def move_vol(moving, transform, label_img=False):
         nib.save(img_3d_affine, resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
     else:
-        resampled_file = pre_process(moving, False)
+        img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
+        img.set_img_filepath(moving)
+        resampled_file = pre_process(img, False).img_filepath
         apply_transforms.inputs.interpolation = 'Linear'
 
     result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
