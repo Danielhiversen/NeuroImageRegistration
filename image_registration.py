@@ -300,10 +300,10 @@ def registration(moving_img, fixed, reg_type):
     moving_img.transform = result
     print(result)
     if os.path.exists(result):
-#        generate_image(reg.inputs.output_warped_image, fixed)
+        #        generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
-#    generate_image(reg.inputs.output_warped_image, fixed)
+    #    generate_image(reg.inputs.output_warped_image, fixed)
 
     return moving_img
 
