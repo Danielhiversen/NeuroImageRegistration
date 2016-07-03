@@ -21,6 +21,7 @@ class img_data(object):
 
         self.pre_processed_filepath = None
         self.init_transform = None
+        self.transform = None
 
         self._img_filepath = None
         self._label_filepath = None
@@ -79,3 +80,9 @@ class img_data(object):
 
     def set_img_filepath(self, filepath):
         self._img_filepath = filepath
+
+
+    def get_transforms(self):
+        if self.init_transform is None:
+            return [self.transform]
+        return [self.init_transform, self.transform]

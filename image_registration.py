@@ -143,9 +143,6 @@ def pre_process(img, do_bet=True):
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
-    if os.path.exists(img.pre_processed_filepath):
-        return img
-
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
     n4bias.inputs.input_image = input_file
@@ -294,19 +291,21 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.use_histogram_matching = True
     reg.inputs.collapse_output_transforms = True
 #    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
+    reg.inputs.write_composite_transform = True
 
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
     result = TEMP_FOLDER_PATH + name + 'Composite.h5'
+    moving_img.transform = result
     print(result)
     if os.path.exists(result):
 #        generate_image(reg.inputs.output_warped_image, fixed)
-        return result
+        return moving_img
     reg.run()
 #    generate_image(reg.inputs.output_warped_image, fixed)
 
-    return result
+    return moving_img
 
 
 def process_dataset(args):
@@ -316,10 +315,10 @@ def process_dataset(args):
 
     img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
     img = pre_process(img)
-    transform = registration(img,
-                             TEMP_FOLDER_PATH + "masked_template.nii",
-                             reg_type)
-    return (moving_image_id, transform, -1)
+    img = registration(img,
+                       TEMP_FOLDER_PATH + "masked_template.nii",
+                       reg_type)
+    return (img, -1)
 
 
 def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
@@ -505,18 +504,17 @@ def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
-    for moving_image_id, transform, fixed_imag_id in data_transforms:
-        cursor = conn.execute('''SELECT pid from Images where id = ? ''', (moving_image_id,))
+    for img, fixed_imag_id in data_transforms:
+        cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
 
         folder = DATA_FOLDER + str(pid) + "/registration_transforms/"
         mkdir_p(folder)
 
-        if not isinstance(transform, list):
-            transform = [transform]
-
         transform_paths = ""
-        for _transform in transform:
+        print(img.get_transforms())
+        for _transform in img.get_transforms():
+            print(_transform)
             dst_file = folder + basename(_transform)
             if os.path.exists(dst_file):
                 os.remove(dst_file)
@@ -525,9 +523,9 @@ def save_transform_to_database(data_transforms):
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
-                               (transform_paths, moving_image_id))
+                               (transform_paths, img.image_id))
         cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''',
-                               (fixed_imag_id, moving_image_id))
+                               (fixed_imag_id, img.image_id))
 
         conn.commit()
         cursor.close()

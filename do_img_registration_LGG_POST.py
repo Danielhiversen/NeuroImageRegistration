@@ -9,6 +9,8 @@ import os
 import sqlite3
 import image_registration
 
+from img_data import img_data
+
 
 def find_images():
     """ Find images for registration """
@@ -47,11 +49,12 @@ def process_dataset(args, num_tries=3):
     cursor.close()
     conn.close()
 
-    for k in range(num_tries):
-        try:
-            pre_image_pre = image_registration.pre_process(pre_image, False)
-            post_image_pre = image_registration.pre_process(post_image, False)
-            trans1 = image_registration.registration(post_image_pre, pre_image_pre,
+    pre_img = img_data(pre_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
+    post_img = img_data(moving_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
+
+    pre_img = image_registration.pre_process(pre_img.image_id, False)
+    post_img = image_registration.pre_process(post_img.image_id, False)
+    trans1 = image_registration.registration(post_img, pre_img.pre_processed_filepath,
                                                      image_registration.RIGID)
 
 #            print("Finished 1 of 2")
@@ -64,11 +67,7 @@ def process_dataset(args, num_tries=3):
 #
 #            print("Finished 2 of 2")
 
-            return (moving_image_id, trans1, pre_image_id)
-        # pylint: disable=  broad-except
-        except Exception as exp:
-            raise Exception('Crashed during processing of ' + post_image + '. Try ' +
-                            str(k+1) + ' of ' + str(num_tries) + ' \n' + str(exp))
+    return (moving_image_id, trans1, pre_image_id)
 
 
 # pylint: disable= invalid-name
