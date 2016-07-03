@@ -56,7 +56,7 @@ from img_data import img_data
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-# MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 TEMP_FOLDER_PATH = ""
 TEMPLATE_VOLUME = ""
@@ -173,7 +173,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
         reg.inputs.initial_moving_transform_com = True
-        reg.inputs.num_threads = 8
+        reg.inputs.num_threads = 1
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.sampling_strategy = ['Regular', None]
         reg.inputs.sampling_percentage = [0.25, 1]
@@ -253,7 +253,7 @@ def registration(moving_img, fixed, reg_type):
         print("Found initial transform")
     else:
         reg.inputs.initial_moving_transform_com = True
-    reg.inputs.num_threads = 8
+    reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid']
         reg.inputs.sampling_strategy = ['Regular', None]
