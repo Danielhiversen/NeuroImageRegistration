@@ -53,9 +53,8 @@ from img_data import img_data
 MULTITHREAD = 1  # 1,23,4....., "max"
 MULTITHREAD = "max"
 
-data = datasets.fetch_icbm152_2009(data_dir="./")
-TEMPLATE_VOLUME = data.get("t1")
-TEMPLATE_MASK = data.get("mask")
+TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
+TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""
