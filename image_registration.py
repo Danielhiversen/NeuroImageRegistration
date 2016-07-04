@@ -87,7 +87,7 @@ def setup_paths(datatype):
         raise Exception
 
     global DATA_FOLDER, DB_PATH
- 
+
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
         DATA_FOLDER = "/mnt/dokumneter/data/database/"
