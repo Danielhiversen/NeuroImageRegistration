@@ -22,12 +22,6 @@ sudo pip install --upgrade setuptools
 sudo pip install --upgrade distribute
 pip install -r requirements.txt
 
-To download data:
-    ipython
-        from nilearn import datasets
-        data = datasets.fetch_icbm152_2009()
-        TEMPLATE_VOLUME = data.get("t1")
-
 """
 # pylint: disable= redefined-builtin
 # import nipype.interfaces.dipy as dipy
@@ -43,6 +37,7 @@ import sqlite3
 import shutil
 from builtins import map
 from builtins import str
+from nilearn import datasets
 from nilearn.image import resample_img
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
@@ -58,11 +53,13 @@ from img_data import img_data
 MULTITHREAD = 1  # 1,23,4....., "max"
 MULTITHREAD = "max"
 
+data = datasets.fetch_icbm152_2009(data_dir="./")
+TEMPLATE_VOLUME = data.get("t1")
+TEMPLATE_MASK = data.get("mask")
+
 TEMP_FOLDER_PATH = ""
-TEMPLATE_VOLUME = ""
 DATA_FOLDER = ""
 DB_PATH = ""
-TEMPLATE_MASK = ""
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -89,25 +86,17 @@ def setup_paths(datatype):
         print("Unkown datatype " + datatype)
         raise Exception
 
-    global TEMPLATE_VOLUME, TEMPLATE_MASK, DATA_FOLDER, DB_PATH
+    global DATA_FOLDER, DB_PATH
+ 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        TEMPLATE_VOLUME = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
-        TEMPLATE_MASK = "/home/dahoiv/disk/sintef/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         DATA_FOLDER = "/mnt/dokumneter/data/database/"
-
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
-        TEMPLATE_VOLUME = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
-        TEMPLATE_MASK = "/mnt/dokumenter/NeuroImageRegistration/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
-        DATA_FOLDER = "/mnt/dokumenter/daniel/database/"
-
+        DATA_FOLDER = "/home/dahoiv/database/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
-        TEMPLATE_VOLUME = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a.nii"
-        TEMPLATE_MASK = "/home/daniel/nilearn_data/icbm152_2009/mni_icbm152_nlin_sym_09a/mni_icbm152_t1_tal_nlin_sym_09a_mask.nii"
         DATA_FOLDER = "/media/ingerid/data/daniel/database/"
-
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
     else:
         print("Unkown host name " + hostname)
