@@ -51,7 +51,7 @@ from img_data import img_data
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+#MULTITHREAD = "max"
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
@@ -156,32 +156,31 @@ def pre_process(img, do_bet=True):
         print("Doing registration for bet")
         name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
         reg = ants.Registration()
-        # reg.inputs.args = "--verbose 1"
+        reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
         reg.inputs.initial_moving_transform_com = True
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 8
         reg.inputs.transforms = ['Rigid', 'Affine']
-        reg.inputs.sampling_strategy = ['Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 1]
-        reg.inputs.metric = ['MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 4]
-        reg.inputs.metric_weight = [1.0]*3
+        reg.inputs.sampling_strategy = ['Regular'] * 2 
+  
+        reg.inputs.sampling_percentage = [0.3] * 2
+        reg.inputs.metric = ['Mattes'] * 2
+        reg.inputs.radius_or_number_of_bins = [32] * 2 
+        reg.inputs.metric_weight = [1] * 2
         reg.inputs.winsorize_lower_quantile = 0.005
         reg.inputs.winsorize_upper_quantile = 0.995
-        reg.inputs.convergence_window_size = [10]
-        reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
-                                           [1000, 500, 250, 100],
-                                           [100, 70, 50, 20]]
-        reg.inputs.convergence_threshold = [1e-06]
-        reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
-        reg.inputs.smoothing_sigmas = [[8, 4, 1, 0]]*3
+        reg.inputs.convergence_window_size = [20] * 2 
+        reg.inputs.number_of_iterations = ([[10000, 111110, 11110]] * 2)
+        reg.inputs.convergence_threshold = [1.e-8] * 2
+        reg.inputs.shrink_factors = [[3, 2, 1]]*2 
+        reg.inputs.smoothing_sigmas = [[4, 2, 1]] * 2
         reg.inputs.sigma_units = ['vox']*3
-        reg.inputs.transform_parameters = [(0.1,),
-                                           (0.1,),
-                                           (0.2, 3.0, 0.0)]
-        reg.inputs.use_histogram_matching = True
+        reg.inputs.transform_parameters = [(0.1,), (0.1,)]
+        reg.inputs.use_histogram_matching = [False] * 2 
+        reg.inputs.use_estimate_learning_rate_once = [True] * 2
+    
         reg.inputs.write_composite_transform = True
         # reg.inputs.fixed_image_mask = img.label_inv_filepath
 
@@ -231,7 +230,7 @@ def registration(moving_img, fixed, reg_type):
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
 
     reg = ants.Registration()
-    # reg.inputs.args = "--verbose 1"
+    reg.inputs.args = "--verbose 1"
     reg.inputs.collapse_output_transforms = True
     reg.inputs.moving_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image = fixed
@@ -241,7 +240,7 @@ def registration(moving_img, fixed, reg_type):
         print("Found initial transform")
     else:
         reg.inputs.initial_moving_transform_com = True
-    reg.inputs.num_threads = 1
+    reg.inputs.num_threads = 8
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid']
         reg.inputs.sampling_strategy = ['Regular', None]
@@ -256,27 +255,24 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.radius_or_number_of_bins = [32, 4]
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
-        reg.inputs.sampling_strategy = ['Regular', 'Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 0.25, 1]
-        reg.inputs.metric = ['MI', 'MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 32, 4]
+        reg.inputs.sampling_strategy = ['Regular'] * 2 + [[None, None]]
+        reg.inputs.sampling_percentage = [0.3] * 2 + [[None, None]]
+        reg.inputs.metric = ['Mattes'] * 2 + [['Mattes', 'CC']]
+        reg.inputs.radius_or_number_of_bins = [32] * 2 + [[32, 4]]
     else:
         raise Exception("Wrong registration type " + reg_type)
-    reg.inputs.metric_weight = [1.0]*3
+    reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
-    reg.inputs.convergence_window_size = [10]
-    reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
-                                       [1000, 500, 250, 100],
-                                       [100, 70, 50, 20]]
-    reg.inputs.convergence_threshold = [1e-06]
-    reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
-    reg.inputs.smoothing_sigmas = [[8, 4, 1, 0]]*3
+    reg.inputs.convergence_window_size = [20] * 2 + [5]
+    reg.inputs.number_of_iterations = ([[10000, 111110, 11110]] * 2 + [[100, 50, 30]])
+    reg.inputs.convergence_threshold = [1.e-8] * 2 + [-0.01]
+    reg.inputs.shrink_factors = [[3, 2, 1]]*2 + [[4, 2, 1]]
+    reg.inputs.smoothing_sigmas = [[4, 2, 1]] * 2 + [[1, 0.5, 0]]
     reg.inputs.sigma_units = ['vox']*3
-    reg.inputs.transform_parameters = [(0.1,),
-                                       (0.1,),
-                                       (0.2, 3.0, 0.0)]
-    reg.inputs.use_histogram_matching = True
+    reg.inputs.transform_parameters = [(0.1,), (0.1,), (0.2, 3.0, 0.0)]
+    reg.inputs.use_histogram_matching = [False] * 2 + [True]
+    reg.inputs.use_estimate_learning_rate_once = [True] * 3
     reg.inputs.collapse_output_transforms = True
 #    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
     reg.inputs.write_composite_transform = True
