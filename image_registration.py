@@ -156,7 +156,7 @@ def pre_process(img, do_bet=True):
         print("Doing registration for bet")
         name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
         reg = ants.Registration()
-        reg.inputs.args = "--verbose 1"
+        # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
@@ -230,7 +230,7 @@ def registration(moving_img, fixed, reg_type):
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
 
     reg = ants.Registration()
-    reg.inputs.args = "--verbose 1"
+    # reg.inputs.args = "--verbose 1"
     reg.inputs.collapse_output_transforms = True
     reg.inputs.moving_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image = fixed
