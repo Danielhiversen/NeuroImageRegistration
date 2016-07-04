@@ -166,7 +166,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.sampling_strategy = ['Regular'] * 2 
   
         reg.inputs.sampling_percentage = [0.3] * 2
-        reg.inputs.metric = ['Mattes'] * 2
+        reg.inputs.metric = ['MI', 'CC']
         reg.inputs.radius_or_number_of_bins = [32] * 2 
         reg.inputs.metric_weight = [1] * 2
         reg.inputs.winsorize_lower_quantile = 0.005
@@ -249,9 +249,9 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.radius_or_number_of_bins = [32, 4]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
-        reg.inputs.sampling_strategy = ['Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 1]
-        reg.inputs.metric = ['MI', 'CC']
+        reg.inputs.sampling_strategy = ['Regular']*2
+        reg.inputs.sampling_percentage = [0.3]*2
+        reg.inputs.metric = ['Mattes'] * 2
         reg.inputs.radius_or_number_of_bins = [32, 4]
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
@@ -298,7 +298,7 @@ def process_dataset(args):
     print(moving_image_id, reg_type)
 
     import datetime
-    now =  datetime.datetime.now()
+    now = datetime.datetime.now()
     img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
     img = pre_process(img)
     img = registration(img,
