@@ -301,11 +301,15 @@ def process_dataset(args):
     (moving_image_id, reg_type) = args
     print(moving_image_id, reg_type)
 
+    import datetime
+    now =  datetime.datetime.now()
     img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
     img = pre_process(img)
     img = registration(img,
                        TEMP_FOLDER_PATH + "masked_template.nii",
                        reg_type)
+    print("\n\n\n\n -- Run time: ")
+    print(now - datetime.datetime.now())
     return (img, -1)
 
 
