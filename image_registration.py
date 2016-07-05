@@ -23,6 +23,7 @@ sudo pip install --upgrade distribute
 pip install -r requirements.txt
 
 ant registration parameters inspired by
+http://miykael.github.io/nipype-beginner-s-guide/normalize.html
 https://www.icts.uiowa.edu/
 confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
 
@@ -121,7 +122,7 @@ def prepare_template(template_vol, template_mask):
 
 
 def pre_process(img, do_bet=True):
-    # pylint: disable= too-many-statements
+    # pylint: disable= too-many-statements, too-many-locals
     """ Pre process the data"""
 
     input_file = img.img_filepath
@@ -140,7 +141,7 @@ def pre_process(img, do_bet=True):
     if os.path.exists(img.pre_processed_filepath) and\
        os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
         img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
-        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)        
+        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
         return img
 
     n4bias = ants.N4BiasFieldCorrection()
@@ -167,7 +168,7 @@ def pre_process(img, do_bet=True):
     if BET_METHOD == 0:
         print("Doing registration for bet")
         reg = ants.Registration()
-        reg.inputs.args = "--verbose 1"
+        #reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
@@ -238,7 +239,7 @@ def registration(moving_img, fixed, reg_type):
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
 
     reg = ants.Registration()
-    reg.inputs.args = "--verbose 1"
+#    reg.inputs.args = "--verbose 1"
     reg.inputs.collapse_output_transforms = True
     reg.inputs.moving_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image = fixed
@@ -262,13 +263,18 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.radius_or_number_of_bins = [32, 5]
     reg.inputs.metric_weight = [1, 1]
     reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000], [50, 35, 15]])
-    reg.inputs.convergence_threshold = [1.e-6]*2
+    reg.inputs.convergence_threshold = [1.e-6]
     reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [3, 2, 1]]
     reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [2, 1, 0]]
     reg.inputs.transform_parameters = [(0.25,), (0.25, 3.0, 0.0)]
     reg.inputs.use_histogram_matching = [False, True]
     reg.inputs.collapse_output_transforms = True
     reg.inputs.write_composite_transform = True
+    reg.inputs.winsorize_lower_quantile = 0.005
+    reg.inputs.winsorize_upper_quantile = 0.995
+    reg.inputs.sigma_units = ['vox']*2
+    reg.inputs.convergence_window_size = [10]
+
 
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
@@ -279,9 +285,9 @@ def registration(moving_img, fixed, reg_type):
     if os.path.exists(result):
         #        generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
-    reg.run()
+    out = reg.run()
     generate_image(reg.inputs.output_warped_image, fixed)
-
+    print(out)
     return moving_img
 
 
@@ -295,9 +301,13 @@ def process_dataset(args):
     img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
     img = pre_process(img)
     bet_time = datetime.datetime.now() - start_time
-    img = registration(img,
-                       TEMP_FOLDER_PATH + "masked_template.nii",
-                       reg_type)
+    for k in range(3):
+        try:
+            img = registration(img,
+                               TEMP_FOLDER_PATH + "masked_template.nii",
+                               reg_type)
+        except Exception as exp:
+            print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
     print("\n\n\n\n -- Run time BET: ")
     print(bet_time)
     print("\n\n\n\n -- Run time: ")
@@ -407,7 +417,7 @@ def move_vol(moving, transform, label_img=False):
     else:
         img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
         img.set_img_filepath(moving)
-        resampled_file = pre_process(img, False).img_filepath
+        resampled_file = pre_process(img, False).pre_processed_filepath
         apply_transforms.inputs.interpolation = 'Linear'
 
     result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
