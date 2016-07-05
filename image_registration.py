@@ -22,7 +22,9 @@ sudo pip install --upgrade setuptools
 sudo pip install --upgrade distribute
 pip install -r requirements.txt
 
-ant registration parameters inspired by https://www.icts.uiowa.edu/confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
+ant registration parameters inspired by 
+https://www.icts.uiowa.edu/
+confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
 
 """
 # pylint: disable= redefined-builtin
@@ -133,6 +135,13 @@ def pre_process(img, do_bet=True):
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
+    name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
+
+    if os.path.exists(img.pre_processed_filepath) and\
+       os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
+        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
+        return img
+
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
     n4bias.inputs.input_image = input_file
@@ -141,9 +150,9 @@ def pre_process(img, do_bet=True):
 
     # normalization [0,100], same as template
     normalize_img = nib.load(n4_file)
-    result_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100,
+    temp_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100,
                                  normalize_img.affine, normalize_img.header)
-    result_img.to_filename(norm_file)
+    temp_img.to_filename(norm_file)
 
     # resample volume to 1 mm slices
     target_affine_3x3 = np.eye(3) * 1
@@ -156,7 +165,6 @@ def pre_process(img, do_bet=True):
 
     if BET_METHOD == 0:
         print("Doing registration for bet")
-        name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
