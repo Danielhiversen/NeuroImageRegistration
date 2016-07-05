@@ -22,6 +22,8 @@ sudo pip install --upgrade setuptools
 sudo pip install --upgrade distribute
 pip install -r requirements.txt
 
+ant registration parameters inspired by https://www.icts.uiowa.edu/confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
+
 """
 # pylint: disable= redefined-builtin
 # import nipype.interfaces.dipy as dipy
@@ -51,7 +53,7 @@ from img_data import img_data
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-#MULTITHREAD = "max"
+# MULTITHREAD = "max"
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
@@ -163,13 +165,13 @@ def pre_process(img, do_bet=True):
         reg.inputs.initial_moving_transform_com = True
         reg.inputs.num_threads = 8
         reg.inputs.transforms = ['Rigid', 'Affine']
-  
+
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
         reg.inputs.number_of_iterations = ([[100, 100], [100, 100, 100, 100]])
-        reg.inputs.convergence_threshold = [1.e-6] *2
+        reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.shrink_factors = [[9, 5], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[9, 5], [9, 5, 3, 1]]
         reg.inputs.transform_parameters = [(0.1,), (0.75,)]
@@ -248,7 +250,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.radius_or_number_of_bins = [32, 5]
     reg.inputs.metric_weight = [1, 1]
     reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000], [50, 35, 15]])
-    reg.inputs.convergence_threshold = [1.e-6] *2
+    reg.inputs.convergence_threshold = [1.e-6]*2
     reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [3, 2, 1]]
     reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [2, 1, 0]]
     reg.inputs.transform_parameters = [(0.25,), (0.25, 3.0, 0.0)]
@@ -277,17 +279,17 @@ def process_dataset(args):
     print(moving_image_id, reg_type)
 
     import datetime
-    now = datetime.datetime.now()
+    start_time = datetime.datetime.now()
     img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
     img = pre_process(img)
-    bet_time = now - datetime.datetime.now()
+    bet_time = datetime.datetime.now() - start_time
     img = registration(img,
                        TEMP_FOLDER_PATH + "masked_template.nii",
                        reg_type)
     print("\n\n\n\n -- Run time BET: ")
     print(bet_time)
     print("\n\n\n\n -- Run time: ")
-    print(now - datetime.datetime.now())
+    print(datetime.datetime.now() - start_time)
     return (img, -1)
 
 
