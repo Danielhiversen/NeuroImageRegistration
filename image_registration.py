@@ -172,7 +172,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.convergence_threshold = [1.e-6] *2
         reg.inputs.shrink_factors = [[9, 5], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[9, 5], [9, 5, 3, 1]]
-        reg.inputs.transform_parameters = [(0.1,), (0.75)]
+        reg.inputs.transform_parameters = [(0.1,), (0.75,)]
         reg.inputs.use_estimate_learning_rate_once = [True, True]
 
         reg.inputs.write_composite_transform = True
