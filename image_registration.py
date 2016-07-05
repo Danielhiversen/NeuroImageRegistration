@@ -173,7 +173,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.winsorize_upper_quantile = 0.995
         reg.inputs.convergence_window_size = [20] * 2 
         reg.inputs.number_of_iterations = ([[10000, 111110, 11110]] * 2)
-        reg.inputs.convergence_threshold = [1.e-8] * 2
+        reg.inputs.convergence_threshold = [1.e-4] * 2
         reg.inputs.shrink_factors = [[3, 2, 1]]*2 
         reg.inputs.smoothing_sigmas = [[4, 2, 1]] * 2
         reg.inputs.sigma_units = ['vox']*3
@@ -266,7 +266,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_window_size = [20] * 2 + [5]
     reg.inputs.number_of_iterations = ([[10000, 111110, 11110]] * 2 + [[100, 50, 30]])
-    reg.inputs.convergence_threshold = [1.e-8] * 2 + [-0.01]
+    reg.inputs.convergence_threshold = [1.e-5] * 2 + [-0.01]
     reg.inputs.shrink_factors = [[3, 2, 1]]*2 + [[4, 2, 1]]
     reg.inputs.smoothing_sigmas = [[4, 2, 1]] * 2 + [[1, 0.5, 0]]
     reg.inputs.sigma_units = ['vox']*3
