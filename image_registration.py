@@ -256,23 +256,23 @@ def registration(moving_img, fixed, reg_type):
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
     elif reg_type == SYN:
-        reg.inputs.transforms = ['Affine', 'SyN']
+        reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
         #    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
     else:
         raise Exception("Wrong registration type " + reg_type)
-    reg.inputs.metric = ['MI', 'CC']
-    reg.inputs.radius_or_number_of_bins = [32, 5]
-    reg.inputs.metric_weight = [1, 1]
-    reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000], [50, 35, 15]])
+    reg.inputs.metric = ['MI', 'MI', 'CC']
+    reg.inputs.radius_or_number_of_bins = [32, 32, 5]
+    reg.inputs.metric_weight = [1, 1, 1]
+    reg.inputs.number_of_iterations = ([[1000], [10000, 10000, 10000, 10000, 10000], [100, 50, 35, 15]])
     reg.inputs.convergence_threshold = [1.e-6]
-    reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [3, 2, 1]]
-    reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [2, 1, 0]]
-    reg.inputs.transform_parameters = [(0.25,), (0.25, 3.0, 0.0)]
-    reg.inputs.use_histogram_matching = [False, True]
+    reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+    reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
+    reg.inputs.transform_parameters = [(0.25,), (0.25,), (0.25, 3.0, 0.0)]
+    reg.inputs.use_histogram_matching = [False, False, True]
     # reg.inputs.collapse_output_transforms = True
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
-    reg.inputs.sigma_units = ['vox']*2
+    reg.inputs.sigma_units = ['vox']*3
     reg.inputs.convergence_window_size = [10]
 
     reg.inputs.write_composite_transform = True
