@@ -236,10 +236,8 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.moving_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image = fixed
     init_moving_transform = moving_img.init_transform
-    if init_moving_transform is not None and os.path.exists(init_moving_transform):
+    if init_moving_transform is None and not os.path.exists(init_moving_transform):
         # reg.inputs.initial_moving_transform = init_moving_transform
-        print("Found initial transform")
-    else:
         reg.inputs.initial_moving_transform_com = True
     reg.inputs.num_threads = 8
     if reg_type == RIGID:
