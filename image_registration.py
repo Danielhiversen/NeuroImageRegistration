@@ -22,7 +22,7 @@ sudo pip install --upgrade setuptools
 sudo pip install --upgrade distribute
 pip install -r requirements.txt
 
-ant registration parameters inspired by 
+ant registration parameters inspired by
 https://www.icts.uiowa.edu/
 confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
 
@@ -151,7 +151,7 @@ def pre_process(img, do_bet=True):
     # normalization [0,100], same as template
     normalize_img = nib.load(n4_file)
     temp_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100,
-                                 normalize_img.affine, normalize_img.header)
+                               normalize_img.affine, normalize_img.header)
     temp_img.to_filename(norm_file)
 
     # resample volume to 1 mm slices
