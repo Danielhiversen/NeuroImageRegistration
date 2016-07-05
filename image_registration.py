@@ -191,8 +191,9 @@ def pre_process(img, do_bet=True):
         reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
         reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_betReg.nii'
         print("starting bet registration")
-        reg.run()
+        out = reg.run()
         print("Finished bet registration")
+        print(out)
 
         img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
 
@@ -202,6 +203,8 @@ def pre_process(img, do_bet=True):
         mult.inputs.second_input = TEMPLATE_MASK
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
+
+        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
 
     elif BET_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
@@ -240,7 +243,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.fixed_image = fixed
     init_moving_transform = moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
-        # reg.inputs.initial_moving_transform = init_moving_transform
+        reg.inputs.initial_moving_transform_com = False
         print("Found initial transform")
     else:
         reg.inputs.initial_moving_transform_com = True
@@ -276,7 +279,7 @@ def registration(moving_img, fixed, reg_type):
         #        generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
-    #    generate_image(reg.inputs.output_warped_image, fixed)
+    generate_image(reg.inputs.output_warped_image, fixed)
 
     return moving_img
 
