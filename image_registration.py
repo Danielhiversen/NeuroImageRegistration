@@ -240,14 +240,15 @@ def registration(moving_img, fixed, reg_type):
 
     reg = ants.Registration()
 #    reg.inputs.args = "--verbose 1"
-    reg.inputs.collapse_output_transforms = True
     reg.inputs.moving_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image = fixed
     init_moving_transform = moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
+        reg.inputs.collapse_output_transforms = False
         reg.inputs.initial_moving_transform_com = False
         print("Found initial transform")
     else:
+        reg.inputs.collapse_output_transforms = True
         reg.inputs.initial_moving_transform_com = True
     reg.inputs.num_threads = 8
     if reg_type == RIGID:
@@ -275,7 +276,6 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.sigma_units = ['vox']*2
     reg.inputs.convergence_window_size = [10]
 
-
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
@@ -294,7 +294,7 @@ def registration(moving_img, fixed, reg_type):
 def process_dataset(args):
     """ pre process and registrate volume"""
     (moving_image_id, reg_type) = args
-    print(moving_image_id, reg_type)
+    print(moving_image_id)
 
     import datetime
     start_time = datetime.datetime.now()
