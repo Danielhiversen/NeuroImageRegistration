@@ -269,13 +269,13 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [2, 1, 0]]
     reg.inputs.transform_parameters = [(0.25,), (0.25, 3.0, 0.0)]
     reg.inputs.use_histogram_matching = [False, True]
-    reg.inputs.collapse_output_transforms = True
-    reg.inputs.write_composite_transform = True
+    # reg.inputs.collapse_output_transforms = True
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.sigma_units = ['vox']*2
     reg.inputs.convergence_window_size = [10]
 
+    reg.inputs.write_composite_transform = True
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
