@@ -137,12 +137,12 @@ def pre_process(img, do_bet=True):
         '_bet.nii.gz'
 
     name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
-
-    if os.path.exists(img.pre_processed_filepath) and\
-       os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
-        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
-        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
-        return img
+#
+#    if os.path.exists(img.pre_processed_filepath) and\
+#       os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
+#        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
+#        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
+#        return img
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
