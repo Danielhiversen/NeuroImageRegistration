@@ -251,7 +251,8 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.radius_or_number_of_bins = [32, 5]
 
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000], [10000, 10000, 1000, 1000, 1000]])
+        reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
+                                            [10000, 10000, 1000, 1000, 1000]])
         reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [5, 4, 3, 2, 1]]
         reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]]
         reg.inputs.sigma_units = ['vox']*2
@@ -264,7 +265,8 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.radius_or_number_of_bins = [32, 5]
 
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000], [10000, 10000, 1000, 1000, 1000]])
+        reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
+                                            [10000, 10000, 1000, 1000, 1000]])
         reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [5, 4, 3, 2, 1]]
         reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]]
         reg.inputs.sigma_units = ['vox']*2
@@ -277,7 +279,8 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.metric = ['MI', 'MI', 'CC']
         reg.inputs.radius_or_number_of_bins = [32, 32, 5]
         reg.inputs.convergence_window_size = [5, 5, 5]
-        reg.inputs.number_of_iterations = ([[1000], [1000, 1000, 1000, 1000, 1000], [100, 50, 35, 15]])
+        reg.inputs.number_of_iterations = ([[1000], [1000, 1000, 1000, 1000, 1000],
+                                            [100, 50, 35, 15]])
         reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
         reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         reg.inputs.sigma_units = ['vox']*3
@@ -292,7 +295,6 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_threshold = [1e-06]
-
 
     reg.inputs.write_composite_transform = True
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
