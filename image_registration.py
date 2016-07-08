@@ -249,7 +249,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.transforms = ['Rigid', 'Rigid']
         reg.inputs.metric = ['MI', 'CC']
         reg.inputs.radius_or_number_of_bins = [32, 5]
-        
+
         reg.inputs.convergence_window_size = [5, 5]
         reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000], [10000, 10000, 1000, 1000, 1000]])
         reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [5, 4, 3, 2, 1]]
@@ -271,7 +271,6 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.15,)]
         reg.inputs.use_histogram_matching = [False, True]
-
 
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
