@@ -33,18 +33,15 @@ def find_images():
 def process_dataset(args, num_tries=3):
     """ pre process and registrate volume"""
     moving_image_id = args[0]
+    print(moving_image_id)
+
     conn = sqlite3.connect(image_registration.DB_PATH)
     conn.text_factory = str
-    cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (moving_image_id,))
-    post_image = image_registration.DATA_FOLDER + cursor.fetchone()[0]
-
     cursor = conn.execute('''SELECT pid from Images where id = ?''', (moving_image_id,))
     pid = cursor.fetchone()[0]
-    cursor = conn.execute('''SELECT filepath, id from Images where pid = ? AND diag_pre_post = ?''', (pid, "pre"))
+    cursor = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (pid, "pre"))
     db_temp = cursor.fetchone()
-    pre_image = image_registration.DATA_FOLDER + db_temp[0]
-    pre_image_id = db_temp[1]
-    print(pre_image, post_image)
+    pre_image_id = db_temp[0]
 
     cursor.close()
     conn.close()
