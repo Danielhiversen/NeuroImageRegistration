@@ -56,7 +56,7 @@ from img_data import img_data
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-# MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
@@ -172,7 +172,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
-        reg.inputs.num_threads = 8
+        reg.inputs.num_threads = 1
 
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
@@ -244,7 +244,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.initial_moving_transform_com = True
     reg.inputs.fixed_image = fixed
     reg.inputs.moving_image = moving_img.pre_processed_filepath
-    reg.inputs.num_threads = 8
+    reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid']
         reg.inputs.metric = ['MI', 'CC']
