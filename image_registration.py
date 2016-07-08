@@ -137,12 +137,12 @@ def pre_process(img, do_bet=True):
         '_bet.nii.gz'
 
     name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
-#
-#    if os.path.exists(img.pre_processed_filepath) and\
-#       os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
-#        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
+
+    if os.path.exists(img.pre_processed_filepath) and\
+       os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
+        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
 #        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
-#        return img
+        return img
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
@@ -172,24 +172,22 @@ def pre_process(img, do_bet=True):
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
-        reg.inputs.initial_moving_transform_com = True
         reg.inputs.num_threads = 8
-        reg.inputs.transforms = ['Rigid', 'Affine']
 
+        reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[100, 100], [100, 100, 100, 100]])
+        reg.inputs.number_of_iterations = ([[1000], [10000, 10000, 10000, 1000]])
         reg.inputs.convergence_threshold = [1.e-6]*2
-        reg.inputs.shrink_factors = [[9, 5], [9, 5, 3, 1]]
-        reg.inputs.smoothing_sigmas = [[9, 5], [9, 5, 3, 1]]
-        reg.inputs.transform_parameters = [(0.1,), (0.75,)]
+        reg.inputs.shrink_factors = [[9], [9, 5, 3, 1]]
+        reg.inputs.smoothing_sigmas = [[9], [8, 4, 1, 0]]
+        reg.inputs.transform_parameters = [(0.25,), (0.25,)]
+        reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
 
         reg.inputs.write_composite_transform = True
-        # reg.inputs.fixed_image_mask = img.label_inv_filepath
-
         reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
         reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_betReg.nii'
         print("starting bet registration")
@@ -236,46 +234,47 @@ def pre_process(img, do_bet=True):
 def registration(moving_img, fixed, reg_type):
     # pylint: disable= too-many-statements
     """Image2Image registration """
-    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
-
     reg = ants.Registration()
-#    reg.inputs.args = "--verbose 1"
-    reg.inputs.moving_image = moving_img.pre_processed_filepath
-    reg.inputs.fixed_image = fixed
-    init_moving_transform = moving_img.init_transform
+    
+    init_moving_transform = None #moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
-        reg.inputs.collapse_output_transforms = False
-        reg.inputs.initial_moving_transform_com = False
         print("Found initial transform")
+        reg.inputs.initial_moving_transform = init_moving_transform
     else:
-        reg.inputs.collapse_output_transforms = True
-        reg.inputs.initial_moving_transform_com = True
+        reg.inputs.initial_moving_transform_com = True    
+    reg.inputs.fixed_image = fixed
+    reg.inputs.moving_image = moving_img.pre_processed_filepath
     reg.inputs.num_threads = 8
     if reg_type == RIGID:
-        reg.inputs.transforms = ['Rigid']
+        reg.inputs.transforms = ['Rigid', 'Rigid']
+        reg.inputs.metric = ['MI', 'CC']
+        reg.inputs.radius_or_number_of_bins = [32, 5]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
+        reg.inputs.metric = ['MI', 'CC']
+        reg.inputs.radius_or_number_of_bins = [32, 5]
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
-        #    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
+        reg.inputs.metric = ['MI', 'MI', 'CC']
+        reg.inputs.radius_or_number_of_bins = [32, 32, 5]
     else:
-        raise Exception("Wrong registration type " + reg_type)
-    reg.inputs.metric = ['MI', 'MI', 'CC']
-    reg.inputs.radius_or_number_of_bins = [32, 32, 5]
-    reg.inputs.metric_weight = [1, 1, 1]
-    reg.inputs.number_of_iterations = ([[1000], [10000, 10000, 10000, 10000, 10000], [100, 50, 35, 15]])
-    reg.inputs.convergence_threshold = [1.e-6]
-    reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
-    reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
-    reg.inputs.transform_parameters = [(0.25,), (0.25,), (0.25, 3.0, 0.0)]
-    reg.inputs.use_histogram_matching = [False, False, True]
-    # reg.inputs.collapse_output_transforms = True
+        raise Exception("Wrong registration format " + reg_type)
+    reg.inputs.metric_weight = [1.0]*3
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
+    reg.inputs.convergence_threshold = [1e-06]
+    reg.inputs.convergence_window_size = [5, 5, 5]
+    reg.inputs.number_of_iterations = ([[1000], [1000, 1000, 1000, 1000, 1000], [75, 50, 35, 15]])
+    reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+    reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
     reg.inputs.sigma_units = ['vox']*3
-    reg.inputs.convergence_window_size = [10]
-
+    reg.inputs.transform_parameters = [(0.25,),
+                                       (0.25,),
+                                       (0.25, 3.0, 0.0)]
+    reg.inputs.use_histogram_matching = [False, False, True]
+    
     reg.inputs.write_composite_transform = True
+    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
@@ -283,11 +282,11 @@ def registration(moving_img, fixed, reg_type):
     moving_img.transform = result
     print(result)
     if os.path.exists(result):
-        #        generate_image(reg.inputs.output_warped_image, fixed)
+        generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
-    out = reg.run()
-    generate_image(reg.inputs.output_warped_image, fixed)
-    print(out)
+    reg.run()
+    # generate_image(reg.inputs.output_warped_image, fixed)
+
     return moving_img
 
 
@@ -306,6 +305,7 @@ def process_dataset(args):
             img = registration(img,
                                TEMP_FOLDER_PATH + "masked_template.nii",
                                reg_type)
+            break
         except Exception as exp:
             print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
     print("\n\n\n\n -- Run time BET: ")
@@ -365,8 +365,8 @@ def post_calculations(moving_dataset_image_ids):
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         img = DATA_FOLDER + db_temp[0]
+        print(img, transforms)
         temp = move_vol(img, transforms)
-        print(img)
         label = "img"
         if label in result:
             result[label].append(temp)
@@ -498,7 +498,7 @@ def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
-    for img, fixed_imag_id in data_transforms:
+    for img, fixed_image_id in data_transforms:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
 
@@ -519,7 +519,7 @@ def save_transform_to_database(data_transforms):
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
                                (transform_paths, img.image_id))
         cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''',
-                               (fixed_imag_id, img.image_id))
+                               (fixed_image_id, img.image_id))
 
         conn.commit()
         cursor.close()

@@ -52,8 +52,8 @@ def process_dataset(args, num_tries=3):
     pre_img = img_data(pre_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
     post_img = img_data(moving_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
 
-    pre_img = image_registration.pre_process(pre_img.image_id, False)
-    post_img = image_registration.pre_process(post_img.image_id, False)
+    pre_img = image_registration.pre_process(pre_img, False)
+    post_img = image_registration.pre_process(post_img, False)
     trans1 = image_registration.registration(post_img, pre_img.pre_processed_filepath,
                                              image_registration.RIGID)
 

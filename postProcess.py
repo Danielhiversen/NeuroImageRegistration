@@ -23,5 +23,5 @@ if __name__ == "__main__":
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
-    image_ids = do_img_registration.find_images()[:1]
+    image_ids = do_img_registration.find_images()[0:1]
     image_registration.post_calculations(image_ids)
