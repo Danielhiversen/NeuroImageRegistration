@@ -168,18 +168,18 @@ def pre_process(img, do_bet=True):
     if BET_METHOD == 0:
         print("Doing registration for bet")
         reg = ants.Registration()
-        #reg.inputs.args = "--verbose 1"
+        # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
-        reg.inputs.num_threads = 8
+        reg.inputs.num_threads = 1
 
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[1000], [10000, 10000, 10000, 1000]])
+        reg.inputs.number_of_iterations = ([[1000], [10000, 10000, 10000, 10000]])
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.shrink_factors = [[9], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[9], [8, 4, 1, 0]]
@@ -235,16 +235,17 @@ def registration(moving_img, fixed, reg_type):
     # pylint: disable= too-many-statements
     """Image2Image registration """
     reg = ants.Registration()
-    
-    init_moving_transform = None #moving_img.init_transform
+
+    init_moving_transform = moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
         print("Found initial transform")
-        reg.inputs.initial_moving_transform = init_moving_transform
+        # reg.inputs.initial_moving_transform = init_moving_transform
+        reg.inputs.initial_moving_transform_com = False
     else:
-        reg.inputs.initial_moving_transform_com = True    
+        reg.inputs.initial_moving_transform_com = True
     reg.inputs.fixed_image = fixed
     reg.inputs.moving_image = moving_img.pre_processed_filepath
-    reg.inputs.num_threads = 8
+    reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid']
         reg.inputs.metric = ['MI', 'CC']
@@ -264,15 +265,15 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.winsorize_upper_quantile = 0.995
     reg.inputs.convergence_threshold = [1e-06]
     reg.inputs.convergence_window_size = [5, 5, 5]
-    reg.inputs.number_of_iterations = ([[1000], [1000, 1000, 1000, 1000, 1000], [75, 50, 35, 15]])
+    reg.inputs.number_of_iterations = ([[1000], [1000, 1000, 1000, 1000, 1000], [100, 50, 35, 15]])
     reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
     reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
     reg.inputs.sigma_units = ['vox']*3
     reg.inputs.transform_parameters = [(0.25,),
                                        (0.25,),
-                                       (0.25, 3.0, 0.0)]
+                                       (0.15, 3.0, 0.0)]
     reg.inputs.use_histogram_matching = [False, False, True]
-    
+
     reg.inputs.write_composite_transform = True
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
@@ -306,6 +307,7 @@ def process_dataset(args):
                                TEMP_FOLDER_PATH + "masked_template.nii",
                                reg_type)
             break
+        # pylint: disable= broad-except
         except Exception as exp:
             print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
     print("\n\n\n\n -- Run time BET: ")
@@ -383,7 +385,7 @@ def post_calculations(moving_dataset_image_ids):
     cursor.close()
     conn.close()
 
-    for label in result.keys():
+    for label in result:
         avg_calculation(result[label], label)
 
 
