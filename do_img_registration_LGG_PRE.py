@@ -26,6 +26,7 @@ def find_images():
     conn.close()
     return ids
 
+
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
