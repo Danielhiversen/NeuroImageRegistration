@@ -56,7 +56,7 @@ from img_data import img_data
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+#MULTITHREAD = "max"
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
@@ -172,17 +172,18 @@ def pre_process(img, do_bet=True):
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 8
+        reg.inputs.initial_moving_transform_com = True
 
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[1000], [10000, 10000, 10000, 10000]])
+        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000], [10000, 10000, 10000, 10000]])
         reg.inputs.convergence_threshold = [1.e-6]*2
-        reg.inputs.shrink_factors = [[9], [9, 5, 3, 1]]
-        reg.inputs.smoothing_sigmas = [[9], [8, 4, 1, 0]]
+        reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
+        reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
         reg.inputs.transform_parameters = [(0.25,), (0.25,)]
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
@@ -244,7 +245,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.initial_moving_transform_com = True
     reg.inputs.fixed_image = fixed
     reg.inputs.moving_image = moving_img.pre_processed_filepath
-    reg.inputs.num_threads = 1
+    reg.inputs.num_threads = 8
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid']
         reg.inputs.metric = ['MI', 'CC']
@@ -279,8 +280,8 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.metric = ['MI', 'MI', 'CC']
         reg.inputs.radius_or_number_of_bins = [32, 32, 5]
         reg.inputs.convergence_window_size = [5, 5, 5]
-        reg.inputs.number_of_iterations = ([[1000], [1000, 1000, 1000, 1000, 1000],
-                                            [100, 50, 35, 15]])
+        reg.inputs.number_of_iterations = ([[10000], [1000, 1000, 1000, 1000, 1000],
+                                            [100, 75, 75, 75]])
         reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
         reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         reg.inputs.sigma_units = ['vox']*3
