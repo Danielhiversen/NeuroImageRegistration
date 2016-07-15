@@ -426,7 +426,8 @@ def post_calculations_qol():
         if not _id:
             continue
         _id = _id[0]
-        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''', (pid[0], )).fetchone()[0]
+        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
+                                 (pid[0], )).fetchone()[0]
         if qol_index is None:
             continue
         transforms = get_transforms_from_db(_id, conn)
