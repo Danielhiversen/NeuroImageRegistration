@@ -412,6 +412,50 @@ def post_calculations(moving_dataset_image_ids):
         avg_calculation(result[label], label)
 
 
+def post_calculations_qol():
+    """ Transform images and calculate avg"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from QualityOfLife''')
+    
+    result = dict()
+    for pid in cursor:
+        print(pid)
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid[0], )).fetchone()
+        if not _id:
+            continue
+        _id = _id[0]
+        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''', (pid[0], )).fetchone()[0]
+        if qol_index is None:
+            continue
+        transforms = get_transforms_from_db(_id, conn)
+        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
+        if len(transforms) < 1:
+            continue
+        db_temp = cursor.fetchone()
+        img = DATA_FOLDER + db_temp[0]
+        print(img, transforms)
+        temp = move_vol(img, transforms, qol_index)
+        label = "img"
+        if label in result:
+            result[label].append(temp)
+        else:
+            result[label] = [temp]
+
+        for (segmentation, label) in find_seg_images(_id):
+            temp = move_vol(segmentation, transforms, True)
+            if label in result:
+                result[label].append(temp)
+            else:
+                result[label] = [temp]
+
+    cursor.close()
+    conn.close()
+
+    for label in result:
+        avg_calculation(result[label], label)
+
+
 def find_seg_images(moving_image_id):
     """ Find segmentation images"""
     conn = sqlite3.connect(DB_PATH)
@@ -427,7 +471,7 @@ def find_seg_images(moving_image_id):
     return images
 
 
-def move_vol(moving, transform, label_img=False):
+def move_vol(moving, transform, label_img=False, qol=None):
     """ Move data with transform """
     apply_transforms = ants.ApplyTransforms()
 
@@ -435,7 +479,9 @@ def move_vol(moving, transform, label_img=False):
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
-                                     interpolation='nearest')
+                                     interpolation='nearest')                                     
+        if qol:
+            img_3d_affine[img_3d_affine>0] = qol            
         resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0] + '_resample.nii'
         nib.save(img_3d_affine, resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
