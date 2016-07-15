@@ -180,7 +180,8 @@ def pre_process(img, do_bet=True):
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000], [10000, 10000, 10000, 10000]])
+        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
+                                            [10000, 10000, 10000, 10000]])
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
@@ -417,7 +418,7 @@ def post_calculations_qol():
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
-    
+
     result = dict()
     for pid in cursor:
         print(pid)
@@ -479,9 +480,9 @@ def move_vol(moving, transform, label_img=False, qol=None):
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
-                                     interpolation='nearest')                                     
+                                     interpolation='nearest')
         if qol:
-            img_3d_affine[img_3d_affine>0] = qol            
+            img_3d_affine[img_3d_affine > 0] = qol
         resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0] + '_resample.nii'
         nib.save(img_3d_affine, resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'

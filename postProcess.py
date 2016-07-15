@@ -23,7 +23,6 @@ if __name__ == "__main__":
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
-
     if True:
         image_registration.post_calculations_qol()
     else:
