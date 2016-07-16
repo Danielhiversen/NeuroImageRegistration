@@ -13,15 +13,18 @@ if __name__ == "__main__":
     if False:
         import do_img_registration_LGG_POST as do_img_registration
         image_registration.setup("LGG_POST_RES/", "LGG")
-    elif True:
+    elif False:
         import do_img_registration_LGG_PRE as do_img_registration
         image_registration.setup("LGG_PRE_RES/", "LGG")
-    elif False:
+    elif True:
         import do_img_registration_GBM as do_img_registration
-        image_registration.setup("HGG_RES/", "GBM")
+        image_registration.setup("GBM_RES/", "GBM")
 
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
-    image_ids = do_img_registration.find_images()
-    image_registration.post_calculations(image_ids)
+    if False:
+        image_registration.post_calculations_qol()
+    else:
+        image_ids = do_img_registration.find_images()
+        image_registration.post_calculations(image_ids)
