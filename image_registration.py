@@ -204,7 +204,7 @@ def pre_process(img, do_bet=True):
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
-        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
+        # generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
 
     elif BET_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
@@ -306,7 +306,7 @@ def registration(moving_img, fixed, reg_type):
     moving_img.transform = result
     print(result)
     if os.path.exists(result):
-        generate_image(reg.inputs.output_warped_image, fixed)
+        # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
     # generate_image(reg.inputs.output_warped_image, fixed)
