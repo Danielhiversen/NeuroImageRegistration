@@ -254,9 +254,9 @@ def registration(moving_img, fixed, reg_type):
 
         reg.inputs.convergence_window_size = [5, 5]
         reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
-                                            [10000, 10000, 1000, 1000, 1000]])
-        reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [5, 4, 3, 2, 1]]
-        reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]]
+                                            [1000]])
+        reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [1]]
+        reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [0]]
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.15,)]
