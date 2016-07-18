@@ -45,11 +45,18 @@ def process_dataset(args, num_tries=3):
     cursor.close()
     conn.close()
 
+    import datetime
+    start_time = datetime.datetime.now()
     pre_img = img_data(pre_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
     post_img = img_data(moving_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
 
     pre_img = image_registration.pre_process(pre_img, False)
     post_img = image_registration.pre_process(post_img, False)
+    pre_time = datetime.datetime.now() - start_time
+    print("\n\n\n\n -- Run time pre: ")
+    print(pre_time)
+    print("\n\n\n\n -- Total run time: ")
+    print(datetime.datetime.now() - start_time)
     image_registration.registration(post_img, pre_img.pre_processed_filepath,
                                     image_registration.RIGID)
 
