@@ -482,7 +482,7 @@ def move_vol(moving, transform, label_img=False, qol=None):
                                      interpolation='nearest')
         if qol:
             img_3d_affine[img_3d_affine > 0] = qol
-        resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0] + '_resample.nii'
+        resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0] + '_resample.nii'
         nib.save(img_3d_affine, resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
     else:
