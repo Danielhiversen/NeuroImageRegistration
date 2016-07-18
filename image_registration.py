@@ -253,7 +253,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.radius_or_number_of_bins = [32]
 
         reg.inputs.convergence_window_size = [5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 5000, 5000, 2000]])
+        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000]])
         reg.inputs.shrink_factors = [[5, 4, 3, 2, 1]]
         reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0]]
         reg.inputs.sigma_units = ['vox']
