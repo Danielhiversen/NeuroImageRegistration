@@ -26,6 +26,7 @@ def find_images():
 
     cursor.close()
     conn.close()
+    print(ids)
     return ids
 
 
