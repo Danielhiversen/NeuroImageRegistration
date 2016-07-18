@@ -53,7 +53,7 @@ def process_dataset(args, num_tries=3):
 
     pre_img = image_registration.pre_process(pre_img, False)
     post_img = image_registration.pre_process(post_img, False)
-    image_registration.registration(post_img, pre_img.pre_processed_filepath,
+    img = image_registration.registration(post_img, pre_img.pre_processed_filepath,
                                     image_registration.RIGID)
     print("\n\n\n\n -- Total run time: ")
     print(datetime.datetime.now() - start_time)
@@ -68,7 +68,7 @@ def process_dataset(args, num_tries=3):
 #
 #            print("Finished 2 of 2")
 
-    return (moving_image_id, pre_image_id)
+    return (img, pre_image_id)
 
 
 # pylint: disable= invalid-name
