@@ -488,8 +488,9 @@ def move_vol(moving, transform, label_img=False, qol=None):
             temp = img_3d_affine.get_data()
             res = np.array(temp) * qol
             img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
-            
-        resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0] + '_resample.nii'
+
+        resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
+            + '_resample.nii'
         img_3d_affine.to_filename(resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
     else:
