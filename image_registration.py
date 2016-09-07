@@ -22,6 +22,11 @@ sudo pip install --upgrade setuptools
 sudo pip install --upgrade distribute
 pip install -r requirements.txt
 
+ant registration parameters inspired by
+http://miykael.github.io/nipype-beginner-s-guide/normalize.html
+https://www.icts.uiowa.edu/
+confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
+
 """
 # pylint: disable= redefined-builtin
 # import nipype.interfaces.dipy as dipy
@@ -51,7 +56,7 @@ from img_data import img_data
 # from dipy.align.aniso2iso import resample
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-#MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
@@ -117,7 +122,7 @@ def prepare_template(template_vol, template_mask):
 
 
 def pre_process(img, do_bet=True):
-    # pylint: disable= too-many-statements
+    # pylint: disable= too-many-statements, too-many-locals
     """ Pre process the data"""
 
     input_file = img.img_filepath
@@ -131,6 +136,14 @@ def pre_process(img, do_bet=True):
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
+    name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
+
+    if os.path.exists(img.pre_processed_filepath) and\
+       os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
+        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
+#        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
+        return img
+
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
     n4bias.inputs.input_image = input_file
@@ -139,9 +152,9 @@ def pre_process(img, do_bet=True):
 
     # normalization [0,100], same as template
     normalize_img = nib.load(n4_file)
-    result_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100,
-                                 normalize_img.affine, normalize_img.header)
-    result_img.to_filename(norm_file)
+    temp_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100,
+                               normalize_img.affine, normalize_img.header)
+    temp_img.to_filename(norm_file)
 
     # resample volume to 1 mm slices
     target_affine_3x3 = np.eye(3) * 1
@@ -154,37 +167,29 @@ def pre_process(img, do_bet=True):
 
     if BET_METHOD == 0:
         print("Doing registration for bet")
-        name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = TEMPLATE_VOLUME
         reg.inputs.moving_image = resampled_file
+        reg.inputs.num_threads = 1
         reg.inputs.initial_moving_transform_com = True
-        reg.inputs.num_threads = 8
-        reg.inputs.transforms = ['Rigid', 'Affine']
-        reg.inputs.sampling_strategy = ['Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 1]
-        reg.inputs.metric = ['MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 4]
-        reg.inputs.metric_weight = [1.0]*3
-        reg.inputs.winsorize_lower_quantile = 0.005
-        reg.inputs.winsorize_upper_quantile = 0.995
-        reg.inputs.convergence_window_size = [10]
-        reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
-                                           [1000, 500, 250, 100],
-                                           [100, 70, 50, 20]]
-        reg.inputs.convergence_threshold = [1e-06]
-        reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
-        reg.inputs.smoothing_sigmas = [[8, 4, 1, 0]]*3
-        reg.inputs.sigma_units = ['vox']*3
-        reg.inputs.transform_parameters = [(0.1,),
-                                           (0.1,),
-                                           (0.2, 3.0, 0.0)]
-        reg.inputs.use_histogram_matching = True
-        reg.inputs.write_composite_transform = True
-        # reg.inputs.fixed_image_mask = img.label_inv_filepath
 
+        reg.inputs.transforms = ['Rigid', 'Affine']
+        reg.inputs.metric = ['MI', 'MI']
+        reg.inputs.radius_or_number_of_bins = [32, 32]
+        reg.inputs.metric_weight = [1, 1]
+        reg.inputs.convergence_window_size = [5, 5]
+        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
+                                            [10000, 10000, 10000, 10000]])
+        reg.inputs.convergence_threshold = [1.e-6]*2
+        reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
+        reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
+        reg.inputs.transform_parameters = [(0.25,), (0.25,)]
+        reg.inputs.sigma_units = ['vox']*2
+        reg.inputs.use_estimate_learning_rate_once = [True, True]
+
+        reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
         reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_betReg.nii'
         print("starting bet registration")
@@ -199,6 +204,8 @@ def pre_process(img, do_bet=True):
         mult.inputs.second_input = TEMPLATE_MASK
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
+
+        # generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
 
     elif BET_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
@@ -228,57 +235,69 @@ def pre_process(img, do_bet=True):
 def registration(moving_img, fixed, reg_type):
     # pylint: disable= too-many-statements
     """Image2Image registration """
-    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
-
     reg = ants.Registration()
-    # reg.inputs.args = "--verbose 1"
-    reg.inputs.collapse_output_transforms = True
-    reg.inputs.moving_image = moving_img.pre_processed_filepath
-    reg.inputs.fixed_image = fixed
+
     init_moving_transform = moving_img.init_transform
-    if init_moving_transform is None and not os.path.exists(init_moving_transform):
+    if init_moving_transform is not None and os.path.exists(init_moving_transform):
+        print("Found initial transform")
         # reg.inputs.initial_moving_transform = init_moving_transform
+        reg.inputs.initial_moving_transform_com = False
+    else:
         reg.inputs.initial_moving_transform_com = True
-    reg.inputs.num_threads = 8
+    reg.inputs.fixed_image = fixed
+    reg.inputs.moving_image = moving_img.pre_processed_filepath
+    reg.inputs.num_threads = 1
     if reg_type == RIGID:
-        reg.inputs.transforms = ['Rigid', 'Rigid']
-        reg.inputs.sampling_strategy = ['Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 1]
-        reg.inputs.metric = ['MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 4]
+        reg.inputs.transforms = ['Rigid']
+        reg.inputs.metric = ['MI']
+        reg.inputs.radius_or_number_of_bins = [32]
+
+        reg.inputs.convergence_window_size = [5]
+        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000]])
+        reg.inputs.shrink_factors = [[5, 4, 3, 2, 1]]
+        reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0]]
+        reg.inputs.sigma_units = ['vox']
+        reg.inputs.transform_parameters = [(0.25,)]
+        reg.inputs.use_histogram_matching = [True]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
-        reg.inputs.sampling_strategy = ['Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 1]
         reg.inputs.metric = ['MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 4]
+        reg.inputs.radius_or_number_of_bins = [32, 5]
+
+        reg.inputs.convergence_window_size = [5, 5]
+        reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
+                                            [10000, 10000, 1000, 1000, 1000]])
+        reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [5, 4, 3, 2, 1]]
+        reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]]
+        reg.inputs.sigma_units = ['vox']*2
+        reg.inputs.transform_parameters = [(0.25,),
+                                           (0.15,)]
+        reg.inputs.use_histogram_matching = [False, True]
+
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
-        reg.inputs.sampling_strategy = ['Regular', 'Regular', None]
-        reg.inputs.sampling_percentage = [0.25, 0.25, 1]
         reg.inputs.metric = ['MI', 'MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 32, 4]
+        reg.inputs.radius_or_number_of_bins = [32, 32, 5]
+        reg.inputs.convergence_window_size = [5, 5, 5]
+        reg.inputs.number_of_iterations = ([[10000], [1000, 1000, 1000, 1000, 1000],
+                                            [100, 75, 75, 75]])
+        reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+        reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
+        reg.inputs.sigma_units = ['vox']*3
+        reg.inputs.transform_parameters = [(0.25,),
+                                           (0.25,),
+                                           (0.15, 3.0, 0.0)]
+        reg.inputs.use_histogram_matching = [False, False, True]
+
     else:
-        raise Exception("Wrong registration type " + reg_type)
+        raise Exception("Wrong registration format " + reg_type)
     reg.inputs.metric_weight = [1.0]*3
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
-    reg.inputs.convergence_window_size = [10]
-    reg.inputs.number_of_iterations = [[1000, 500, 250, 100],
-                                       [1000, 500, 250, 100],
-                                       [100, 70, 50, 20]]
     reg.inputs.convergence_threshold = [1e-06]
-    reg.inputs.shrink_factors = [[8, 4, 2, 1]]*3
-    reg.inputs.smoothing_sigmas = [[8, 4, 1, 0]]*3
-    reg.inputs.sigma_units = ['vox']*3
-    reg.inputs.transform_parameters = [(0.1,),
-                                       (0.1,),
-                                       (0.2, 3.0, 0.0)]
-    reg.inputs.use_histogram_matching = True
-    reg.inputs.collapse_output_transforms = True
-#    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
-    reg.inputs.write_composite_transform = True
 
+    reg.inputs.write_composite_transform = True
+    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
@@ -286,10 +305,10 @@ def registration(moving_img, fixed, reg_type):
     moving_img.transform = result
     print(result)
     if os.path.exists(result):
-        #        generate_image(reg.inputs.output_warped_image, fixed)
+        # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
-    #    generate_image(reg.inputs.output_warped_image, fixed)
+    # generate_image(reg.inputs.output_warped_image, fixed)
 
     return moving_img
 
@@ -297,17 +316,26 @@ def registration(moving_img, fixed, reg_type):
 def process_dataset(args):
     """ pre process and registrate volume"""
     (moving_image_id, reg_type) = args
-    print(moving_image_id, reg_type)
+    print(moving_image_id)
 
     import datetime
-    now =  datetime.datetime.now()
+    start_time = datetime.datetime.now()
     img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
     img = pre_process(img)
-    img = registration(img,
-                       TEMP_FOLDER_PATH + "masked_template.nii",
-                       reg_type)
+    bet_time = datetime.datetime.now() - start_time
+    for k in range(3):
+        try:
+            img = registration(img,
+                               TEMP_FOLDER_PATH + "masked_template.nii",
+                               reg_type)
+            break
+        # pylint: disable= broad-except
+        except Exception as exp:
+            print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
+    print("\n\n\n\n -- Run time BET: ")
+    print(bet_time)
     print("\n\n\n\n -- Run time: ")
-    print(now - datetime.datetime.now())
+    print(datetime.datetime.now() - start_time)
     return (img, -1)
 
 
@@ -361,8 +389,8 @@ def post_calculations(moving_dataset_image_ids):
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         img = DATA_FOLDER + db_temp[0]
+        print(img, transforms)
         temp = move_vol(img, transforms)
-        print(img)
         label = "img"
         if label in result:
             result[label].append(temp)
@@ -379,7 +407,56 @@ def post_calculations(moving_dataset_image_ids):
     cursor.close()
     conn.close()
 
-    for label in result.keys():
+    for label in result:
+        avg_calculation(result[label], label)
+
+
+def post_calculations_qol():
+    """ Transform images and calculate avg"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from QualityOfLife''')
+
+    result = dict()
+    for pid in cursor:
+        print(pid)
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid[0], )).fetchone()
+        if not _id:
+            continue
+        _id = _id[0]
+        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
+                                 (pid[0], )).fetchone()[0]
+        if qol_index is None:
+            continue
+        transforms = get_transforms_from_db(_id, conn)
+        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
+        if len(transforms) < 1:
+            continue
+        db_temp = cursor.fetchone()
+        img = DATA_FOLDER + db_temp[0]
+        print(img, transforms)
+        temp = move_vol(img, transforms)
+        label = "img"
+        if label in result:
+            result[label].append(temp)
+        else:
+            result[label] = [temp]
+
+        for (segmentation, label) in find_seg_images(_id):
+            temp_qol = move_vol(segmentation, transforms, True, qol_index*100)
+            temp = move_vol(segmentation, transforms, True)
+            if label in result:
+                result[label + '_qol'].append(temp_qol)
+                result[label].append(temp)
+            else:
+                result[label + '_qol'] = [temp_qol]
+                result[label] = [temp]
+
+    cursor.close()
+    conn.close()
+
+    for label in result:
+        print(len(result[label]))
         avg_calculation(result[label], label)
 
 
@@ -398,7 +475,7 @@ def find_seg_images(moving_image_id):
     return images
 
 
-def move_vol(moving, transform, label_img=False):
+def move_vol(moving, transform, label_img=False, qol=None):
     """ Move data with transform """
     apply_transforms = ants.ApplyTransforms()
 
@@ -407,13 +484,20 @@ def move_vol(moving, transform, label_img=False):
         target_affine_3x3 = np.eye(3) * 1
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
-        resampled_file = TEMP_FOLDER_PATH + splitext(basename(moving))[0] + '_resample.nii'
-        nib.save(img_3d_affine, resampled_file)
+        if qol:
+            # pylint: disable= no-member
+            temp = img_3d_affine.get_data()
+            res = np.array(temp) * qol
+            img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
+
+        resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
+            + '_resample.nii'
+        img_3d_affine.to_filename(resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
     else:
         img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
         img.set_img_filepath(moving)
-        resampled_file = pre_process(img, False).img_filepath
+        resampled_file = pre_process(img, False).pre_processed_filepath
         apply_transforms.inputs.interpolation = 'Linear'
 
     result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
@@ -494,7 +578,7 @@ def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
-    for img, fixed_imag_id in data_transforms:
+    for img, fixed_image_id in data_transforms:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
 
@@ -515,7 +599,7 @@ def save_transform_to_database(data_transforms):
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
                                (transform_paths, img.image_id))
         cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''',
-                               (fixed_imag_id, img.image_id))
+                               (fixed_image_id, img.image_id))
 
         conn.commit()
         cursor.close()

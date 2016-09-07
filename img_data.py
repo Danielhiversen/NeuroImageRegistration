@@ -84,4 +84,4 @@ class img_data(object):
     def get_transforms(self):
         if self.init_transform is None:
             return [self.transform]
-        return [self.init_transform, self.transform]
+        return [self.transform, self.init_transform]

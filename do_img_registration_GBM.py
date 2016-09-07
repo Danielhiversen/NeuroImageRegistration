@@ -7,12 +7,7 @@ Created on Wed Apr 20 15:02:02 2016
 
 import os
 import sqlite3
-
 import image_registration
-
-
-image_registration.MULTITHREAD = "max"
-image_registration.DEFORMATION = False
 
 
 def find_images():
@@ -48,8 +43,3 @@ if __name__ == "__main__":
     data_transforms = image_registration.get_transforms(moving_datasets_pids, image_registration.SYN)
 
     image_registration.save_transform_to_database(data_transforms)
-
-#    results = image_registration.move_segmentations(data_transforms)
-
-#   for label_i in results:
-#       image_registration.post_calculation(results[label_i], label_i)
