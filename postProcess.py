@@ -18,12 +18,12 @@ if __name__ == "__main__":
         image_registration.setup("LGG_PRE_RES/", "LGG")
     elif True:
         import do_img_registration_GBM as do_img_registration
-        image_registration.setup("GBM_RES/", "GBM")
+        image_registration.setup("GBM_RES2/", "GBM")
 
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
-    if False:
+    if True:
         image_registration.post_calculations_qol()
     else:
         image_ids = do_img_registration.find_images()

@@ -435,7 +435,7 @@ def post_calculations_qol():
         db_temp = cursor.fetchone()
         img = DATA_FOLDER + db_temp[0]
         print(img, transforms)
-        temp = move_vol(img, transforms, qol_index)
+        temp = move_vol(img, transforms)
         label = "img"
         if label in result:
             result[label].append(temp)
@@ -443,16 +443,20 @@ def post_calculations_qol():
             result[label] = [temp]
 
         for (segmentation, label) in find_seg_images(_id):
+            temp_qol = move_vol(segmentation, transforms, True, qol_index*100)
             temp = move_vol(segmentation, transforms, True)
             if label in result:
+                result[label + '_qol'].append(temp_qol)
                 result[label].append(temp)
             else:
+                result[label + '_qol'] = [temp_qol]
                 result[label] = [temp]
 
     cursor.close()
     conn.close()
 
     for label in result:
+        print(len(result[label]))
         avg_calculation(result[label], label)
 
 
@@ -481,9 +485,12 @@ def move_vol(moving, transform, label_img=False, qol=None):
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
         if qol:
-            img_3d_affine[img_3d_affine > 0] = qol
+            temp = img_3d_affine.get_data()
+            res = np.array(temp) * qol
+            img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
+            
         resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0] + '_resample.nii'
-        nib.save(img_3d_affine, resampled_file)
+        img_3d_affine.to_filename(resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
     else:
         img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)

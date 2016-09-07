@@ -37,7 +37,7 @@ if __name__ == "__main__":
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
                                         image_registration.TEMPLATE_MASK)
 
-    pre_images = find_images()
+    pre_images = [12]# find_images()
 
     data_transforms = image_registration.get_transforms(pre_images, image_registration.SYN)
 
