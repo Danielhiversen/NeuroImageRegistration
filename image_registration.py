@@ -485,6 +485,7 @@ def move_vol(moving, transform, label_img=False, qol=None):
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
         if qol:
+            # pylint: disable= no-member
             temp = img_3d_affine.get_data()
             res = np.array(temp) * qol
             img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
