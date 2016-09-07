@@ -100,7 +100,7 @@ def setup_paths(datatype):
         DATA_FOLDER = "/home/dahoiv/database/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
-        DATA_FOLDER = "/media/ingerid/data/daniel/database/"
+        DATA_FOLDER = "/media/ingerid/data/daniel/database_test/"
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
     else:
         print("Unkown host name " + hostname)
@@ -244,8 +244,9 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.initial_moving_transform_com = False
     else:
         reg.inputs.initial_moving_transform_com = True
-    reg.inputs.fixed_image = fixed
-    reg.inputs.moving_image = moving_img.pre_processed_filepath
+    reg.inputs.fixed_image = moving_img.pre_processed_filepath
+    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
+    reg.inputs.moving_image = fixed
     reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
@@ -301,7 +302,9 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
-    result = TEMP_FOLDER_PATH + name + 'Composite.h5'
+    result = TEMP_FOLDER_PATH + name + 'invComposite.h5'
+    reg.output_inverse_warped_image = result
+
     moving_img.transform = result
     print(result)
     if os.path.exists(result):

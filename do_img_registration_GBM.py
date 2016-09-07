@@ -31,7 +31,7 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("GBM/", "GBM")
+    image_registration.setup("GBM_test/", "GBM")
     if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
         os.makedirs(image_registration.TEMP_FOLDER_PATH)
 
