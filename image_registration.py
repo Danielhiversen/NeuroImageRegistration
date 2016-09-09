@@ -205,8 +205,6 @@ def pre_process(img, do_bet=True):
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
-        # generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
-
     elif BET_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
         bet = fsl.BET(command="fsl5.0-bet")
@@ -228,6 +226,7 @@ def pre_process(img, do_bet=True):
         bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
+    generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
     print("---BET", img.pre_processed_filepath)
     return img
 
@@ -302,7 +301,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
 
-    result = TEMP_FOLDER_PATH + name + 'invComposite.h5'
+    result = TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
     reg.output_inverse_warped_image = result
 
     moving_img.transform = result
@@ -420,6 +419,8 @@ def post_calculations_qol():
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
 
+    params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
+
     result = dict()
     for pid in cursor:
         print(pid)
@@ -427,10 +428,7 @@ def post_calculations_qol():
         if not _id:
             continue
         _id = _id[0]
-        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
-                                 (pid[0], )).fetchone()[0]
-        if qol_index is None:
-            continue
+
         transforms = get_transforms_from_db(_id, conn)
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
         if len(transforms) < 1:
@@ -446,21 +444,40 @@ def post_calculations_qol():
             result[label] = [temp]
 
         for (segmentation, label) in find_seg_images(_id):
-            temp_qol = move_vol(segmentation, transforms, True, qol_index*100)
-            temp = move_vol(segmentation, transforms, True)
+            file_name = move_vol(segmentation, transforms, True)
+
             if label in result:
-                result[label + '_qol'].append(temp_qol)
-                result[label].append(temp)
+                result[label].append(file_name)
             else:
-                result[label + '_qol'] = [temp_qol]
-                result[label] = [temp]
+                result[label] = [file_name]
+
+            # pylint: disable= no-member
+            img = nib.load(file_name)
+            data = np.array(img.get_data())
+
+            for param in params:
+                val = conn.execute('SELECT {} from QualityOfLife where pid = ?'.format(param), (pid[0], )).fetchone()[0]
+                if val is None:
+                    continue
+                res = data * val * 100
+                res_img = nib.Nifti1Image(res, img.affine)
+                path = TEMP_FOLDER_PATH + splitext(splitext(basename(file_name))[0])[0]\
+                    + '_' + param + '.nii'
+                res_img.to_filename(path)
+                if param in result:
+                    result[param].append(path)
+                else:
+                    result[param] = [path]
 
     cursor.close()
     conn.close()
 
     for label in result:
         print(len(result[label]))
-        avg_calculation(result[label], label)
+        if label in params:
+            avg_calculation(result[label], label, True)
+        else:
+            avg_calculation(result[label], label)
 
 
 def find_seg_images(moving_image_id):
@@ -478,7 +495,7 @@ def find_seg_images(moving_image_id):
     return images
 
 
-def move_vol(moving, transform, label_img=False, qol=None):
+def move_vol(moving, transform, label_img=False, bet=False):
     """ Move data with transform """
     apply_transforms = ants.ApplyTransforms()
 
@@ -487,27 +504,19 @@ def move_vol(moving, transform, label_img=False, qol=None):
         target_affine_3x3 = np.eye(3) * 1
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
-        if qol:
-            # pylint: disable= no-member
-            temp = img_3d_affine.get_data()
-            res = np.array(temp) * qol
-            img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_qol_resample.nii'
-        else:
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_resample.nii'
+        resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
+            + '_resample.nii'
         img_3d_affine.to_filename(resampled_file)
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
     else:
         img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
         img.set_img_filepath(moving)
-        resampled_file = pre_process(img, False).pre_processed_filepath
+        resampled_file = pre_process(img, bet).pre_processed_filepath
         apply_transforms.inputs.interpolation = 'Linear'
 
     result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
-#    if os.path.exists(result):
-#        return result
+    if os.path.exists(result):
+        return result
 
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = resampled_file
@@ -523,18 +532,27 @@ def move_vol(moving, transform, label_img=False, qol=None):
     return apply_transforms.inputs.output_image
 
 
-def avg_calculation(images, label):
+def avg_calculation(images, label, qol=False):
     """ Calculate average volumes """
     path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
     average = None
+    total = None
     for file_name in images:
         img = nib.load(file_name)
         if average is None:
             average = np.zeros(img.get_data().shape)
+            total = np.zeros(img.get_data().shape)
         average = average + np.array(img.get_data())
-    average = average / float(len(images))
+        if qol:
+            temp = np.array(img.get_data())
+            temp[temp != 0] = 1.0
+            total = total + temp
+    if qol:
+        average = average / total
+    else:
+        average = average / float(len(images))
     result_img = nib.Nifti1Image(average, img.affine)
     result_img.to_filename(path)
 
