@@ -11,6 +11,7 @@ import sqlite3
 import image_registration
 import util
 
+
 def find_images():
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)

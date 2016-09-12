@@ -10,6 +10,7 @@ import sqlite3
 import image_registration
 import util
 
+
 def find_images():
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
@@ -36,7 +37,7 @@ if __name__ == "__main__":
         os.makedirs(util.TEMP_FOLDER_PATH)
 
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                          image_registration.TEMPLATE_MASK)
+                                        image_registration.TEMPLATE_MASK)
 
     moving_datasets_pids = find_images()
 
