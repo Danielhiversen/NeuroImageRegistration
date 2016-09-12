@@ -32,8 +32,6 @@ confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+dat
 # import nipype.interfaces.dipy as dipy
 from __future__ import print_function
 from __future__ import division
-import sys
-import errno
 from multiprocessing import Pool
 import os
 from os.path import basename
@@ -186,7 +184,7 @@ def pre_process(img, do_bet=True):
         bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
-    generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
+    util.generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
     print("---BET", img.pre_processed_filepath)
     return img
 

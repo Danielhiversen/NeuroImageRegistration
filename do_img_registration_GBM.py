@@ -7,12 +7,14 @@ Created on Wed Apr 20 15:02:02 2016
 
 import os
 import sqlite3
+
 import image_registration
+import util
 
 
 def find_images():
     """ Find images for registration """
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
