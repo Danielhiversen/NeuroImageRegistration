@@ -32,6 +32,8 @@ confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+dat
 # import nipype.interfaces.dipy as dipy
 from __future__ import print_function
 from __future__ import division
+import sys
+import errno
 from multiprocessing import Pool
 import os
 from os.path import basename
@@ -163,8 +165,6 @@ def pre_process(img, do_bet=True):
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
-        # generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
-
     elif BET_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
         bet = fsl.BET(command="fsl5.0-bet")
@@ -186,6 +186,7 @@ def pre_process(img, do_bet=True):
         bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
+    generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
     print("---BET", img.pre_processed_filepath)
     return img
 
@@ -202,8 +203,9 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.initial_moving_transform_com = False
     else:
         reg.inputs.initial_moving_transform_com = True
-    reg.inputs.fixed_image = fixed
-    reg.inputs.moving_image = moving_img.pre_processed_filepath
+    reg.inputs.fixed_image = moving_img.pre_processed_filepath
+    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
+    reg.inputs.moving_image = fixed
     reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
@@ -259,7 +261,9 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.output_transform_prefix = util.TEMP_FOLDER_PATH + name
     reg.inputs.output_warped_image = util.TEMP_FOLDER_PATH + name + '.nii'
 
-    result = util.TEMP_FOLDER_PATH + name + 'Composite.h5'
+    result = util.TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
+    reg.output_inverse_warped_image = result
+
     moving_img.transform = result
     moving_img.processed_filepath = util.TEMP_FOLDER_PATH + name + '.nii'
     print(result)
