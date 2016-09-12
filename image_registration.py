@@ -319,6 +319,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func
 
 def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
+    # pylint: disable= too-many-locals, bare-except
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
     try:
