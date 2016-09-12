@@ -32,8 +32,6 @@ confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+dat
 # import nipype.interfaces.dipy as dipy
 from __future__ import print_function
 from __future__ import division
-import sys
-import errno
 from multiprocessing import Pool
 import os
 from os.path import basename
@@ -44,14 +42,14 @@ from builtins import map
 from builtins import str
 from nilearn import datasets
 from nilearn.image import resample_img
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
+
 import nipype.interfaces.ants as ants
 import nipype.interfaces.fsl as fsl
 import nibabel as nib
 import numpy as np
 
 from img_data import img_data
+import util
 
 # from dipy.align.aniso2iso import resample
 
@@ -60,10 +58,6 @@ MULTITHREAD = "max"
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
-
-TEMP_FOLDER_PATH = ""
-DATA_FOLDER = ""
-DB_PATH = ""
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -75,49 +69,13 @@ BET_METHOD = 0
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
-def setup(temp_path, datatype):
-    """setup for current computer """
-    # pylint: disable= global-statement
-    global TEMP_FOLDER_PATH
-    TEMP_FOLDER_PATH = temp_path
-    setup_paths(datatype)
-
-
-def setup_paths(datatype):
-    """setup for current computer """
-    # pylint: disable= global-statement, line-too-long
-    if datatype not in ["LGG", "GBM"]:
-        print("Unkown datatype " + datatype)
-        raise Exception
-
-    global DATA_FOLDER, DB_PATH
-
-    hostname = os.uname()[1]
-    if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/mnt/dokumneter/data/database/"
-        os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
-    elif hostname == 'dahoiv-Precision-M6500':
-        DATA_FOLDER = "/home/dahoiv/database/"
-        os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
-    elif hostname == 'ingerid-PC':
-        DATA_FOLDER = "/media/ingerid/data/daniel/database/"
-        os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
-    else:
-        print("Unkown host name " + hostname)
-        print("Add your host name path to " + sys.argv[0])
-        raise Exception
-
-    DATA_FOLDER = DATA_FOLDER + datatype + "/"
-    DB_PATH = DATA_FOLDER + "brainSegmentation.db"
-
-
 def prepare_template(template_vol, template_mask):
     """ prepare template volumemoving"""
     mult = ants.MultiplyImages()
     mult.inputs.dimension = 3
     mult.inputs.first_input = template_vol
     mult.inputs.second_input = template_mask
-    mult.inputs.output_product_image = TEMP_FOLDER_PATH + "masked_template.nii"
+    mult.inputs.output_product_image = util.TEMP_FOLDER_PATH + "masked_template.nii"
     mult.run()
 
 
@@ -126,21 +84,21 @@ def pre_process(img, do_bet=True):
     """ Pre process the data"""
 
     input_file = img.img_filepath
-    n4_file = TEMP_FOLDER_PATH + splitext(splitext(basename(input_file))[0])[0]\
+    n4_file = util.TEMP_FOLDER_PATH + splitext(splitext(basename(input_file))[0])[0]\
         + '_n4.nii'
-    norm_file = TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
+    norm_file = util.TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
         + '_norm.nii'
-    resampled_file = TEMP_FOLDER_PATH + splitext(basename(norm_file))[0]\
+    resampled_file = util.TEMP_FOLDER_PATH + splitext(basename(norm_file))[0]\
         + '_resample.nii'
-    img.pre_processed_filepath = TEMP_FOLDER_PATH +\
+    img.pre_processed_filepath = util.TEMP_FOLDER_PATH +\
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
     name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
 
     if os.path.exists(img.pre_processed_filepath) and\
-       os.path.exists(TEMP_FOLDER_PATH + name + 'Composite.h5'):
-        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
+       os.path.exists(util.TEMP_FOLDER_PATH + name + 'Composite.h5'):
+        img.init_transform = util.TEMP_FOLDER_PATH + name + 'Composite.h5'
 #        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
         return img
 
@@ -190,13 +148,13 @@ def pre_process(img, do_bet=True):
         reg.inputs.use_estimate_learning_rate_once = [True, True]
 
         reg.inputs.write_composite_transform = True
-        reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
-        reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '_betReg.nii'
+        reg.inputs.output_transform_prefix = util.TEMP_FOLDER_PATH + name
+        reg.inputs.output_warped_image = util.TEMP_FOLDER_PATH + name + '_betReg.nii'
         print("starting bet registration")
         reg.run()
         print("Finished bet registration")
 
-        img.init_transform = TEMP_FOLDER_PATH + name + 'Composite.h5'
+        img.init_transform = util.TEMP_FOLDER_PATH + name + 'Composite.h5'
 
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
@@ -298,11 +256,12 @@ def registration(moving_img, fixed, reg_type):
 
     reg.inputs.write_composite_transform = True
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
-    reg.inputs.output_transform_prefix = TEMP_FOLDER_PATH + name
-    reg.inputs.output_warped_image = TEMP_FOLDER_PATH + name + '.nii'
+    reg.inputs.output_transform_prefix = util.TEMP_FOLDER_PATH + name
+    reg.inputs.output_warped_image = util.TEMP_FOLDER_PATH + name + '.nii'
 
-    result = TEMP_FOLDER_PATH + name + 'Composite.h5'
+    result = util.TEMP_FOLDER_PATH + name + 'Composite.h5'
     moving_img.transform = result
+    moving_img.processed_filepath = util.TEMP_FOLDER_PATH + name + '.nii'
     print(result)
     if os.path.exists(result):
         # generate_image(reg.inputs.output_warped_image, fixed)
@@ -320,13 +279,13 @@ def process_dataset(args):
 
     import datetime
     start_time = datetime.datetime.now()
-    img = img_data(moving_image_id, DATA_FOLDER, TEMP_FOLDER_PATH)
+    img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     img = pre_process(img)
     bet_time = datetime.datetime.now() - start_time
     for k in range(3):
         try:
             img = registration(img,
-                               TEMP_FOLDER_PATH + "masked_template.nii",
+                               util.TEMP_FOLDER_PATH + "masked_template.nii",
                                reg_type)
             break
         # pylint: disable= broad-except
@@ -358,234 +317,26 @@ def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func
     return result
 
 
-def get_transforms_from_db(img_id, conn):
-    """Get transforms from the database """
-    cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (img_id,))
-    db_temp = cursor.fetchone()
-
-    fixed_image_id = db_temp[1]
-    if fixed_image_id > 0:
-        transforms = get_transforms_from_db(fixed_image_id, conn)
-    else:
-        transforms = []
-
-    if db_temp[0] is None:
-        return []
-
-    img_transforms = db_temp[0].split(",")
-    for _transform in img_transforms:
-        transforms.append(DATA_FOLDER + _transform.strip())
-
-    return transforms
-
-
-def post_calculations(moving_dataset_image_ids):
-    """ Transform images and calculate avg"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-    result = dict()
-    for _id in moving_dataset_image_ids:
-        transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
-        db_temp = cursor.fetchone()
-        img = DATA_FOLDER + db_temp[0]
-        print(img, transforms)
-        temp = move_vol(img, transforms)
-        label = "img"
-        if label in result:
-            result[label].append(temp)
-        else:
-            result[label] = [temp]
-
-        for (segmentation, label) in find_seg_images(_id):
-            temp = move_vol(segmentation, transforms, True)
-            if label in result:
-                result[label].append(temp)
-            else:
-                result[label] = [temp]
-
-    cursor.close()
-    conn.close()
-
-    for label in result:
-        avg_calculation(result[label], label)
-
-
-def post_calculations_qol():
-    """ Transform images and calculate avg"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-    cursor = conn.execute('''SELECT pid from QualityOfLife''')
-
-    result = dict()
-    for pid in cursor:
-        print(pid)
-        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid[0], )).fetchone()
-        if not _id:
-            continue
-        _id = _id[0]
-        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
-                                 (pid[0], )).fetchone()[0]
-        if qol_index is None:
-            continue
-        transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
-        if len(transforms) < 1:
-            continue
-        db_temp = cursor.fetchone()
-        img = DATA_FOLDER + db_temp[0]
-        print(img, transforms)
-        temp = move_vol(img, transforms)
-        label = "img"
-        if label in result:
-            result[label].append(temp)
-        else:
-            result[label] = [temp]
-
-        for (segmentation, label) in find_seg_images(_id):
-            temp_qol = move_vol(segmentation, transforms, True, qol_index*100)
-            temp = move_vol(segmentation, transforms, True)
-            if label in result:
-                result[label + '_qol'].append(temp_qol)
-                result[label].append(temp)
-            else:
-                result[label + '_qol'] = [temp_qol]
-                result[label] = [temp]
-
-    cursor.close()
-    conn.close()
-
-    for label in result:
-        print(len(result[label]))
-        avg_calculation(result[label], label)
-
-
-def find_seg_images(moving_image_id):
-    """ Find segmentation images"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-    cursor = conn.execute('''SELECT filepath, description from Labels where image_id = ? ''',
-                          (moving_image_id,))
-    images = []
-    for (row, label) in cursor:
-        images.append((DATA_FOLDER + row, label))
-
-    cursor.close()
-    conn.close()
-    return images
-
-
-def move_vol(moving, transform, label_img=False, qol=None):
-    """ Move data with transform """
-    apply_transforms = ants.ApplyTransforms()
-
-    if label_img:
-        # resample volume to 1 mm slices
-        target_affine_3x3 = np.eye(3) * 1
-        img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
-                                     interpolation='nearest')
-        if qol:
-            # pylint: disable= no-member
-            temp = img_3d_affine.get_data()
-            res = np.array(temp) * qol
-            img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_qol_resample.nii'
-        else:
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_resample.nii'
-        img_3d_affine.to_filename(resampled_file)
-        apply_transforms.inputs.interpolation = 'NearestNeighbor'
-    else:
-        img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
-        img.set_img_filepath(moving)
-        resampled_file = pre_process(img, False).pre_processed_filepath
-        apply_transforms.inputs.interpolation = 'Linear'
-
-    result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
-#    if os.path.exists(result):
-#        return result
-
-    apply_transforms.inputs.dimension = 3
-    apply_transforms.inputs.input_image = resampled_file
-    apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
-    apply_transforms.inputs.output_image = result
-    apply_transforms.inputs.default_value = 0
-    apply_transforms.inputs.transforms = transform
-    apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
-    apply_transforms.run()
-
-    generate_image(apply_transforms.inputs.output_image, TEMPLATE_VOLUME)
-
-    return apply_transforms.inputs.output_image
-
-
-def avg_calculation(images, label):
-    """ Calculate average volumes """
-    path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-
-    average = None
-    for file_name in images:
-        img = nib.load(file_name)
-        if average is None:
-            average = np.zeros(img.get_data().shape)
-        average = average + np.array(img.get_data())
-    average = average / float(len(images))
-    result_img = nib.Nifti1Image(average, img.affine)
-    result_img.to_filename(path)
-
-    generate_image(path, TEMPLATE_VOLUME)
-
-
-def generate_image(path, path2):
-    """ generate png images"""
-    img = nib.load(path).get_data()
-    img_template = nib.load(path2).get_data()
-
-    def show_slices(slices, layers):
-        """ Show 2d slices"""
-        _, axes = plt.subplots(1, len(slices))
-        for i, slice_i in enumerate(slices):
-            # pylint: disable= no-member
-            axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
-            axes[i].imshow(slice_i.T, cmap=cm.Reds, origin="lower", alpha=0.6)
-
-    # pylint: disable= invalid-name
-    x = int(img.shape[0]/2)
-    y = int(img.shape[1]/2)
-    z = int(img.shape[2]/2)
-    slice_0 = img[x, :, :]
-    slice_1 = img[:, y, :]
-    slice_2 = img[:, :, z]
-    slices = [slice_0, slice_1, slice_2]
-
-    x = int(img_template.shape[0]/2)
-    y = int(img_template.shape[1]/2)
-    z = int(img_template.shape[2]/2)
-    slice_0 = img_template[x, :, :]
-    slice_1 = img_template[:, y, :]
-    slice_2 = img_template[:, :, z]
-    slices_template = [slice_0, slice_1, slice_2]
-
-    show_slices(slices, slices_template)
-    name = splitext(splitext(basename(path))[0])[0]
-    plt.suptitle(name)
-
-    plt.savefig(splitext(splitext(path)[0])[0] + ".png")
-    plt.close()
-
-
 def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
+    try:
+        conn.execute('ALTER TABLE Images ADD COLUMN filepath_reg TEXT;')
+    except:
+        pass
+
+    try:
+        conn.execute('ALTER Labels Images ADD COLUMN filepath_reg TEXT;')
+    except:
+        pass
+
     for img, fixed_image_id in data_transforms:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
 
-        folder = DATA_FOLDER + str(pid) + "/registration_transforms/"
-        mkdir_p(folder)
+        folder = util.DATA_FOLDER + str(pid) + "/registration_transforms/"
+        util.mkdir_p(folder)
 
         transform_paths = ""
         print(img.get_transforms())
@@ -603,20 +354,26 @@ def save_transform_to_database(data_transforms):
         cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''',
                                (fixed_image_id, img.image_id))
 
+        folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/"
+        util.mkdir_p(folder)
+        shutil.copy(img.processed_filepath, folder)
+
+        volume_db = img.processed_filepath.replace(util.DATA_FOLDER, "")
+        cursor2 = conn.execute('''UPDATE Images SET filepath_reg = ? WHERE id = ?''',
+                               (volume_db, img.image_id))
+
+        cursor = conn.execute('''SELECT filepat, id from Labels where image_id = ? ''',
+                              (img.image_id,))
+        for (row, label_id) in cursor:
+            temp = util.move_vol(util.DATA_FOLDER + row, img.get_transforms(), True)
+            shutil.copy(temp, folder)
+            label_db = temp.replace(util.DATA_FOLDER, "")
+            cursor2 = conn.execute('''UPDATE Labels SET filepath_reg = ? WHERE id = ?''',
+                                   (label_db, label_id))
+
         conn.commit()
         cursor.close()
         cursor2.close()
 
     cursor = conn.execute('''VACUUM; ''')
     conn.close()
-
-
-def mkdir_p(path):
-    """Make new folder if not exits"""
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise

@@ -20,6 +20,7 @@ class img_data(object):
         self.temp_data_path = temp_data_path
 
         self.pre_processed_filepath = None
+        self.processed_filepath = None
         self.init_transform = None
         self.transform = None
 

@@ -7,12 +7,13 @@ Created on Wed Apr 20 15:02:02 2016
 
 import os
 import sqlite3
-import image_registration
 
+import image_registration
+import util
 
 def find_images():
     """ Find images for registration """
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
@@ -30,9 +31,9 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("LGG_PRE/", "LGG")
-    if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
-        os.makedirs(image_registration.TEMP_FOLDER_PATH)
+    util.setup("LGG_PRE/", "LGG")
+    if not os.path.exists(util.TEMP_FOLDER_PATH):
+        os.makedirs(util.TEMP_FOLDER_PATH)
 
     image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
                                         image_registration.TEMPLATE_MASK)

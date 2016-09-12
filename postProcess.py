@@ -7,6 +7,7 @@ Created on Tue May 24 10:41:50 2016
 
 import os
 import image_registration
+import util
 
 if __name__ == "__main__":
     os.nice(19)
@@ -20,11 +21,11 @@ if __name__ == "__main__":
         import do_img_registration_GBM as do_img_registration
         image_registration.setup("GBM_RES2/", "GBM")
 
-    if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
-        os.makedirs(image_registration.TEMP_FOLDER_PATH)
+    if not os.path.exists(util.TEMP_FOLDER_PATH):
+        os.makedirs(util.TEMP_FOLDER_PATH)
 
     if True:
-        image_registration.post_calculations_qol()
+        util.post_calculations_qol()
     else:
         image_ids = do_img_registration.find_images()
-        image_registration.post_calculations(image_ids)
+        util.post_calculations(image_ids)

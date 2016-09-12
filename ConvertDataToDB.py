@@ -14,7 +14,7 @@ import shutil
 import sqlite3
 import pyexcel_xlsx
 
-import image_registration
+import util
 
 # DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
 # PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
@@ -40,6 +40,7 @@ def create_db(path):
     `filepath`    TEXT,
     `transform`    TEXT,
     `fixed_image`    INTEGER,
+    `filepath_reg`    TEXT,
     `comments`    TEXT,
     FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
     cursor.execute('''CREATE TABLE "Labels" (
@@ -47,6 +48,7 @@ def create_db(path):
     `image_id`    INTEGER NOT NULL,
     `description`    TEXT,
     `filepath`    TEXT,
+    `filepath_reg`    TEXT,
     `comments`    TEXT,
     FOREIGN KEY(`image_id`) REFERENCES `Images`(`id`))''')
     cursor.execute('''CREATE TABLE "Patient" (
@@ -107,7 +109,7 @@ def mkdir_p(path):
 #     # pylint: disable= too-many-locals
 #     convert_table = get_convert_table(PID_LISA)
 #
-#     conn = sqlite3.connect(image_registration.DB_PATH)
+#     conn = sqlite3.connect(util.DB_PATH)
 #     cursor = conn.cursor()
 #
 #     for case_id in range(350):
@@ -155,15 +157,15 @@ def mkdir_p(path):
 #         if qol:
 #             cursor.execute('''INSERT INTO QualityOfLife(pid, qol) VALUES(?,?)''', (pid, -1))
 #
-#         mkdir_p(image_registration.DATA_FOLDER + str(pid))
-#         img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/NIFTI/"
+#         mkdir_p(util.DATA_FOLDER + str(pid))
+#         img_out_folder = util.DATA_FOLDER + str(pid) + "/NIFTI/"
 #         mkdir_p(img_out_folder)
 #
 #         volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_PRE.nii.gz"
 #         volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_PRE_label_" + ".nii.gz"
 #
-#         volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
-#         volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
+#         volume_out_db = volume_out.replace(util.DATA_FOLDER, "")
+#         volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
 #         cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
 #         cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''', (volume_label_out_db, label_id))
 #
@@ -181,7 +183,7 @@ def mkdir_p(path):
 #     """Convert data from anne lise"""
 #     # pylint: disable= too-many-locals
 #     convert_table = get_convert_table(PID_ANNE_LISE)
-#     conn = sqlite3.connect(image_registration.DB_PATH)
+#     conn = sqlite3.connect(util.DB_PATH)
 #     cursor = conn.cursor()
 #
 #     labels = {'hele-label': 'all', 'nekrose-label': 'nekrose', 'kontrast-label': 'kontrast'}
@@ -205,8 +207,8 @@ def mkdir_p(path):
 #         if exist is None:
 #             cursor.execute('''INSERT INTO Patient(pid, diagnose) VALUES(?,?)''', (pid, 'HGG'))
 #         cursor.execute('''INSERT INTO Surgery(pid, date) VALUES(?,?)''', (pid, date))
-#         mkdir_p(image_registration.DATA_FOLDER + str(pid))
-#         img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/NIFTI/"
+#         mkdir_p(util.DATA_FOLDER + str(pid))
+#         img_out_folder = util.DATA_FOLDER + str(pid) + "/NIFTI/"
 #         mkdir_p(img_out_folder)
 #
 #         for image_type in image_types.keys():
@@ -219,7 +221,7 @@ def mkdir_p(path):
 #
 #             volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_types[image_type] + ".nii.gz"
 #             os.system(DWICONVERT_PATH + " --inputVolume " + volume + " -o " + volume_out + " --conversionMode NrrdToFSL")
-#             volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
+#             volume_out_db = volume_out.replace(util.DATA_FOLDER, "")
 #             cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
 #
 #             for label_type in labels.keys():
@@ -235,7 +237,7 @@ def mkdir_p(path):
 #                     + "_label_" + labels[label_type] + ".nii.gz"
 #                 os.system(DWICONVERT_PATH + " --inputVolume " + volume_label + " -o " +
 #                           volume_label_out + " --conversionMode NrrdToFSL")
-#                 volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
+#                 volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
 #                 cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
 #                                (volume_label_out_db, label_id))
 #
@@ -247,8 +249,8 @@ def mkdir_p(path):
 
 
 def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
-    mkdir_p(image_registration.DATA_FOLDER + str(pid))
-    img_out_folder = image_registration.DATA_FOLDER + str(pid) + "/volumes_labels/"
+    mkdir_p(util.DATA_FOLDER + str(pid))
+    img_out_folder = util.DATA_FOLDER + str(pid) + "/volumes_labels/"
     mkdir_p(img_out_folder)
 
     cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
@@ -267,7 +269,7 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
     volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
     print("--->", volume_out)
     os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out + " --conversionMode NrrdToFSL")
-    volume_out_db = volume_out.replace(image_registration.DATA_FOLDER, "")
+    volume_out_db = volume_out.replace(util.DATA_FOLDER, "")
     cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
     os.remove(volume_temp)
 
@@ -284,7 +286,7 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
             + "_label_all.nii.gz"
         os.system(DWICONVERT_PATH + " --inputVolume " + volume_label_temp + " -o " +
                   volume_label_out + " --conversionMode NrrdToFSL")
-        volume_label_out_db = volume_label_out.replace(image_registration.DATA_FOLDER, "")
+        volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
         cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
                        (volume_label_out_db, label_id))
         os.remove(volume_label_temp)
@@ -294,7 +296,7 @@ def convert_gbm_data(path):
     """Convert gbm data """
     # pylint: disable= too-many-locals
 
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
     for case_id in range(2000):
@@ -351,7 +353,7 @@ def convert_gbm_data(path):
 
 
 def qol_to_db():
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
     cursor.executescript('drop table if exists QualityOfLife;')
@@ -397,7 +399,7 @@ def qol_to_db():
 
 
 def convert_lgg_data(path):
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
     ids = range(350)
@@ -429,32 +431,32 @@ def convert_lgg_data(path):
 
 def vacuum_db():
     """ Clean up database"""
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.execute('''VACUUM; ''')
     cursor.close()
     conn.close()
 
 
 if __name__ == "__main__":
-    image_registration.setup_paths('GBM')
+    util.setup_paths('GBM')
     try:
-        shutil.rmtree(image_registration.DATA_FOLDER)
+        shutil.rmtree(util.DATA_FOLDER)
     except OSError:
         pass
-    mkdir_p(image_registration.DATA_FOLDER)
-    create_db(image_registration.DB_PATH)
+    mkdir_p(util.DATA_FOLDER)
+    create_db(util.DB_PATH)
     convert_gbm_data(main_folder + "Segmenteringer_GBM/")
 
     qol_to_db()
     vacuum_db()
 
-    image_registration.setup_paths('LGG')
+    util.setup_paths('LGG')
     try:
-        shutil.rmtree(image_registration.DATA_FOLDER)
+        shutil.rmtree(util.DATA_FOLDER)
     except OSError:
         pass
-    mkdir_p(image_registration.DATA_FOLDER)
-    create_db(image_registration.DB_PATH)
+    mkdir_p(util.DATA_FOLDER)
+    create_db(util.DB_PATH)
     convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
     convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
 

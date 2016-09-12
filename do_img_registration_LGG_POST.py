@@ -7,14 +7,15 @@ Created on Wed Apr 20 15:02:02 2016
 
 import os
 import sqlite3
-import image_registration
 
 from img_data import img_data
+import image_registration
+import util
 
 
 def find_images():
     """ Find images for registration """
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
@@ -35,7 +36,7 @@ def process_dataset(args, num_tries=3):
     moving_image_id = args[0]
     print(moving_image_id)
 
-    conn = sqlite3.connect(image_registration.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from Images where id = ?''', (moving_image_id,))
     pid = cursor.fetchone()[0]
@@ -48,8 +49,8 @@ def process_dataset(args, num_tries=3):
 
     import datetime
     start_time = datetime.datetime.now()
-    pre_img = img_data(pre_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
-    post_img = img_data(moving_image_id, image_registration.DATA_FOLDER, image_registration.TEMP_FOLDER_PATH)
+    pre_img = img_data(pre_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+    post_img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
 
     pre_img = image_registration.pre_process(pre_img, False)
     post_img = image_registration.pre_process(post_img, False)
@@ -74,9 +75,9 @@ def process_dataset(args, num_tries=3):
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    image_registration.setup("LGG_POST/", "LGG")
-    if not os.path.exists(image_registration.TEMP_FOLDER_PATH):
-        os.makedirs(image_registration.TEMP_FOLDER_PATH)
+    util.setup("LGG_POST/", "LGG")
+    if not os.path.exists(util.TEMP_FOLDER_PATH):
+        os.makedirs(util.TEMP_FOLDER_PATH)
 
     #  image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
     #                                    image_registration.TEMPLATE_MASK)
