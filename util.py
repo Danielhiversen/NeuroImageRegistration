@@ -180,11 +180,26 @@ def find_seg_images(moving_image_id):
     conn.close()
     return images
 
+def transform_volume(vol, transform, label_img=False):
+    result = TEMP_FOLDER_PATH + splitext(basename(vol))[0] + '_reg.nii'
+    apply_transforms = ants.ApplyTransforms()
+    if label_img:
+        apply_transforms.inputs.interpolation = 'NearestNeighbor'
+    else:
+        apply_transforms.inputs.interpolation = 'Linear'
+    apply_transforms.inputs.dimension = 3
+    apply_transforms.inputs.input_image = vol
+    apply_transforms.inputs.reference_image = image_registration.TEMPLATE_VOLUME
+    apply_transforms.inputs.output_image = result
+    apply_transforms.inputs.default_value = 0
+    apply_transforms.inputs.transforms = transform
+    apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
+    apply_transforms.run()
+
+    return apply_transforms.inputs.output_image
 
 def move_vol(moving, transform, label_img=False, qol=None):
     """ Move data with transform """
-    apply_transforms = ants.ApplyTransforms()
-
     if label_img:
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
@@ -201,29 +216,15 @@ def move_vol(moving, transform, label_img=False, qol=None):
             resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
                 + '_resample.nii'
         img_3d_affine.to_filename(resampled_file)
-        apply_transforms.inputs.interpolation = 'NearestNeighbor'
+
     else:
         img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
         img.set_img_filepath(moving)
         resampled_file = image_registration.pre_process(img, False).pre_processed_filepath
-        apply_transforms.inputs.interpolation = 'Linear'
 
-    result = TEMP_FOLDER_PATH + splitext(basename(resampled_file))[0] + '_reg.nii'
-#    if os.path.exists(result):
-#        return result
-
-    apply_transforms.inputs.dimension = 3
-    apply_transforms.inputs.input_image = resampled_file
-    apply_transforms.inputs.reference_image = image_registration.TEMPLATE_VOLUME
-    apply_transforms.inputs.output_image = result
-    apply_transforms.inputs.default_value = 0
-    apply_transforms.inputs.transforms = transform
-    apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
-    apply_transforms.run()
-
-    generate_image(apply_transforms.inputs.output_image, image_registration.TEMPLATE_VOLUME)
-
-    return apply_transforms.inputs.output_image
+    result = transform_volume(moving, transform, label_img)
+    generate_image(result, image_registration.TEMPLATE_VOLUME)
+    return result
 
 
 def avg_calculation(images, label):
