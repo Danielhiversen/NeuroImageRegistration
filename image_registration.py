@@ -155,7 +155,7 @@ def pre_process(img, do_bet=True):
 
         result = util.TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
         reg.output_inverse_warped_image = result
-    
+
         print("starting bet registration")
         reg.run()
         print("Finished bet registration")
@@ -208,7 +208,7 @@ def registration(moving_img, fixed, reg_type):
     else:
         reg.inputs.initial_moving_transform_com = True
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
-    mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform , True)
+    mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform, True)
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
     reg.inputs.num_threads = 1

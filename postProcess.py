@@ -26,5 +26,5 @@ if __name__ == "__main__":
     if True:
         util.post_calculations_qol()
     else:
-        image_ids = util.find_images()
+        image_ids = do_img_registration.find_images()
         util.post_calculations(image_ids)
