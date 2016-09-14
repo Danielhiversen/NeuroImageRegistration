@@ -180,6 +180,7 @@ def find_seg_images(moving_image_id):
     conn.close()
     return images
 
+
 def transform_volume(vol, transform, label_img=False):
     result = TEMP_FOLDER_PATH + splitext(basename(vol))[0] + '_reg.nii'
     apply_transforms = ants.ApplyTransforms()
@@ -197,6 +198,7 @@ def transform_volume(vol, transform, label_img=False):
     apply_transforms.run()
 
     return apply_transforms.inputs.output_image
+
 
 def move_vol(moving, transform, label_img=False, qol=None):
     """ Move data with transform """
