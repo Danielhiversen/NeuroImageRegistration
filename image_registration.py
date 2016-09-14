@@ -64,7 +64,7 @@ AFFINE = 'affine'
 SYN = 'syn'
 
 
-BET_METHOD = 0
+BE_METHOD = 0
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
@@ -123,13 +123,15 @@ def pre_process(img, do_bet=True):
         img.pre_processed_filepath = resampled_file
         return img
 
-    if BET_METHOD == 0:
+    if BE_METHOD == 0:
         print("Doing registration for bet")
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
-        reg.inputs.fixed_image = TEMPLATE_VOLUME
-        reg.inputs.moving_image = resampled_file
+        reg.inputs.fixed_image = resampled_file
+        reg.inputs.moving_image = TEMPLATE_VOLUME
+        reg.inputs.fixed_image_mask = img.label_inv_filepath
+
         reg.inputs.num_threads = 1
         reg.inputs.initial_moving_transform_com = True
 
@@ -150,11 +152,15 @@ def pre_process(img, do_bet=True):
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = util.TEMP_FOLDER_PATH + name
         reg.inputs.output_warped_image = util.TEMP_FOLDER_PATH + name + '_betReg.nii'
+
+        result = util.TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
+        reg.output_inverse_warped_image = result
+    
         print("starting bet registration")
         reg.run()
         print("Finished bet registration")
 
-        img.init_transform = util.TEMP_FOLDER_PATH + name + 'Composite.h5'
+        img.init_transform = result
 
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
@@ -163,7 +169,7 @@ def pre_process(img, do_bet=True):
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
-    elif BET_METHOD == 1:
+    elif BE_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
         bet = fsl.BET(command="fsl5.0-bet")
         bet.inputs.in_file = resampled_file
@@ -202,7 +208,8 @@ def registration(moving_img, fixed, reg_type):
     else:
         reg.inputs.initial_moving_transform_com = True
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
-    reg.inputs.fixed_image_mask = moving_img.label_inv_filepath
+    mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform , True)
+    reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
     reg.inputs.num_threads = 1
     if reg_type == RIGID:
