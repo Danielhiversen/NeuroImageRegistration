@@ -76,6 +76,8 @@ def prepare_template(template_vol, template_mask):
     mult.inputs.first_input = template_vol
     mult.inputs.second_input = template_mask
     mult.inputs.output_product_image = util.TEMP_FOLDER_PATH + "masked_template.nii"
+    if os.path.exists(mult.inputs.output_product_image):
+        return
     mult.run()
 
 
@@ -124,7 +126,6 @@ def pre_process(img, do_bet=True):
         return img
 
     if BE_METHOD == 0:
-        print("Doing registration for bet")
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
@@ -153,18 +154,20 @@ def pre_process(img, do_bet=True):
         reg.inputs.output_transform_prefix = util.TEMP_FOLDER_PATH + name
         reg.inputs.output_warped_image = util.TEMP_FOLDER_PATH + name + '_betReg.nii'
 
-        result = util.TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
-        reg.output_inverse_warped_image = result
+        transform = util.TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
+        reg.output_inverse_warped_image = True
 
-        print("starting bet registration")
+        print("starting be registration")
         reg.run()
-        print("Finished bet registration")
+        print("Finished be registration")
 
-        img.init_transform = result
+        img.init_transform = transform
+
+        reg_volume = util.transform_volume(resampled_file, transform)
 
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
-        mult.inputs.first_input = reg.inputs.output_warped_image
+        mult.inputs.first_input = reg_volume
         mult.inputs.second_input = TEMPLATE_MASK
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
@@ -276,7 +279,7 @@ def registration(moving_img, fixed, reg_type):
         # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
-    # generate_image(reg.inputs.output_warped_image, fixed)
+    util.generate_image(reg.inputs.output_warped_image, fixed)
 
     return moving_img
 
@@ -290,6 +293,7 @@ def process_dataset(args):
     start_time = datetime.datetime.now()
     img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     img = pre_process(img)
+
     bet_time = datetime.datetime.now() - start_time
     for k in range(3):
         try:
