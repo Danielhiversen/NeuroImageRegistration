@@ -299,6 +299,8 @@ def convert_gbm_data(path):
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
+    log = ""
+
     for case_id in range(2000):
         data_path = path + str(case_id) + "/"
         if not os.path.exists(data_path):
@@ -319,17 +321,17 @@ def convert_gbm_data(path):
         if len(volume_label) == 0:
             volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
         if len(volume_label) > 1:
-            print("Warning!!\n\n More than one file with label found \n", volume_label)
+            log = log + "\n Warning!! More than one file with label found " + volume_label
             continue
         if len(volume_label) == 0:
             file_type_nrrd = False
             volume = data_path + "k" + pid + "-T1_" + "preop" + ".nii"
             if not os.path.exists(volume):
-                print("Warning!!\n\n No volumes found \n", data_path, volume)
+                log = log + "\n Warning!! No volumes found" + data_path + volume
 
             volume_label = data_path + "k" + pid + "_" + "preop" + "_" + "hele-label" + ".nii"
             if not os.path.exists(volume_label):
-                print("Warning!!\n\n No label found \n", data_path, volume_label)
+                log = log + "\n Warning!! No label found "+ data_path + volume_label
 
         if file_type_nrrd:
             volume_label = volume_label[0]
@@ -340,14 +342,16 @@ def convert_gbm_data(path):
                 if len(volume) == 0:
                     volume = glob.glob(data_path + '*.nii')
                 if len(volume) > 1:
-                    print("Warning!!\n\n More than one file with volume found \n", volume)
+                    log = log + "\n Warning!! More than one file with volume found " + volume
                 if len(volume) == 0:
-                    print("Warning!!\n\n No volume found \n", data_path)
+                    log = log + "\n Warning!! No volume found " + data_path
                 volume = volume[0]
 
         convert_and_save_dataset(pid, cursor, "pre", [volume_label], volume)
-
         conn.commit()
+
+    with open("Log.txt", "w") as text_file:
+        text_file.write(log)
     cursor.close()
     conn.close()
 
@@ -369,7 +373,7 @@ def qol_to_db():
         'Anxiety'    INTEGER,
         FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
 
-    data = pyexcel_xlsx.get_data('/home/dahoiv/Desktop/Indexverdier_atlas.xlsx')['Ark2']
+    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas_NY.xlsx')['Ark2']
 
     for row in data[3:]:
         print(row)
@@ -446,18 +450,16 @@ if __name__ == "__main__":
     mkdir_p(util.DATA_FOLDER)
     create_db(util.DB_PATH)
     convert_gbm_data(main_folder + "Segmenteringer_GBM/")
-
     qol_to_db()
     vacuum_db()
 
-    util.setup_paths('LGG')
-    try:
-        shutil.rmtree(util.DATA_FOLDER)
-    except OSError:
-        pass
-    mkdir_p(util.DATA_FOLDER)
-    create_db(util.DB_PATH)
-    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
-    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
-
-    vacuum_db()
+#    util.setup_paths('LGG')
+#    try:
+#        shutil.rmtree(util.DATA_FOLDER)
+#    except OSError:
+#        pass
+#    mkdir_p(util.DATA_FOLDER)
+#    create_db(util.DB_PATH)
+#    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
+#    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
+#    vacuum_db()
