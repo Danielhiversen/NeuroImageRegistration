@@ -331,7 +331,7 @@ def convert_gbm_data(path):
 
             volume_label = data_path + "k" + pid + "_" + "preop" + "_" + "hele-label" + ".nii"
             if not os.path.exists(volume_label):
-                log = log + "\n Warning!! No label found "+ data_path + volume_label
+                log = log + "\n Warning!! No label found " + data_path + volume_label
 
         if file_type_nrrd:
             volume_label = volume_label[0]

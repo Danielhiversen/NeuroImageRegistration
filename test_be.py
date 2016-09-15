@@ -33,7 +33,7 @@ def _test_be(moving_image_id, reg):
     print("Finished be registration")
 
     img.init_transform = transform
-    
+
     reg_volume = util.transform_volume(resampled_file, transform)
 
     mult = ants.MultiplyImages()
@@ -42,9 +42,9 @@ def _test_be(moving_image_id, reg):
     mult.inputs.second_input = image_registration.TEMPLATE_MASK
     mult.inputs.output_product_image = img.pre_processed_filepath
     mult.run()
-    
-    util.generate_image(img.pre_processed_filepath, image_registration.TEMPLATE_VOLUME)    
-    
+
+    util.generate_image(img.pre_processed_filepath, image_registration.TEMPLATE_VOLUME)
+
 
 def test_be(moving_image_ids, reg):
     for moving_image_id in moving_datasets_ids:
@@ -54,11 +54,9 @@ def test_be(moving_image_ids, reg):
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
+    util.setup("GBM_test/", "GBM")
     moving_datasets_ids = do_img_registration_GBM.find_images()[:5]
-    
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
-    
+
     reg = ants.Registration()
     # reg.inputs.args = "--verbose 1"
     reg.inputs.collapse_output_transforms = True
@@ -86,12 +84,16 @@ if __name__ == "__main__":
 
     # test 0
     util.setup("GBM_test_0/", "GBM")
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
     test_be(moving_datasets_ids, reg)
 
     # test 1
     util.setup("GBM_test_1/", "GBM")
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
     reg.inputs.number_of_iterations = ([[10000, 5000, 1000, 500],
@@ -100,6 +102,8 @@ if __name__ == "__main__":
 
     # test 2
     util.setup("GBM_test_2/", "GBM")
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
     reg.inputs.transform_parameters = [(0.75,), (0.75,)]
@@ -107,6 +111,8 @@ if __name__ == "__main__":
 
     # test 3
     util.setup("GBM_test_3/", "GBM")
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
     reg.inputs.transform_parameters = [(0.50,), (0.50,)]
@@ -114,6 +120,8 @@ if __name__ == "__main__":
 
     # test 4
     util.setup("GBM_test_4/", "GBM")
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
     reg.inputs.transform_parameters = [(0.25,), (0.25,)]
@@ -123,10 +131,11 @@ if __name__ == "__main__":
 
     # test 5
     util.setup("GBM_test_5/", "GBM")
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
     reg.inputs.radius_or_number_of_bins = [32, 32]
     reg.inputs.metric = ['MI', 'MI']
     reg.inputs.use_histogram_matching = [False, True]
     test_be(moving_datasets_ids, reg)
-    
