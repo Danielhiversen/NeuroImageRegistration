@@ -234,12 +234,19 @@ def avg_calculation(images, label):
     path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
+    path_N = TEMP_FOLDER_PATH + 'total_' + label + '.nii'
+    path_N = path.replace('label', 'tumor')
+
     average = None
     for file_name in images:
         img = nib.load(file_name)
         if average is None:
             average = np.zeros(img.get_data().shape)
         average = average + np.array(img.get_data())
+
+    result_img = nib.Nifti1Image(average, img.affine)
+    result_img.to_filename(path_N)
+
     average = average / float(len(images))
     result_img = nib.Nifti1Image(average, img.affine)
     result_img.to_filename(path)
