@@ -84,46 +84,46 @@ if __name__ == "__main__":
 
     # test 0
     util.setup("GBM_test_0/", "GBM")
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     test_be(moving_datasets_ids, reg)
 
     # test 1
     util.setup("GBM_test_1/", "GBM")
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     reg.inputs.number_of_iterations = ([[10000, 5000, 1000, 500],
                                         [10000, 5000, 1000, 500]])
     test_be(moving_datasets_ids, reg)
 
     # test 2
     util.setup("GBM_test_2/", "GBM")
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     reg.inputs.transform_parameters = [(0.75,), (0.75,)]
     test_be(moving_datasets_ids, reg)
 
     # test 3
     util.setup("GBM_test_3/", "GBM")
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     reg.inputs.transform_parameters = [(0.50,), (0.50,)]
     test_be(moving_datasets_ids, reg)
 
     # test 4
     util.setup("GBM_test_4/", "GBM")
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     reg.inputs.transform_parameters = [(0.25,), (0.25,)]
     reg.inputs.radius_or_number_of_bins = [32, 5]
     reg.inputs.metric = ['MI', 'CC']
@@ -131,10 +131,10 @@ if __name__ == "__main__":
 
     # test 5
     util.setup("GBM_test_5/", "GBM")
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
     reg.inputs.radius_or_number_of_bins = [32, 32]
     reg.inputs.metric = ['MI', 'MI']
     reg.inputs.use_histogram_matching = [False, True]
