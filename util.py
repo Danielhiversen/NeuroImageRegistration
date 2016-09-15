@@ -181,7 +181,13 @@ def find_seg_images(moving_image_id):
     return images
 
 
+def ensure_list(value):
+    """Wrap value in list if it is not one."""
+    return value if isinstance(value, list) else [value]
+
+
 def transform_volume(vol, transform, label_img=False):
+    transform = ensure_list(transform)
     result = TEMP_FOLDER_PATH + splitext(basename(vol))[0] + '_reg.nii'
     apply_transforms = ants.ApplyTransforms()
     if label_img:
