@@ -188,7 +188,7 @@ def ensure_list(value):
 
 def transform_volume(vol, transform, label_img=False):
     transform = ensure_list(transform)
-    result = TEMP_FOLDER_PATH + splitext(basename(vol))[0] + '_reg.nii'
+    result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii'
     apply_transforms = ants.ApplyTransforms()
     if label_img:
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
@@ -218,10 +218,10 @@ def move_vol(moving, transform, label_img=False, qol=None):
             temp = img_3d_affine.get_data()
             res = np.array(temp) * qol
             img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
-            resampled_file = TEMP_FOLDER_PATH + splitext(basename(splitext(basename(moving))[0]))[0]\
+            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
                 + '_qol_resample.nii'
         else:
-            resampled_file = TEMP_FOLDER_PATH + splitext(basename(splitext(basename(moving))[0]))[0]\
+            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
                 + '_resample.nii'
         img_3d_affine.to_filename(resampled_file)
 
