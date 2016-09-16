@@ -370,17 +370,18 @@ def save_transform_to_database(data_transforms):
 
         folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/"
         util.mkdir_p(folder)
-        shutil.copy(util.compress_vol(img.processed_filepath), folder)
+        vol_path = util.compress_vol(img.processed_filepath)
+        shutil.copy(vol_path, folder)
 
-        volume_db = str(pid) + "/reg_volumes_labels/" + basename(img.processed_filepath)
+        volume_db = str(pid) + "/reg_volumes_labels/" + basename(vol_path)
         cursor2 = conn.execute('''UPDATE Images SET filepath_reg = ? WHERE id = ?''',
                                (volume_db, img.image_id))
 
         cursor = conn.execute('''SELECT filepath, id from Labels where image_id = ? ''',
                               (img.image_id,))
         for (row, label_id) in cursor:
-            temp = util.move_vol(util.DATA_FOLDER + row, img.get_transforms(), True)
-            shutil.copy(util.compress_vol(temp), folder)
+            temp = util.compress_vol(util.move_vol(util.DATA_FOLDER + row, img.get_transforms(), True))
+            shutil.copy(temp, folder)
             label_db = str(pid) + "/reg_volumes_labels/" + splitext(splitext(basename(temp)))
             cursor2 = conn.execute('''UPDATE Labels SET filepath_reg = ? WHERE id = ?''',
                                    (label_db, label_id))
