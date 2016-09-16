@@ -382,7 +382,7 @@ def save_transform_to_database(data_transforms):
         for (row, label_id) in cursor:
             temp = util.compress_vol(util.move_vol(util.DATA_FOLDER + row, img.get_transforms(), True))
             shutil.copy(temp, folder)
-            label_db = str(pid) + "/reg_volumes_labels/" + splitext(splitext(basename(temp)))
+            label_db = str(pid) + "/reg_volumes_labels/" + basename(temp)
             cursor2 = conn.execute('''UPDATE Labels SET filepath_reg = ? WHERE id = ?''',
                                    (label_db, label_id))
 
