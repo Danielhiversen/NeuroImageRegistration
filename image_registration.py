@@ -335,15 +335,15 @@ def save_transform_to_database(data_transforms):
     # pylint: disable= too-many-locals, bare-except
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
-    try:
-        conn.execute('ALTER TABLE Images ADD COLUMN filepath_reg TEXT;')
-    except:
-        pass
-
-    try:
-        conn.execute('ALTER TABLE Labels ADD COLUMN filepath_reg TEXT;')
-    except:
-        pass
+#    try:
+#        conn.execute('ALTER TABLE Images ADD COLUMN filepath_reg TEXT;')
+#    except:
+#        pass
+#
+#    try:
+#        conn.execute('ALTER TABLE Labels ADD COLUMN filepath_reg TEXT;')
+#    except:
+#        pass
 
     for img, fixed_image_id in data_transforms:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
@@ -370,7 +370,7 @@ def save_transform_to_database(data_transforms):
 
         folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/"
         util.mkdir_p(folder)
-        shutil.copy(img.processed_filepath, folder)
+        shutil.copy(util.compress_vol(img.processed_filepath), folder)
 
         volume_db = str(pid) + "/reg_volumes_labels/" + basename(img.processed_filepath)
         cursor2 = conn.execute('''UPDATE Images SET filepath_reg = ? WHERE id = ?''',
@@ -380,8 +380,8 @@ def save_transform_to_database(data_transforms):
                               (img.image_id,))
         for (row, label_id) in cursor:
             temp = util.move_vol(util.DATA_FOLDER + row, img.get_transforms(), True)
-            shutil.copy(temp, folder)
-            label_db = str(pid) + "/reg_volumes_labels/" + basename(temp)
+            shutil.copy(util.compress_vol(temp), folder)
+            label_db = str(pid) + "/reg_volumes_labels/" + splitext(splitext(basename(temp)))
             cursor2 = conn.execute('''UPDATE Labels SET filepath_reg = ? WHERE id = ?''',
                                    (label_db, label_id))
 

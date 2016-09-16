@@ -298,6 +298,15 @@ def generate_image(path, path2):
     plt.close()
 
 
+def compress_vol(vol):
+    if vol[-3:] == ".gz":
+        return vol
+    temp = nib.load(vol)
+    res = vol + ".gz"
+    temp.to_filename(res)
+    return res
+
+
 def mkdir_p(path):
     """Make new folder if not exits"""
     try:
