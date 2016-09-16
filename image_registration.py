@@ -36,6 +36,7 @@ from multiprocessing import Pool
 import os
 from os.path import basename
 from os.path import splitext
+import datetime
 import sqlite3
 import shutil
 from builtins import map
@@ -289,7 +290,6 @@ def process_dataset(args):
     (moving_image_id, reg_type) = args
     print(moving_image_id)
 
-    import datetime
     start_time = datetime.datetime.now()
     img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     img = pre_process(img)

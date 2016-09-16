@@ -5,8 +5,9 @@ Created on Thu Sep 15 14:15:23 2016
 @author: dahoiv
 """
 
-import os
+import datetime
 import nipype.interfaces.ants as ants
+import os
 from os.path import basename
 from os.path import splitext
 
@@ -47,9 +48,12 @@ def _test_be(moving_image_id, reg):
 
 
 def test_be(moving_image_ids, reg):
+    start_time = datetime.datetime.now()
     for moving_image_id in moving_datasets_ids:
         _test_be(moving_image_id, reg)
-
+    bet_time = datetime.datetime.now() - start_time
+    print("\n\n\n\n -- Run time BET: ")
+    print(bet_time/len(moving_datasets_ids))
 
 # pylint: disable= invalid-name
 if __name__ == "__main__":
@@ -139,3 +143,24 @@ if __name__ == "__main__":
     reg.inputs.metric = ['MI', 'MI']
     reg.inputs.use_histogram_matching = [False, True]
     test_be(moving_datasets_ids, reg)
+
+    # test 6
+    util.setup("GBM_test_5/", "GBM")
+    if not os.path.exists(util.TEMP_FOLDER_PATH):
+        os.makedirs(util.TEMP_FOLDER_PATH)
+    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
+                                        image_registration.TEMPLATE_MASK)
+    reg.inputs.radius_or_number_of_bins = [32, 32, 5]
+    reg.inputs.convergence_window_size = [5, 5, 5]
+    reg.inputs.number_of_iterations = ([[10000, 5000, 1000, 500],
+                                        [10000, 5000, 1000, 500],
+                                        [100, 75, 75, 75]])
+    reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1], [5, 3, 2, 1]]
+    reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0], [4, 2, 1, 0]]
+    reg.inputs.sigma_units = ['vox']*3
+    reg.inputs.transform_parameters = [(0.25,),
+                                       (0.25,),
+                                        (0.15, 3.0, 0.0)]
+    reg.inputs.use_histogram_matching = [False, False, True]
+    test_be(moving_datasets_ids, reg)
+
