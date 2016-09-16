@@ -7,7 +7,6 @@ Created on Tue Apr 19 15:19:49 2016
 # pylint: disable= line-too-long
 from __future__ import print_function
 
-import errno
 import glob
 import os
 import shutil
@@ -16,14 +15,14 @@ import pyexcel_xlsx
 
 import util
 
-# DATA_PATH_LISA = main_folder + "Segmenteringer_Lisa/"
-# PID_LISA = main_folder + "Koblingsliste__Lisa.xlsx"
-# DATA_PATH_LISA_QOL = main_folder + "Segmenteringer_Lisa/Med_QoL/"
-# DATA_PATH_ANNE_LISE = main_folder + "Segmenteringer_AnneLine/"
-# PID_ANNE_LISE = main_folder + "Koblingsliste__Anne_Line.xlsx"
-# DATA_PATH_LGG = main_folder + "Data_HansKristian_LGG/LGG/NIFTI/"
+# DATA_PATH_LISA = MAIN_FOLDER + "Segmenteringer_Lisa/"
+# PID_LISA = MAIN_FOLDER + "Koblingsliste__Lisa.xlsx"
+# DATA_PATH_LISA_QOL = MAIN_FOLDER + "Segmenteringer_Lisa/Med_QoL/"
+# DATA_PATH_ANNE_LISE = MAIN_FOLDER + "Segmenteringer_AnneLine/"
+# PID_ANNE_LISE = MAIN_FOLDER + "Koblingsliste__Anne_Line.xlsx"
+# DATA_PATH_LGG = MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/"
 
-main_folder = "/home/dahoiv/nevro_data/Segmentations/"
+MAIN_FOLDER = "/home/dahoiv/nevro_data/Segmentations/"
 DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
 
 
@@ -72,36 +71,20 @@ def create_db(path):
 
     conn.close()
 
-
-def mkdir_p(path):
-    """Make new folder if not exits"""
-    try:
-        os.makedirs(path)
-    except OSError as exc:  # Python >2.5
-        if exc.errno == errno.EEXIST and os.path.isdir(path):
-            pass
-        else:
-            raise
-
 # ==============================================================================
 #
-# def get_convert_table(path):
-#     """Open xls file and read new pid"""
-#     xls_data = pyexcel_xlsx.get_data(path)
-#     convert_table = {}
-#     if 'Ark1' in xls_data:
-#         data = xls_data['Ark1']  # lisa
-#     else:
-#         data = xls_data  # anne lise
-#
-#     for row in data:
-#         if not row:
-#             continue
-#         pid = row[0]
-#         case_id = row[1]
-#         date = row[2]
-#         convert_table[case_id] = [pid, date]
-#     return convert_table
+def get_convert_table(path):
+    """Open xls file and read new pid"""
+    xls_data = pyexcel_xlsx.get_data(path)
+    convert_table = {}
+    data = xls_data['Ark1']
+    for row in data:
+        if not row:
+            continue
+        pid = str(row[0])
+        case_id = str(row[1])
+        convert_table[case_id] = pid
+    return convert_table
 #
 #
 # def convert_lisa_data(path, qol):
@@ -249,9 +232,9 @@ def mkdir_p(path):
 
 
 def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume):
-    mkdir_p(util.DATA_FOLDER + str(pid))
+    util.mkdir_p(util.DATA_FOLDER + str(pid))
     img_out_folder = util.DATA_FOLDER + str(pid) + "/volumes_labels/"
-    mkdir_p(img_out_folder)
+    util.mkdir_p(img_out_folder)
 
     cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
     exist = cursor.fetchone()
@@ -356,7 +339,7 @@ def convert_gbm_data(path):
     conn.close()
 
 
-def qol_to_db():
+def qol_to_db(data_type):
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
@@ -373,25 +356,36 @@ def qol_to_db():
         'Anxiety'    INTEGER,
         FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
 
-    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas_NY.xlsx')['Ark2']
+    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas.xlsx')['Ark2']
 
-    for row in data[3:]:
+    for row in data[4:]:
         print(row)
         if not row:
             continue
 
-        if row[1] is None:
+        if data_type == "gbm":
+            idx1 = 1
+            idx2 = 0
+            idx3 = 7
+        elif data_type == "lgg":
+            idx1 = 12
+            idx2 = 11
+            idx3 = 18
+        if len(row) < idx3 - 1:
+            continue
+
+        if row[idx1] is None:
             gl_idx = None
-        elif row[1] > 0.85:
+        elif row[idx1] > 0.85:
             gl_idx = 1
-        elif row[1] > 0.50:
+        elif row[idx1] > 0.50:
             gl_idx = 2
         else:
             gl_idx = 3
 
-        val = [None]*8
+        val = [None]*7
         idx = 0
-        for _val in row[:8]:
+        for _val in row[idx2:idx3]:
             val[idx] = _val
             idx += 1
         cursor.execute('''INSERT INTO QualityOfLife(pid, Index_value, Global_index, Mobility, Selfcare, Activity, Pain, Anxiety) VALUES(?,?,?,?,?,?,?,?)''',
@@ -403,26 +397,35 @@ def qol_to_db():
 
 
 def convert_lgg_data(path):
+    convert_table = get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
+
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
-    ids = range(350)
-    for case_id in ids:
-        volume = path + '%02d' % case_id + '_post.nii'
+    ids = range(70)
+    ids.extend(['X1', 'X3', 'X5'])
+    print(ids)
+    for case_id_org in ids:
+        if type(case_id_org) == int:
+            case_id = '%02d' % case_id_org
+        else:
+            case_id = str(case_id_org)
+        volume = path + case_id + '_post.nii'
         image_type = 'post'
         if not os.path.exists(volume):
-            volume = path + '%02d' % case_id + '_pre.nii'
+            volume = path + case_id + '_pre.nii'
             image_type = 'pre'
+        print(volume)
         if not os.path.exists(volume):
             continue
-        print(volume, image_type)
 
-        pid = str(case_id)
+        pid = convert_table[str(case_id_org)]
+        print(volume, image_type, case_id, pid)
 
         if image_type == 'post':
-            volume_label = path + '%02d' % case_id + '_post-label.nii'
+            volume_label = path + case_id + '_post-label.nii'
         elif image_type == 'pre':
-            volume_label = path + '%02d' % case_id + '_pre-label.nii'
+            volume_label = path + case_id + '_pre-label.nii'
         if not os.path.exists(volume):
             continue
 
@@ -442,24 +445,24 @@ def vacuum_db():
 
 
 if __name__ == "__main__":
-    util.setup_paths('GBM')
-    try:
-        shutil.rmtree(util.DATA_FOLDER)
-    except OSError:
-        pass
-    mkdir_p(util.DATA_FOLDER)
-    create_db(util.DB_PATH)
-    convert_gbm_data(main_folder + "Segmenteringer_GBM/")
-    qol_to_db()
-    vacuum_db()
-
-#    util.setup_paths('LGG')
+#    util.setup_paths('GBM')
 #    try:
 #        shutil.rmtree(util.DATA_FOLDER)
 #    except OSError:
 #        pass
-#    mkdir_p(util.DATA_FOLDER)
+#    util.mkdir_p(util.DATA_FOLDER)
 #    create_db(util.DB_PATH)
-#    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
-#    convert_lgg_data(main_folder + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
+#    convert_gbm_data(MAIN_FOLDER + "Segmenteringer_GBM/")
+#    qol_to_db("gbm")
 #    vacuum_db()
+
+    util.setup_paths('LGG')
+    try:
+        shutil.rmtree(util.DATA_FOLDER)
+    except OSError:
+        pass
+    util.mkdir_p(util.DATA_FOLDER)
+    create_db(util.DB_PATH)
+    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
+    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
+    qol_to_db("lgg")

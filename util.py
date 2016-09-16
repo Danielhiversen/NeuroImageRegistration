@@ -47,13 +47,13 @@ def setup_paths(datatype):
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/mnt/dokumneter/data/database/"
+        DATA_FOLDER = "/mnt/dokumneter/data/database2/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
-        DATA_FOLDER = "/media/ingerid/data/daniel/database/"
+        DATA_FOLDER = "/media/ingerid/data/daniel/database2/"
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
     else:
         print("Unkown host name " + hostname)
