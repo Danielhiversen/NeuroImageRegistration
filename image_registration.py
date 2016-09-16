@@ -341,7 +341,7 @@ def save_transform_to_database(data_transforms):
         pass
 
     try:
-        conn.execute('ALTER Labels Images ADD COLUMN filepath_reg TEXT;')
+        conn.execute('ALTER TABLE Labels ADD COLUMN filepath_reg TEXT;')
     except:
         pass
 
@@ -372,16 +372,16 @@ def save_transform_to_database(data_transforms):
         util.mkdir_p(folder)
         shutil.copy(img.processed_filepath, folder)
 
-        volume_db = img.processed_filepath.replace(util.DATA_FOLDER, "")
+        volume_db = str(pid) + "/reg_volumes_labels/" + basename(img.processed_filepath)
         cursor2 = conn.execute('''UPDATE Images SET filepath_reg = ? WHERE id = ?''',
                                (volume_db, img.image_id))
 
-        cursor = conn.execute('''SELECT filepat, id from Labels where image_id = ? ''',
+        cursor = conn.execute('''SELECT filepath, id from Labels where image_id = ? ''',
                               (img.image_id,))
         for (row, label_id) in cursor:
             temp = util.move_vol(util.DATA_FOLDER + row, img.get_transforms(), True)
             shutil.copy(temp, folder)
-            label_db = temp.replace(util.DATA_FOLDER, "")
+            label_db = str(pid) + "/reg_volumes_labels/" + basename(temp)
             cursor2 = conn.execute('''UPDATE Labels SET filepath_reg = ? WHERE id = ?''',
                                    (label_db, label_id))
 
