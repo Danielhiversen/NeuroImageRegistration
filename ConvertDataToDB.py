@@ -71,8 +71,7 @@ def create_db(path):
 
     conn.close()
 
-# ==============================================================================
-#
+
 def get_convert_table(path):
     """Open xls file and read new pid"""
     xls_data = pyexcel_xlsx.get_data(path)
@@ -445,16 +444,16 @@ def vacuum_db():
 
 
 if __name__ == "__main__":
-#    util.setup_paths('GBM')
-#    try:
-#        shutil.rmtree(util.DATA_FOLDER)
-#    except OSError:
-#        pass
-#    util.mkdir_p(util.DATA_FOLDER)
-#    create_db(util.DB_PATH)
-#    convert_gbm_data(MAIN_FOLDER + "Segmenteringer_GBM/")
-#    qol_to_db("gbm")
-#    vacuum_db()
+    #    util.setup_paths('GBM')
+    #    try:
+    #        shutil.rmtree(util.DATA_FOLDER)
+    #    except OSError:
+    #        pass
+    #    util.mkdir_p(util.DATA_FOLDER)
+    #    create_db(util.DB_PATH)
+    #    convert_gbm_data(MAIN_FOLDER + "Segmenteringer_GBM/")
+    #    qol_to_db("gbm")
+    #    vacuum_db()
 
     util.setup_paths('LGG')
     try:
