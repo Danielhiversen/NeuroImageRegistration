@@ -37,6 +37,6 @@ if __name__ == "__main__":
     result.extend(util.post_calculations(image_ids))
 
     for label in result:
-        util.avg_calculation(result[label], label, qol, True)
+        util.avg_calculation(result[label], label + '_' + qol_param, qol, True)
 
 

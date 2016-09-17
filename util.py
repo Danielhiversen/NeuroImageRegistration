@@ -128,7 +128,7 @@ def get_image_id_and_qol(qol_param):
         if not _id:
             continue
         _id = _id[0]
-        _qol = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
+        _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
                                  (pid[0], )).fetchone()[0]
         if _qol is None:
             continue
@@ -139,54 +139,6 @@ def get_image_id_and_qol(qol_param):
     conn.close()
         
     return (image_id, qol)
-
-def post_calculations_qol():
-    """ Transform images and calculate avg"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-    cursor = conn.execute('''SELECT pid from QualityOfLife''')
-
-    result = dict()
-    for pid in cursor:
-        print(pid)
-        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid[0], )).fetchone()
-        if not _id:
-            continue
-        _id = _id[0]
-        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
-                                 (pid[0], )).fetchone()[0]
-        if qol_index is None:
-            continue
-        transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
-        if len(transforms) < 1:
-            continue
-        db_temp = cursor.fetchone()
-        img = DATA_FOLDER + db_temp[0]
-        print(img, transforms)
-        temp = move_vol(img, transforms)
-        label = "img"
-        if label in result:
-            result[label].append(temp)
-        else:
-            result[label] = [temp]
-
-        for (segmentation, label) in find_seg_images(_id):
-            temp_qol = move_vol(segmentation, transforms, True, qol_index*100)
-            temp = move_vol(segmentation, transforms, True)
-            if label in result:
-                result[label + '_qol'].append(temp_qol)
-                result[label].append(temp)
-            else:
-                result[label + '_qol'] = [temp_qol]
-                result[label] = [temp]
-
-    cursor.close()
-    conn.close()
-
-    for label in result:
-        print(len(result[label]))
-        avg_calculation(result[label], label)
 
 
 def find_seg_images(moving_image_id):
