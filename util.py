@@ -47,7 +47,7 @@ def setup_paths(datatype):
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/mnt/dokumneter/data/database2/"
+        DATA_FOLDER = "/mnt/dokumneter/data/database/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
@@ -113,9 +113,32 @@ def post_calculations(moving_dataset_image_ids):
     cursor.close()
     conn.close()
 
-    for label in result:
-        avg_calculation(result[label], label)
+    return result
 
+def get_image_id_and_qol(qol_param):
+    """ Get image id and qol """    
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from QualityOfLife''')
+
+    image_id = []
+    qol = []
+    for pid in cursor:
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid[0], )).fetchone()
+        if not _id:
+            continue
+        _id = _id[0]
+        _qol = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
+                                 (pid[0], )).fetchone()[0]
+        if _qol is None:
+            continue
+
+        image_id.extend(_id)
+        qol.extend(_qol)
+    cursor.close()
+    conn.close()
+        
+    return (image_id, qol)
 
 def post_calculations_qol():
     """ Transform images and calculate avg"""
@@ -206,23 +229,15 @@ def transform_volume(vol, transform, label_img=False):
     return apply_transforms.inputs.output_image
 
 
-def move_vol(moving, transform, label_img=False, qol=None):
+def move_vol(moving, transform, label_img=False):
     """ Move data with transform """
     if label_img:
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
-        if qol:
-            # pylint: disable= no-member
-            temp = img_3d_affine.get_data()
-            res = np.array(temp) * qol
-            img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_qol_resample.nii'
-        else:
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_resample.nii'
+        resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
+            + '_resample.nii'
         img_3d_affine.to_filename(resampled_file)
 
     else:
@@ -235,30 +250,44 @@ def move_vol(moving, transform, label_img=False, qol=None):
     return result
 
 
-def avg_calculation(images, label):
+def sum_calculation(images, label, val=None, save=False):
+    """ Calculate sum volumes """
+    path_N = TEMP_FOLDER_PATH + 'total_' + label + '.nii'
+    path_N = path_N.replace('label', 'tumor')
+    
+    if not val:
+        val = [1]*len(images)
+
+    _sum = None
+    for (file_name, val_i) in zip(images, val):
+        if not val_i is None:
+            continue
+        img = nib.load(file_name)
+        if _sum is None:
+            _sum = np.zeros(img.get_data().shape)
+        _sum = _sum+ np.array(img.get_data())*val_i
+
+    if save:
+        result_img = nib.Nifti1Image(_sum, img.affine)
+        result_img.to_filename(path_N)
+
+    generate_image(path_N, image_registration.TEMPLATE_VOLUME)
+    return _sum
+
+def avg_calculation(images, label, val=None, save=False):
     """ Calculate average volumes """
     path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
-    path_N = TEMP_FOLDER_PATH + 'total_' + label + '.nii'
-    path_N = path.replace('label', 'tumor')
-
-    average = None
-    for file_name in images:
-        img = nib.load(file_name)
-        if average is None:
-            average = np.zeros(img.get_data().shape)
-        average = average + np.array(img.get_data())
-
-    result_img = nib.Nifti1Image(average, img.affine)
-    result_img.to_filename(path_N)
-
-    average = average / float(len(images))
-    result_img = nib.Nifti1Image(average, img.affine)
-    result_img.to_filename(path)
-
+    _sum = sum_calculation(images, label, val, save=False)
+    average = _sum / float(len(images))
+    
+    if save:    
+        result_img = nib.Nifti1Image(average, _sum.affine)
+        result_img.to_filename(path)
+    
     generate_image(path, image_registration.TEMPLATE_VOLUME)
-
+    return average
 
 def generate_image(path, path2):
     """ generate png images"""
