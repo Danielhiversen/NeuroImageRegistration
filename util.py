@@ -7,6 +7,7 @@ Created on Mon Sep 12 11:54:08 2016
 
 from __future__ import print_function
 from __future__ import division
+import gzip
 import os
 from os.path import basename
 from os.path import splitext
@@ -85,11 +86,11 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-def post_calculations(moving_dataset_image_ids):
+def post_calculations(moving_dataset_image_ids, result = dict()):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
-    result = dict()
+    
     for _id in moving_dataset_image_ids:
         transforms = get_transforms_from_db(_id, conn)
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
@@ -110,31 +111,41 @@ def post_calculations(moving_dataset_image_ids):
             else:
                 result[label] = [temp]
 
-    cursor.close()
+        cursor.close()
     conn.close()
 
     return result
 
-def get_image_id_and_qol(qol_param):
+def get_image_id_and_qol(qol_param, old_format=False):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
 
+    if old_format:
+        import ConvertDataToDB
+        convert_table_inv = ConvertDataToDB.get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
+        convert_table = {v: k for k, v in convert_table_inv.items()}
+        print(convert_table)
     image_id = []
     qol = []
     for pid in cursor:
-        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid[0], )).fetchone()
-        if not _id:
-            continue
-        _id = _id[0]
+        pid = pid[0]
         _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
-                                 (pid[0], )).fetchone()[0]
+                                 (pid, )).fetchone()[0]
         if _qol is None:
             continue
 
-        image_id.extend(_id)
-        qol.extend(_qol*100)
+        if old_format:
+            pid = convert_table[str(pid)]
+        print(pid)
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
+        if not _id:
+            continue            
+        _id = _id[0]
+
+        image_id.extend([_id])
+        qol.extend([_qol*100])
     cursor.close()
     conn.close()
 
@@ -161,8 +172,32 @@ def ensure_list(value):
     return value if isinstance(value, list) else [value]
 
 
+def decompress_file(gzip_path):
+        if gzip_path[:-3] != '.gz':
+            return gzip_path
+
+        inF = gzip.open(gzip_path, 'rb')
+        # uncompress the gzip_path INTO THE 's' variable
+        s = inF.read()
+        inF.close()
+
+        # get gzip filename (without directories)
+        gzip_fname = os.path.basename(gzip_path)
+        # get original filename (remove 3 characters from the end: ".gz")
+        fname = gzip_fname[:-3]
+        uncompressed_path = os.path.join(TEMP_FOLDER_PATH, fname)
+
+        # store uncompressed file data from 's' variable
+        open(uncompressed_path, 'w').write(s)
+        
+        return uncompressed_path
+
+
 def transform_volume(vol, transform, label_img=False):
-    transform = ensure_list(transform)
+    transforms = []    
+    for _transform in ensure_list(transform):
+        transform.append(decompress_file(_transform))
+
     result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii'
     apply_transforms = ants.ApplyTransforms()
     if label_img:
@@ -174,8 +209,8 @@ def transform_volume(vol, transform, label_img=False):
     apply_transforms.inputs.reference_image = image_registration.TEMPLATE_VOLUME
     apply_transforms.inputs.output_image = result
     apply_transforms.inputs.default_value = 0
-    apply_transforms.inputs.transforms = transform
-    apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
+    apply_transforms.inputs.transforms = transforms
+    apply_transforms.inputs.invert_transform_flags = [False]*len(transforms)
     apply_transforms.run()
 
     return apply_transforms.inputs.output_image

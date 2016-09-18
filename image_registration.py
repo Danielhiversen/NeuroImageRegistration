@@ -32,6 +32,7 @@ confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+dat
 # import nipype.interfaces.dipy as dipy
 from __future__ import print_function
 from __future__ import division
+import gzip
 from multiprocessing import Pool
 import os
 from os.path import basename
@@ -43,7 +44,6 @@ from builtins import map
 from builtins import str
 from nilearn import datasets
 from nilearn.image import resample_img
-
 import nipype.interfaces.ants as ants
 import nipype.interfaces.fsl as fsl
 import nibabel as nib
@@ -356,11 +356,12 @@ def save_transform_to_database(data_transforms):
         print(img.get_transforms())
         for _transform in img.get_transforms():
             print(_transform)
-            dst_file = folder + basename(_transform)
+            dst_file = folder + basename(_transform) + '.gz'
             if os.path.exists(dst_file):
                 os.remove(dst_file)
-            shutil.copy(_transform, folder)
-            transform_paths += str(pid) + "/registration_transforms/" + basename(_transform) + ", "
+            with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
+                shutil.copyfileobj(f_in, f_out)
+            transform_paths += str(pid) + "/registration_transforms/" + basename(_transform)  + '.gz' + ", "
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
