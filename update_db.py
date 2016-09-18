@@ -17,7 +17,7 @@ if __name__ == "__main__":
     os.nice(19)
 
     util.setup("temp_convert/", "LGG")
-    util.mkdir_p(util.TEMP_FOLDER_PATH )
+    util.mkdir_p(util.TEMP_FOLDER_PATH)
 
     util.DATA_FOLDER = "/mnt/dokumneter/data/database3/"
 
@@ -25,7 +25,7 @@ if __name__ == "__main__":
     db_path = "/home/dahoiv/disk/data/database/LGG/"
 
     if True:
-        util.DATA_FOLDER = util.DATA_FOLDER +  "LGG" + "/"
+        util.DATA_FOLDER = util.DATA_FOLDER + "LGG" + "/"
         util.DB_PATH = util.DATA_FOLDER + "brainSegmentation.db"
 
         convert_table_inv = ConvertDataToDB.get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
@@ -60,7 +60,12 @@ if __name__ == "__main__":
         cursor.close()
         conn.close()
     else:
-        image_ids =[]
+        util.DATA_FOLDER = util.DATA_FOLDER + "GBM" + "/"
+        util.DB_PATH = util.DATA_FOLDER + "brainSegmentation.db"
+
+        import do_img_registration_GBM 
+        image_ids = do_img_registration_GBM.find_images()
+        ny_image_ids = image_ids
 
     for (img_id, ny_img_id) in zip(image_ids, ny_image_ids):
         print(img_id)

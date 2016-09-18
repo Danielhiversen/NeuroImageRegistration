@@ -86,7 +86,7 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-def post_calculations(moving_dataset_image_ids, result = dict()):
+def post_calculations(moving_dataset_image_ids, result=dict()):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
@@ -116,6 +116,7 @@ def post_calculations(moving_dataset_image_ids, result = dict()):
 
     return result
 
+
 def get_image_id_and_qol(qol_param, old_format=False):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH)
@@ -132,7 +133,7 @@ def get_image_id_and_qol(qol_param, old_format=False):
     for pid in cursor:
         pid = pid[0]
         _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
-                                 (pid, )).fetchone()[0]
+                            (pid, )).fetchone()[0]
         if _qol is None:
             continue
 
@@ -254,7 +255,7 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
         if _sum is None:
             _sum = np.zeros(img.get_data().shape)
             _total = np.zeros(img.get_data().shape)
-        _sum = _sum+ np.array(img.get_data())*val_i
+        _sum = _sum + np.array(img.get_data())*val_i
         temp = np.array(img.get_data())
         temp[temp != 0] = 1.0
         _total = _total + temp
@@ -264,6 +265,7 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
         generate_image(path_N, image_registration.TEMPLATE_VOLUME)
 
     return (_sum, _total)
+
 
 def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
     """ Calculate average volumes """
@@ -279,6 +281,7 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
 
     generate_image(path, image_registration.TEMPLATE_VOLUME)
     return average
+
 
 def generate_image(path, path2):
     """ generate png images"""

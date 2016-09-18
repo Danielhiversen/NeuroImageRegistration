@@ -14,6 +14,7 @@ from nilearn.image import resample_img
 
 import util
 
+
 class img_data(object):
     def __init__(self, image_id, data_path, temp_data_path):
         self.image_id = image_id

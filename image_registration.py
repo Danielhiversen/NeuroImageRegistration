@@ -361,7 +361,8 @@ def save_transform_to_database(data_transforms):
                 os.remove(dst_file)
             with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
-            transform_paths += str(pid) + "/registration_transforms/" + basename(_transform)  + '.gz' + ", "
+            transform_paths += str(pid) + "/registration_transforms/" +\
+                basename(_transform) + '.gz' + ", "
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
