@@ -90,7 +90,7 @@ def post_calculations(moving_dataset_image_ids, result = dict()):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
-    
+
     for _id in moving_dataset_image_ids:
         transforms = get_transforms_from_db(_id, conn)
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
@@ -141,7 +141,7 @@ def get_image_id_and_qol(qol_param, old_format=False):
         print(pid)
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
-            continue            
+            continue
         _id = _id[0]
 
         image_id.extend([_id])
@@ -189,12 +189,12 @@ def decompress_file(gzip_path):
 
         # store uncompressed file data from 's' variable
         open(uncompressed_path, 'w').write(s)
-        
+
         return uncompressed_path
 
 
 def transform_volume(vol, transform, label_img=False):
-    transforms = []    
+    transforms = []
     for _transform in ensure_list(transform):
         transform.append(decompress_file(_transform))
 
@@ -246,7 +246,7 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
         val = [1]*len(images)
 
     _sum = None
-    _total = None    
+    _total = None
     for (file_name, val_i) in zip(images, val):
         if val_i is None:
             continue
@@ -261,8 +261,8 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     if save:
         result_img = nib.Nifti1Image(_sum, img.affine)
         result_img.to_filename(path_N)
+        generate_image(path_N, image_registration.TEMPLATE_VOLUME)
 
-    generate_image(path_N, image_registration.TEMPLATE_VOLUME)
     return (_sum, _total)
 
 def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):

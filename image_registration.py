@@ -308,7 +308,7 @@ def process_dataset(args):
     print(bet_time)
     print("\n\n\n\n -- Run time: ")
     print(datetime.datetime.now() - start_time)
-    return (img, -1)
+    return img
 
 
 def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
@@ -345,7 +345,7 @@ def save_transform_to_database(data_transforms):
 #    except:
 #        pass
 
-    for img, fixed_image_id in data_transforms:
+    for img in data_transforms:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
 
@@ -367,7 +367,7 @@ def save_transform_to_database(data_transforms):
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
                                (transform_paths, img.image_id))
         cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''',
-                               (fixed_image_id, img.image_id))
+                               (img.fixed_image, img.image_id))
 
         folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/"
         util.mkdir_p(folder)
