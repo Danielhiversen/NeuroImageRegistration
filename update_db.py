@@ -23,11 +23,11 @@ if __name__ == "__main__":
 
     data_transforms = []
     db_path = "/home/dahoiv/disk/data/database/LGG/"
-    
+
     if True:
         util.DATA_FOLDER = util.DATA_FOLDER +  "LGG" + "/"
         util.DB_PATH = util.DATA_FOLDER + "brainSegmentation.db"
-                
+
         convert_table_inv = ConvertDataToDB.get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
         convert_table = {v: k for k, v in convert_table_inv.items()}
         print(convert_table_inv)
@@ -35,7 +35,7 @@ if __name__ == "__main__":
         conn = sqlite3.connect(util.DB_PATH)
         conn.text_factory = str
         cursor = conn.execute('''SELECT pid from Patient''')
-    
+
         conn2 = sqlite3.connect(db_path + "brainSegmentation.db")
         conn2.text_factory = str
         image_ids = []
@@ -52,7 +52,7 @@ if __name__ == "__main__":
                 image_ids.append(_id[0])
             cursor2.close()
 
-            cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (old_pid, "pre"))
+            cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (ny_pid, "pre"))
             for _id in cursor2:
                 ny_image_ids.append(_id[0])
             cursor2.close()
@@ -61,9 +61,9 @@ if __name__ == "__main__":
         conn.close()
     else:
         image_ids =[]
-         
-    
+
     for (img_id, ny_img_id) in zip(image_ids, ny_image_ids):
+        print(img_id)
         _img = img_data(img_id, db_path, util.TEMP_FOLDER_PATH)
         _img.load_db_transforms()
         _img.processed_filepath = util.move_vol(_img.img_filepath, _img.get_transforms())
