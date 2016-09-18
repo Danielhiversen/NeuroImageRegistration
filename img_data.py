@@ -51,7 +51,10 @@ class img_data(object):
         cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (self.image_id,))
         db_temp = cursor.fetchone()
 
-        self.transform = db_temp[0].split(",")
+        self.transform = []
+        for _transform in db_temp[0].split(","):
+            self.transform.append(self.data_path + _transform.strip())
+
         self.fixed_image_id = db_temp[1]
         cursor.close()
         conn.close()

@@ -22,9 +22,9 @@ if __name__ == "__main__":
     util.DATA_FOLDER = "/mnt/dokumneter/data/database3/"
 
     data_transforms = []
-    db_path = "/home/dahoiv/disk/data/database/LGG/"
 
-    if True:
+    if False:
+        db_path = "/home/dahoiv/disk/data/database/LGG/"
         util.DATA_FOLDER = util.DATA_FOLDER + "LGG" + "/"
         util.DB_PATH = util.DATA_FOLDER + "brainSegmentation.db"
 
@@ -60,10 +60,12 @@ if __name__ == "__main__":
         cursor.close()
         conn.close()
     else:
+        db_path = "/home/dahoiv/disk/data/database/GBM/"
+
         util.DATA_FOLDER = util.DATA_FOLDER + "GBM" + "/"
         util.DB_PATH = util.DATA_FOLDER + "brainSegmentation.db"
 
-        import do_img_registration_GBM 
+        import do_img_registration_GBM
         image_ids = do_img_registration_GBM.find_images()
         ny_image_ids = image_ids
 

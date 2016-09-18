@@ -197,7 +197,7 @@ def decompress_file(gzip_path):
 def transform_volume(vol, transform, label_img=False):
     transforms = []
     for _transform in ensure_list(transform):
-        transform.append(decompress_file(_transform))
+        transforms.append(decompress_file(_transform))
 
     result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii'
     apply_transforms = ants.ApplyTransforms()
