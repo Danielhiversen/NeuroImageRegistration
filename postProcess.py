@@ -21,22 +21,22 @@ if __name__ == "__main__":
         util.setup("GBM_RES2/", "GBM")
 
 
-    qol_param = 'Index_value'
-
-    util.setup("LGG_POST_RES/", "LGG")
-    if not os.path.exists(util.TEMP_FOLDER_PATH):
-        os.makedirs(util.TEMP_FOLDER_PATH)
-    (image_ids, qol) = util.get_image_id_and_qol(qol_param)
-    result = util.post_calculations(image_ids)
-
-    util.setup("GBM_RES2/", "GBM")
-    if not os.path.exists(util.TEMP_FOLDER_PATH):
-        os.makedirs(util.TEMP_FOLDER_PATH)
-    (image_ids, _qol) = util.get_image_id_and_qol(qol_param)
-    qol.extend(_qol)
-    result.extend(util.post_calculations(image_ids))
-
-    for label in result:
-        util.avg_calculation(result[label], label + '_' + qol_param, qol, True)
-
-
+    params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
+    for qol_param in params:
+        util.setup("LGG_POST_RES/", "LGG")
+        if not os.path.exists(util.TEMP_FOLDER_PATH):
+            os.makedirs(util.TEMP_FOLDER_PATH)
+        (image_ids, qol) = util.get_image_id_and_qol(qol_param)
+        result = util.post_calculations(image_ids)
+    
+        util.setup("GBM_RES2/", "GBM")
+        if not os.path.exists(util.TEMP_FOLDER_PATH):
+            os.makedirs(util.TEMP_FOLDER_PATH)
+        (image_ids, _qol) = util.get_image_id_and_qol(qol_param)
+        qol.extend(_qol)
+        result.extend(util.post_calculations(image_ids))
+    
+        for label in result:
+            util.avg_calculation(result[label], label + '_' + qol_param, qol, True, "LGG_GBM_RES")
+    
+    

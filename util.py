@@ -116,7 +116,7 @@ def post_calculations(moving_dataset_image_ids):
     return result
 
 def get_image_id_and_qol(qol_param):
-    """ Get image id and qol """    
+    """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
@@ -134,10 +134,10 @@ def get_image_id_and_qol(qol_param):
             continue
 
         image_id.extend(_id)
-        qol.extend(_qol)
+        qol.extend(_qol*100)
     cursor.close()
     conn.close()
-        
+
     return (image_id, qol)
 
 
@@ -202,42 +202,46 @@ def move_vol(moving, transform, label_img=False):
     return result
 
 
-def sum_calculation(images, label, val=None, save=False):
+def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
     """ Calculate sum volumes """
-    path_N = TEMP_FOLDER_PATH + 'total_' + label + '.nii'
+    path_N = folder + 'total_' + label + '.nii'
     path_N = path_N.replace('label', 'tumor')
-    
+
     if not val:
         val = [1]*len(images)
 
     _sum = None
+    _total = None    
     for (file_name, val_i) in zip(images, val):
-        if not val_i is None:
+        if val_i is None:
             continue
         img = nib.load(file_name)
         if _sum is None:
             _sum = np.zeros(img.get_data().shape)
+            _total = np.zeros(img.get_data().shape)
         _sum = _sum+ np.array(img.get_data())*val_i
-
+        temp = np.array(img.get_data())
+        temp[temp != 0] = 1.0
+        _total = _total + temp
     if save:
         result_img = nib.Nifti1Image(_sum, img.affine)
         result_img.to_filename(path_N)
 
     generate_image(path_N, image_registration.TEMPLATE_VOLUME)
-    return _sum
+    return (_sum, _total)
 
-def avg_calculation(images, label, val=None, save=False):
+def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
     """ Calculate average volumes """
-    path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
+    path = folder + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
-    _sum = sum_calculation(images, label, val, save=False)
-    average = _sum / float(len(images))
-    
-    if save:    
+    (_sum, _total) = sum_calculation(images, label, val, save=False)
+    average = _sum / _total
+
+    if save:
         result_img = nib.Nifti1Image(average, _sum.affine)
         result_img.to_filename(path)
-    
+
     generate_image(path, image_registration.TEMPLATE_VOLUME)
     return average
 
