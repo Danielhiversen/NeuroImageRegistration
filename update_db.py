@@ -73,6 +73,8 @@ if __name__ == "__main__":
         print(img_id)
         _img = img_data(img_id, db_path, util.TEMP_FOLDER_PATH)
         _img.load_db_transforms()
+        if _img.transform is None:
+            continue
         _img.processed_filepath = util.move_vol(_img.img_filepath, _img.get_transforms())
         _img.image_id = ny_img_id
         data_transforms.append(_img)

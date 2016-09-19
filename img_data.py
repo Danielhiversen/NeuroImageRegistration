@@ -50,7 +50,8 @@ class img_data(object):
         conn.text_factory = str
         cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (self.image_id,))
         db_temp = cursor.fetchone()
-
+        if db_temp is None:
+            return
         self.transform = []
         for _transform in db_temp[0].split(","):
             self.transform.append(self.data_path + _transform.strip())
@@ -58,8 +59,6 @@ class img_data(object):
         self.fixed_image_id = db_temp[1]
         cursor.close()
         conn.close()
-
-        return self._img_filepath
 
     @property
     def label_filepath(self):

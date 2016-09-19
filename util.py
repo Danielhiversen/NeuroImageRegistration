@@ -93,23 +93,21 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
 
     for _id in moving_dataset_image_ids:
         transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
+        cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
-        img = DATA_FOLDER + db_temp[0]
-        print(img, transforms)
-        temp = move_vol(img, transforms)
+        vol = DATA_FOLDER + db_temp[0]
+        print(vol, transforms)
         label = "img"
         if label in result:
-            result[label].append(temp)
+            result[label].append(vol)
         else:
-            result[label] = [temp]
+            result[label] = [vol]
 
-        for (segmentation, label) in find_seg_images(_id):
-            temp = move_vol(segmentation, transforms, True)
+        for (segmentation, label) in find_reg_label_images(_id):
             if label in result:
-                result[label].append(temp)
+                result[label].append(segmentation)
             else:
-                result[label] = [temp]
+                result[label] = [segmentation]
 
         cursor.close()
     conn.close()
@@ -117,17 +115,12 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
     return result
 
 
-def get_image_id_and_qol(qol_param, old_format=False):
+def get_image_id_and_qol(qol_param):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
 
-    if old_format:
-        import ConvertDataToDB
-        convert_table_inv = ConvertDataToDB.get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
-        convert_table = {v: k for k, v in convert_table_inv.items()}
-        print(convert_table)
     image_id = []
     qol = []
     for pid in cursor:
@@ -137,8 +130,6 @@ def get_image_id_and_qol(qol_param, old_format=False):
         if _qol is None:
             continue
 
-        if old_format:
-            pid = convert_table[str(pid)]
         print(pid)
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
@@ -158,6 +149,21 @@ def find_seg_images(moving_image_id):
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT filepath, description from Labels where image_id = ? ''',
+                          (moving_image_id,))
+    images = []
+    for (row, label) in cursor:
+        images.append((DATA_FOLDER + row, label))
+
+    cursor.close()
+    conn.close()
+    return images
+
+
+def find_reg_label_images(moving_image_id):
+    """ Find reg segmentation images"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT filepath_reg, description from Labels where image_id = ? ''',
                           (moving_image_id,))
     images = []
     for (row, label) in cursor:
