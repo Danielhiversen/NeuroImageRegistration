@@ -20,7 +20,6 @@ if __name__ == "__main__":
 #        import do_img_registration_GBM as do_img_registration
 #        util.setup("GBM_RES2/", "GBM")
 
-
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
     util.mkdir_p("LGG_GBM_RES")
     util.mkdir_p("LGG_GBM_RES/LGG")
