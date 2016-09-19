@@ -25,23 +25,29 @@ if __name__ == "__main__":
     util.mkdir_p("LGG_GBM_RES/LGG")
     util.mkdir_p("LGG_GBM_RES/GBM")
 
+    util.setup("LGG_POST_RES/LGG/", "LGG")
+    util.mkdir_p(util.TEMP_FOLDER_PATH)
     for qol_param in params:
-        util.setup("LGG_POST_RES/LGG/", "LGG")
-        util.mkdir_p(util.TEMP_FOLDER_PATH)
-        (image_ids, qol) = util.get_image_id_and_qol(qol_param, True)
+        (image_ids, qol) = util.get_image_id_and_qol(qol_param)
         print(image_ids)
         result = util.post_calculations(image_ids)
         for label in result:
-            util.avg_calculation(result[label], label + '_' + qol_param, qol, True, "LGG_GBM_RES")
+            print(label)
+            if label == 'img':
+                continue
+            util.avg_calculation(result[label], label + '_' + qol_param, qol, True, "LGG_GBM_RES/LGG/")
+    print(result)
+    util.avg_calculation(result['img'], label, None, True, "LGG_GBM_RES/LGG/")
+    util.sum_calculation(result['img'], label, None, True, "LGG_GBM_RES/LGG/")
 
-        print(result)
+    a= b
 
-        util.setup("GBM_RES/GBM/", "GBM")
-        util.mkdir_p(util.TEMP_FOLDER_PATH)
+    util.setup("GBM_RES/GBM/", "GBM")
+    util.mkdir_p(util.TEMP_FOLDER_PATH)
+    for qol_param in params:
         (image_ids, _qol) = util.get_image_id_and_qol(qol_param)
-        qol.extend(_qol)
-        result = util.post_calculations(image_ids, result)
         print(result)
+        result = util.post_calculations(image_ids, result)
 
         for label in result:
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, "LGG_GBM_RES")

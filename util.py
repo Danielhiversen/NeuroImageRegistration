@@ -48,7 +48,7 @@ def setup_paths(datatype):
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/mnt/dokumneter/data/database/"
+        DATA_FOLDER = "/mnt/dokumneter/data/database3/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
@@ -92,9 +92,12 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
     conn.text_factory = str
 
     for _id in moving_dataset_image_ids:
+        print(_id)
         transforms = get_transforms_from_db(_id, conn)
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
+        if db_temp[0] is None:
+            continue
         vol = DATA_FOLDER + db_temp[0]
         print(vol, transforms)
         label = "img"
@@ -130,7 +133,6 @@ def get_image_id_and_qol(qol_param):
         if _qol is None:
             continue
 
-        print(pid)
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
             continue
@@ -176,6 +178,8 @@ def find_reg_label_images(moving_image_id):
 
 def ensure_list(value):
     """Wrap value in list if it is not one."""
+    if value is None:
+        return []
     return value if isinstance(value, list) else [value]
 
 
@@ -282,10 +286,10 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     average = _sum / _total
 
     if save:
-        result_img = nib.Nifti1Image(average, _sum.affine)
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(average, img.affine)
         result_img.to_filename(path)
-
-    generate_image(path, image_registration.TEMPLATE_VOLUME)
+        generate_image(path, image_registration.TEMPLATE_VOLUME)
     return average
 
 
