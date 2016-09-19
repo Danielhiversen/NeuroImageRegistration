@@ -10,15 +10,15 @@ import util
 
 if __name__ == "__main__":
     os.nice(19)
-    if False:
-        import do_img_registration_LGG_POST as do_img_registration
-        util.setup("LGG_POST_RES/", "LGG")
-    elif False:
-        import do_img_registration_LGG_PRE as do_img_registration
-        util.setup("LGG_PRE_RES/", "LGG")
-    elif False:
-        import do_img_registration_GBM as do_img_registration
-        util.setup("GBM_RES2/", "GBM")
+#    if False:
+#        import do_img_registration_LGG_POST as do_img_registration
+#        util.setup("LGG_POST_RES/", "LGG")
+#    elif False:
+#        import do_img_registration_LGG_PRE as do_img_registration
+#        util.setup("LGG_PRE_RES/", "LGG")
+#    elif False:
+#        import do_img_registration_GBM as do_img_registration
+#        util.setup("GBM_RES2/", "GBM")
 
 
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
@@ -36,7 +36,7 @@ if __name__ == "__main__":
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, "LGG_GBM_RES")
 
         print(result)
-    
+
         util.setup("GBM_RES/GBM/", "GBM")
         util.mkdir_p(util.TEMP_FOLDER_PATH)
         (image_ids, _qol) = util.get_image_id_and_qol(qol_param)
@@ -46,5 +46,3 @@ if __name__ == "__main__":
 
         for label in result:
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, "LGG_GBM_RES")
-    
-    
