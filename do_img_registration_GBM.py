@@ -37,8 +37,8 @@ if __name__ == "__main__":
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
 
-    image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-                                        image_registration.TEMPLATE_MASK)
+    image_registration.prepare_template(util.TEMPLATE_VOLUME,
+                                        util.TEMPLATE_MASK)
 
     moving_datasets_ids = find_images()
 
