@@ -335,6 +335,7 @@ def move_vol(moving, transform, label_img=False):
                                      interpolation='nearest')
         resampled_file = util.TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
             + '_resample.nii'
+        # pylint: disable= no-member
         img_3d_affine.to_filename(resampled_file)
 
     else:
@@ -345,6 +346,7 @@ def move_vol(moving, transform, label_img=False):
     result = util.transform_volume(moving, transform, label_img)
     util.generate_image(result, util.TEMPLATE_VOLUME)
     return result
+
 
 def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
@@ -398,7 +400,7 @@ def save_transform_to_database(data_transforms):
         cursor = conn.execute('''SELECT filepath, id from Labels where image_id = ? ''',
                               (img.image_id,))
         for (row, label_id) in cursor:
-            temp = util.compress_vol(util.move_vol(util.DATA_FOLDER + row,
+            temp = util.compress_vol(move_vol(util.DATA_FOLDER + row,
                                                    img.get_transforms(), True))
             shutil.copy(temp, folder)
             label_db = str(pid) + "/reg_volumes_labels/" + basename(temp)

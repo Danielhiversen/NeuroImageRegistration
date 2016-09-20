@@ -75,7 +75,7 @@ if __name__ == "__main__":
         _img.load_db_transforms()
         if _img.transform is None:
             continue
-        _img.processed_filepath = util.move_vol(_img.img_filepath, _img.get_transforms())
+        _img.processed_filepath = image_registration.move_vol(_img.img_filepath, _img.get_transforms())
         _img.image_id = ny_img_id
         data_transforms.append(_img)
 

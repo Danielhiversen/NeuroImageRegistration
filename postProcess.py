@@ -26,8 +26,8 @@ if __name__ == "__main__":
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
     util.mkdir_p("LGG_GBM_RES")
 
-    FOLDER = "LGG_GBM_RES/GBM/" #  "LGG_GBM_RES/GBM"
-    util.setup(FOLDER, "GGM")
+    FOLDER = "LGG_GBM_RES/GBM/"  # "LGG_GBM_RES/GBM"
+    util.setup(FOLDER, "GBM")
     util.mkdir_p(FOLDER)
     util.mkdir_p(util.TEMP_FOLDER_PATH)
 

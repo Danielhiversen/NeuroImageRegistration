@@ -30,7 +30,6 @@ TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 
 
-
 def setup(temp_path, datatype):
     """setup for current computer """
     # pylint: disable= global-statement
