@@ -194,7 +194,7 @@ def pre_process(img, do_bet=True):
         bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
-    util.generate_image(img.pre_processed_filepath, util.TEMPLATE_VOLUME)
+    util.generate_image(img.pre_processed_filepath, resampled_file)
     print("---BET", img.pre_processed_filepath)
     return img
 
@@ -289,7 +289,7 @@ def registration(moving_img, fixed, reg_type):
         # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
-    # util.generate_image(reg.inputs.output_warped_image, fixed)
+    util.generate_image(reg.inputs.output_warped_image, fixed)
 
     return moving_img
 
