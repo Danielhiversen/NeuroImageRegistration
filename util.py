@@ -16,13 +16,13 @@ from os.path import splitext
 import sqlite3
 from nilearn import datasets
 import matplotlib as mpl
-mpl.use('Agg')
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
 
+mpl.use('Agg')
 
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""

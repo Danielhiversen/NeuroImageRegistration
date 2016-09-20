@@ -42,4 +42,3 @@ if __name__ == "__main__":
                 all_filepaths.remove(filepath)
 
     print("Delete ", all_filepaths)
-    

@@ -5,21 +5,19 @@ Created on Tue May 24 10:41:50 2016
 @author: dahoiv
 """
 
-import os
+# import os
 import util
 
 if __name__ == "__main__":
-
-
-#    if False:
-#        import do_img_registration_LGG_POST as do_img_registration
-#        util.setup("LGG_POST_RES/", "LGG")
-#    elif False:
-#        import do_img_registration_LGG_PRE as do_img_registration
-#        util.setup("LGG_PRE_RES/", "LGG")
-#    elif False:
-#        import do_img_registration_GBM as do_img_registration
-#        util.setup("GBM_RES2/", "GBM")
+    #    if False:
+    #        import do_img_registration_LGG_POST as do_img_registration
+    #        util.setup("LGG_POST_RES/", "LGG")
+    #    elif False:
+    #        import do_img_registration_LGG_PRE as do_img_registration
+    #        util.setup("LGG_PRE_RES/", "LGG")
+    #    elif False:
+    #        import do_img_registration_GBM as do_img_registration
+    #        util.setup("GBM_RES2/", "GBM")
 
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
     util.mkdir_p("LGG_GBM_RES")
