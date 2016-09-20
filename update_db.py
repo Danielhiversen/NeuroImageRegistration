@@ -57,7 +57,7 @@ if __name__ == "__main__":
         image_ids = []
         ny_image_ids = []
         for row in cursor:
-            #print(row)
+            # print(row)
             ny_pid = row[0]
             try:
                 old_pid = int(convert_table_inv[str(ny_pid)])

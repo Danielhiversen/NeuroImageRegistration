@@ -15,12 +15,15 @@ from os.path import basename
 from os.path import splitext
 import sqlite3
 from nilearn import datasets
-import matplotlib as mpl
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
+import matplotlib
+matplotlib.use('Agg')
+# pylint: disable= wrong-import-position
+import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 
-mpl.use('Agg')
 
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""
@@ -35,6 +38,7 @@ def setup(temp_path, datatype=""):
     # pylint: disable= global-statement
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
+    mkdir_p(TEMP_FOLDER_PATH)
     setup_paths(datatype)
 
 
@@ -254,11 +258,11 @@ def generate_image(path, path2):
 
     def show_slices(slices, layers):
         """ Show 2d slices"""
-        _, axes = mpl.pyplot.subplots(1, len(slices))
+        _, axes = plt.subplots(1, len(slices))
         for i, slice_i in enumerate(slices):
             # pylint: disable= no-member
             axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
-            axes[i].imshow(slice_i.T, cmap=mpl.cm.Reds, origin="lower", alpha=0.6)
+            axes[i].imshow(slice_i.T, cmap=cm.Reds, origin="lower", alpha=0.6)
 
     # pylint: disable= invalid-name
     x = int(img.shape[0]/2)
@@ -279,10 +283,10 @@ def generate_image(path, path2):
 
     show_slices(slices, slices_template)
     name = splitext(splitext(basename(path))[0])[0]
-    mpl.pyplot.suptitle(name)
+    plt.suptitle(name)
 
-    mpl.pyplot.savefig(splitext(splitext(path)[0])[0] + ".png")
-    mpl.pyplot.close()
+    plt.savefig(splitext(splitext(path)[0])[0] + ".png")
+    plt.close()
 
 
 def compress_vol(vol):
