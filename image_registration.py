@@ -98,7 +98,7 @@ def pre_process(img, do_bet=True):
     name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
 
     if os.path.exists(img.pre_processed_filepath) and\
-       os.path.exists(path + name + 'Composite.h5'):
+       (os.path.exists(path + name + 'Composite.h5') or BE_METHOD == 1):
         img.init_transform = path + name + 'Composite.h5'
 #        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
         return img

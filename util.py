@@ -21,8 +21,8 @@ import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 # pylint: disable= wrong-import-position
-import matplotlib.pyplot as plt
-import matplotlib.cm as cm
+import matplotlib.pyplot as plt  # noqa
+import matplotlib.cm as cm  # noqa
 
 
 TEMP_FOLDER_PATH = ""
