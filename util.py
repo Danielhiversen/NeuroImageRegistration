@@ -7,8 +7,8 @@ Created on Mon Sep 12 11:54:08 2016
 
 from __future__ import print_function
 from __future__ import division
-import errno
 import sys
+import errno
 import gzip
 import os
 from os.path import basename
@@ -38,10 +38,10 @@ def setup(temp_path, datatype):
     setup_paths(datatype)
 
 
-def setup_paths(datatype):
+def setup_paths(datatype=""):
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long
-    if datatype not in ["LGG", "GBM"]:
+    if datatype not in ["LGG", "GBM", ""]:
         print("Unkown datatype " + datatype)
         raise Exception
 
@@ -49,7 +49,7 @@ def setup_paths(datatype):
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/mnt/dokumneter/data/database3/"
+        DATA_FOLDER = "/mnt/dokumneter/data/database2/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
