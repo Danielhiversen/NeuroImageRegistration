@@ -307,19 +307,15 @@ def vacuum_db():
 
 if __name__ == "__main__":
     util.setup_paths()
-    try:
-        shutil.rmtree(util.DATA_FOLDER)
-    except OSError:
-        pass
+#    try:
+#        shutil.rmtree(util.DATA_FOLDER)
+#    except OSError:
+#        pass
     util.mkdir_p(util.DATA_FOLDER)
     create_db(util.DB_PATH)
     convert_gbm_data(MAIN_FOLDER + "Segmenteringer_GBM/")
     qol_to_db("gbm")
 
-    try:
-        shutil.rmtree(util.DATA_FOLDER)
-    except OSError:
-        pass
     util.mkdir_p(util.DATA_FOLDER)
     create_db(util.DB_PATH)
     convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
