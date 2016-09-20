@@ -13,7 +13,7 @@ import util
 if __name__ == "__main__":
     os.nice(19)
 
-    util.setup("temp/", "GBM")
+    util.setup("temp/", "")
 
     all_filepaths = ['brainSegmentation.db']
 
@@ -38,3 +38,8 @@ if __name__ == "__main__":
             filepath = os.path.join(root, filepath).replace(util.DATA_FOLDER, "")
             if filepath not in all_filepaths:
                 print("Delete " + filepath)
+            else:
+                all_filepaths.remove(filepath)
+
+    print("Delete ", all_filepaths)
+    
