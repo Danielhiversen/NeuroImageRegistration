@@ -29,4 +29,4 @@ install:
   - "pip install -r requirements.txt"
 script:
   - flake8 
-  - pylint image_registration.py util.py
+  - pylint image_registration.py util.py ConvertDataToDB.py
