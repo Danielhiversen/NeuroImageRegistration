@@ -7,6 +7,8 @@ Created on Mon Sep 12 11:54:08 2016
 
 from __future__ import print_function
 from __future__ import division
+import errno
+import sys
 import gzip
 import os
 from os.path import basename
@@ -18,8 +20,6 @@ import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
-import sys
-import errno
 
 
 TEMP_FOLDER_PATH = ""
@@ -87,6 +87,7 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
+# pylint: disable= dangerous-default-value
 def post_calculations(moving_dataset_image_ids, result=dict()):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH)
@@ -185,27 +186,29 @@ def ensure_list(value):
 
 
 def decompress_file(gzip_path):
-        if gzip_path[:-3] != '.gz':
-            return gzip_path
+    """Decompress file """
+    if gzip_path[:-3] != '.gz':
+        return gzip_path
 
-        inF = gzip.open(gzip_path, 'rb')
-        # uncompress the gzip_path INTO THE 's' variable
-        s = inF.read()
-        inF.close()
+    in_file = gzip.open(gzip_path, 'rb')
+    # uncompress the gzip_path INTO THE 'data' variable
+    data = in_file.read()
+    in_file.close()
 
-        # get gzip filename (without directories)
-        gzip_fname = os.path.basename(gzip_path)
-        # get original filename (remove 3 characters from the end: ".gz")
-        fname = gzip_fname[:-3]
-        uncompressed_path = os.path.join(TEMP_FOLDER_PATH, fname)
+    # get gzip filename (without directories)
+    gzip_fname = os.path.basename(gzip_path)
+    # get original filename (remove 3 characters from the end: ".gz")
+    fname = gzip_fname[:-3]
+    uncompressed_path = os.path.join(TEMP_FOLDER_PATH, fname)
 
-        # store uncompressed file data from 's' variable
-        open(uncompressed_path, 'w').write(s)
+    # store uncompressed file data from 'data' variable
+    open(uncompressed_path, 'w').write(data)
 
-        return uncompressed_path
+    return uncompressed_path
 
 
 def transform_volume(vol, transform, label_img=False):
+    """Transform volume """
     transforms = []
     for _transform in ensure_list(transform):
         transforms.append(decompress_file(_transform))
@@ -230,8 +233,8 @@ def transform_volume(vol, transform, label_img=False):
 
 def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
     """ Calculate sum volumes """
-    path_N = folder + 'total_' + label + '.nii'
-    path_N = path_N.replace('label', 'tumor')
+    path_n = folder + 'total_' + label + '.nii'
+    path_n = path_n.replace('label', 'tumor')
 
     if not val:
         val = [1]*len(images)
@@ -251,8 +254,8 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
         _total = _total + temp
     if save:
         result_img = nib.Nifti1Image(_sum, img.affine)
-        result_img.to_filename(path_N)
-        generate_image(path_N, TEMPLATE_VOLUME)
+        result_img.to_filename(path_n)
+        generate_image(path_n, TEMPLATE_VOLUME)
 
     return (_sum, _total)
 
@@ -312,6 +315,7 @@ def generate_image(path, path2):
 
 
 def compress_vol(vol):
+    """Compress volume"""
     if vol[-3:] == ".gz":
         return vol
     temp = nib.load(vol)
