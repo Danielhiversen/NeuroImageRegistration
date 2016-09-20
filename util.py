@@ -178,35 +178,6 @@ def find_reg_label_images(moving_image_id):
     return images
 
 
-def ensure_list(value):
-    """Wrap value in list if it is not one."""
-    if value is None:
-        return []
-    return value if isinstance(value, list) else [value]
-
-
-def decompress_file(gzip_path):
-    """Decompress file """
-    if gzip_path[:-3] != '.gz':
-        return gzip_path
-
-    in_file = gzip.open(gzip_path, 'rb')
-    # uncompress the gzip_path INTO THE 'data' variable
-    data = in_file.read()
-    in_file.close()
-
-    # get gzip filename (without directories)
-    gzip_fname = os.path.basename(gzip_path)
-    # get original filename (remove 3 characters from the end: ".gz")
-    fname = gzip_fname[:-3]
-    uncompressed_path = os.path.join(TEMP_FOLDER_PATH, fname)
-
-    # store uncompressed file data from 'data' variable
-    open(uncompressed_path, 'w').write(data)
-
-    return uncompressed_path
-
-
 def transform_volume(vol, transform, label_img=False):
     """Transform volume """
     transforms = []
@@ -322,6 +293,35 @@ def compress_vol(vol):
     res = vol + ".gz"
     temp.to_filename(res)
     return res
+
+
+def ensure_list(value):
+    """Wrap value in list if it is not one."""
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def decompress_file(gzip_path):
+    """Decompress file """
+    if gzip_path[:-3] != '.gz':
+        return gzip_path
+
+    in_file = gzip.open(gzip_path, 'rb')
+    # uncompress the gzip_path INTO THE 'data' variable
+    data = in_file.read()
+    in_file.close()
+
+    # get gzip filename (without directories)
+    gzip_fname = os.path.basename(gzip_path)
+    # get original filename (remove 3 characters from the end: ".gz")
+    fname = gzip_fname[:-3]
+    uncompressed_path = os.path.join(TEMP_FOLDER_PATH, fname)
+
+    # store uncompressed file data from 'data' variable
+    open(uncompressed_path, 'w').write(data)
+
+    return uncompressed_path
 
 
 def mkdir_p(path):
