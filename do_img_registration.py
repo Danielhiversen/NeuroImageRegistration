@@ -1,11 +1,12 @@
 # -*- coding: utf-8 -*-
 """
-Created on Wed Apr 20 15:02:02 2016
+Created on Tue Sep 20 15:51:02 2016
 
 @author: dahoiv
 """
 
 import os
+import datetime
 import sqlite3
 
 import image_registration
@@ -19,21 +20,20 @@ def find_images():
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
-        cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
+        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (row[0], "pre"))
         for _id in cursor2:
             ids.append(_id[0])
         cursor2.close()
 
     cursor.close()
     conn.close()
-    print(ids)
     return ids
 
 
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("GBM/", "GBM")
+    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}".format(datetime.now()) + "/")
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
 
@@ -41,7 +41,7 @@ if __name__ == "__main__":
                                         util.TEMPLATE_MASK)
 
     moving_datasets_ids = find_images()
-
+    print(moving_datasets_ids)
     data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN)
 
 #    image_registration.save_transform_to_database(data_transforms)

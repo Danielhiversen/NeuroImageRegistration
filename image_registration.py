@@ -194,7 +194,7 @@ def pre_process(img, do_bet=True):
         bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
-    # util.generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
+    util.generate_image(img.pre_processed_filepath, util.TEMPLATE_VOLUME)
     print("---BET", img.pre_processed_filepath)
     return img
 
@@ -251,10 +251,17 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.metric = ['MI', 'MI', 'CC']
         reg.inputs.radius_or_number_of_bins = [32, 32, 5]
         reg.inputs.convergence_window_size = [5, 5, 5]
-        reg.inputs.number_of_iterations = ([[10000], [1000, 1000, 1000, 1000, 1000],
-                                            [100, 75, 75, 75]])
-        reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
-        reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
+        if reg.inputs.initial_moving_transform_com:
+            reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
+                                                [10000, 10000, 10000, 10000],
+                                                [100, 75, 75, 75]])
+            reg.inputs.shrink_factors = [[9, 5, 3, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
+        else:
+            reg.inputs.number_of_iterations = ([[10000], [1000, 1000, 1000, 1000, 1000],
+                                                [100, 75, 75, 75]])
+            reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         reg.inputs.sigma_units = ['vox']*3
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.25,),
@@ -297,9 +304,11 @@ def process_dataset(args):
     img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH + str(moving_image_id))
     img = pre_process(img)
 
+    bet_time = datetime.datetime.now() - start_time
+    print("\n\n\n\n -- Run time BET: ")
+    print(bet_time)
     return img
 
-    bet_time = datetime.datetime.now() - start_time
     for k in range(3):
         try:
             img = registration(img,
@@ -309,8 +318,6 @@ def process_dataset(args):
         # pylint: disable= broad-except
         except Exception as exp:
             print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
-    print("\n\n\n\n -- Run time BET: ")
-    print(bet_time)
     print("\n\n\n\n -- Run time: ")
     print(datetime.datetime.now() - start_time)
     return img
@@ -362,15 +369,6 @@ def save_transform_to_database(data_transforms):
     # pylint: disable= too-many-locals, bare-except
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
-#    try:
-#        conn.execute('ALTER TABLE Images ADD COLUMN filepath_reg TEXT;')
-#    except:
-#        pass
-#
-#    try:
-#        conn.execute('ALTER TABLE Labels ADD COLUMN filepath_reg TEXT;')
-#    except:
-#        pass
 
     for img in data_transforms:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))

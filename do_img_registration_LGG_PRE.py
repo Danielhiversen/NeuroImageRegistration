@@ -43,4 +43,4 @@ if __name__ == "__main__":
 
     data_transforms = image_registration.get_transforms(pre_images, image_registration.SYN)
 
-    image_registration.save_transform_to_database(data_transforms)
+#    image_registration.save_transform_to_database(data_transforms)

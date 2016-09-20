@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     data_transforms = []
 
-    if False:
+    if True:
         db_path = "/home/dahoiv/disk/data/database/LGG/"
         util.DATA_FOLDER = util.DATA_FOLDER + "LGG" + "/"
         util.DB_PATH = util.DATA_FOLDER + "brainSegmentation.db"
@@ -59,7 +59,7 @@ if __name__ == "__main__":
 
         cursor.close()
         conn.close()
-    else:
+    if True:
         db_path = "/home/dahoiv/disk/data/database/GBM/"
 
         util.DATA_FOLDER = util.DATA_FOLDER + "GBM" + "/"
