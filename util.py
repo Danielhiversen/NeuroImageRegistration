@@ -12,7 +12,7 @@ import os
 from os.path import basename
 from os.path import splitext
 import sqlite3
-from nilearn.image import resample_img
+from nilearn import datasets
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
@@ -21,12 +21,14 @@ import numpy as np
 import sys
 import errno
 
-from img_data import img_data
-import image_registration
 
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""
 DB_PATH = ""
+
+TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
+TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
+
 
 
 def setup(temp_path, datatype):
@@ -217,7 +219,7 @@ def transform_volume(vol, transform, label_img=False):
         apply_transforms.inputs.interpolation = 'Linear'
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = vol
-    apply_transforms.inputs.reference_image = image_registration.TEMPLATE_VOLUME
+    apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
     apply_transforms.inputs.output_image = result
     apply_transforms.inputs.default_value = 0
     apply_transforms.inputs.transforms = transforms
@@ -225,27 +227,6 @@ def transform_volume(vol, transform, label_img=False):
     apply_transforms.run()
 
     return apply_transforms.inputs.output_image
-
-
-def move_vol(moving, transform, label_img=False):
-    """ Move data with transform """
-    if label_img:
-        # resample volume to 1 mm slices
-        target_affine_3x3 = np.eye(3) * 1
-        img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
-                                     interpolation='nearest')
-        resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-            + '_resample.nii'
-        img_3d_affine.to_filename(resampled_file)
-
-    else:
-        img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
-        img.set_img_filepath(moving)
-        resampled_file = image_registration.pre_process(img, False).pre_processed_filepath
-
-    result = transform_volume(moving, transform, label_img)
-    generate_image(result, image_registration.TEMPLATE_VOLUME)
-    return result
 
 
 def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
@@ -272,7 +253,7 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     if save:
         result_img = nib.Nifti1Image(_sum, img.affine)
         result_img.to_filename(path_N)
-        generate_image(path_N, image_registration.TEMPLATE_VOLUME)
+        generate_image(path_N, TEMPLATE_VOLUME)
 
     return (_sum, _total)
 
@@ -289,7 +270,7 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
         img = nib.load(images[0])
         result_img = nib.Nifti1Image(average, img.affine)
         result_img.to_filename(path)
-        generate_image(path, image_registration.TEMPLATE_VOLUME)
+        generate_image(path, TEMPLATE_VOLUME)
     return average
 
 

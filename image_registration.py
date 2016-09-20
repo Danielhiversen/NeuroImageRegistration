@@ -42,7 +42,6 @@ import sqlite3
 import shutil
 from builtins import map
 from builtins import str
-from nilearn import datasets
 from nilearn.image import resample_img
 import nipype.interfaces.ants as ants
 import nipype.interfaces.fsl as fsl
@@ -56,9 +55,6 @@ import util
 
 MULTITHREAD = 1  # 1,23,4....., "max"
 MULTITHREAD = "max"
-
-TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
-TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -131,7 +127,7 @@ def pre_process(img, do_bet=True):
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = resampled_file
-        reg.inputs.moving_image = TEMPLATE_VOLUME
+        reg.inputs.moving_image = util.TEMPLATE_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
         reg.inputs.num_threads = 1
@@ -169,7 +165,7 @@ def pre_process(img, do_bet=True):
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
         mult.inputs.first_input = reg_volume
-        mult.inputs.second_input = TEMPLATE_MASK
+        mult.inputs.second_input = util.TEMPLATE_MASK
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
@@ -329,6 +325,26 @@ def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func
                                                     [reg_type]*len(moving_dataset_image_ids))))
     return result
 
+
+def move_vol(moving, transform, label_img=False):
+    """ Move data with transform """
+    if label_img:
+        # resample volume to 1 mm slices
+        target_affine_3x3 = np.eye(3) * 1
+        img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
+                                     interpolation='nearest')
+        resampled_file = util.TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
+            + '_resample.nii'
+        img_3d_affine.to_filename(resampled_file)
+
+    else:
+        img = img_data(-1, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+        img.set_img_filepath(moving)
+        resampled_file = pre_process(img, False).pre_processed_filepath
+
+    result = util.transform_volume(moving, transform, label_img)
+    util.generate_image(result, util.TEMPLATE_VOLUME)
+    return result
 
 def save_transform_to_database(data_transforms):
     """ Save data transforms to database"""
