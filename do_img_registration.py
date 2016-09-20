@@ -33,7 +33,8 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}".format(datetime.now()) + "/")
+
+    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
     if not os.path.exists(util.TEMP_FOLDER_PATH):
         os.makedirs(util.TEMP_FOLDER_PATH)
 

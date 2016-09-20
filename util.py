@@ -16,8 +16,6 @@ from os.path import splitext
 import sqlite3
 from nilearn import datasets
 import matplotlib as mpl
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
@@ -32,7 +30,7 @@ TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 
 
-def setup(temp_path, datatype):
+def setup(temp_path, datatype=""):
     """setup for current computer """
     # pylint: disable= global-statement
     global TEMP_FOLDER_PATH
@@ -256,11 +254,11 @@ def generate_image(path, path2):
 
     def show_slices(slices, layers):
         """ Show 2d slices"""
-        _, axes = plt.subplots(1, len(slices))
+        _, axes = mpl.pyplot.subplots(1, len(slices))
         for i, slice_i in enumerate(slices):
             # pylint: disable= no-member
             axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
-            axes[i].imshow(slice_i.T, cmap=cm.Reds, origin="lower", alpha=0.6)
+            axes[i].imshow(slice_i.T, cmap=mpl.cm.Reds, origin="lower", alpha=0.6)
 
     # pylint: disable= invalid-name
     x = int(img.shape[0]/2)
@@ -281,10 +279,10 @@ def generate_image(path, path2):
 
     show_slices(slices, slices_template)
     name = splitext(splitext(basename(path))[0])[0]
-    plt.suptitle(name)
+    mpl.pyplot.suptitle(name)
 
-    plt.savefig(splitext(splitext(path)[0])[0] + ".png")
-    plt.close()
+    mpl.pyplot.savefig(splitext(splitext(path)[0])[0] + ".png")
+    mpl.pyplot.close()
 
 
 def compress_vol(vol):

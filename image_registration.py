@@ -82,7 +82,7 @@ def pre_process(img, do_bet=True):
     # pylint: disable= too-many-statements, too-many-locals
     """ Pre process the data"""
 
-    path = util.TEMP_FOLDER_PATH + img.image_id
+    path = img.temp_data_path
 
     input_file = img.img_filepath
     n4_file = path + splitext(splitext(basename(input_file))[0])[0]\
@@ -300,8 +300,7 @@ def process_dataset(args):
     print(moving_image_id)
 
     start_time = datetime.datetime.now()
-    util.mkdir_p(util.TEMP_FOLDER_PATH + str(moving_image_id))
-    img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH + str(moving_image_id))
+    img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     img = pre_process(img)
 
     bet_time = datetime.datetime.now() - start_time
