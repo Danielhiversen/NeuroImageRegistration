@@ -61,7 +61,7 @@ AFFINE = 'affine'
 SYN = 'syn'
 
 
-BE_METHOD = 0
+BE_METHOD = 1
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
@@ -82,22 +82,24 @@ def pre_process(img, do_bet=True):
     # pylint: disable= too-many-statements, too-many-locals
     """ Pre process the data"""
 
+    path = util.TEMP_FOLDER_PATH + img.image_id
+
     input_file = img.img_filepath
-    n4_file = util.TEMP_FOLDER_PATH + splitext(splitext(basename(input_file))[0])[0]\
+    n4_file = path + splitext(splitext(basename(input_file))[0])[0]\
         + '_n4.nii'
-    norm_file = util.TEMP_FOLDER_PATH + splitext(basename(n4_file))[0]\
+    norm_file = path + splitext(basename(n4_file))[0]\
         + '_norm.nii'
-    resampled_file = util.TEMP_FOLDER_PATH + splitext(basename(norm_file))[0]\
+    resampled_file = path + splitext(basename(norm_file))[0]\
         + '_resample.nii'
-    img.pre_processed_filepath = util.TEMP_FOLDER_PATH +\
+    img.pre_processed_filepath = path +\
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
 
     name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
 
     if os.path.exists(img.pre_processed_filepath) and\
-       os.path.exists(util.TEMP_FOLDER_PATH + name + 'Composite.h5'):
-        img.init_transform = util.TEMP_FOLDER_PATH + name + 'Composite.h5'
+       os.path.exists(path + name + 'Composite.h5'):
+        img.init_transform = path + name + 'Composite.h5'
 #        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
         return img
 
@@ -148,10 +150,10 @@ def pre_process(img, do_bet=True):
         reg.inputs.use_estimate_learning_rate_once = [True, True]
 
         reg.inputs.write_composite_transform = True
-        reg.inputs.output_transform_prefix = util.TEMP_FOLDER_PATH + name
-        reg.inputs.output_warped_image = util.TEMP_FOLDER_PATH + name + '_betReg.nii'
+        reg.inputs.output_transform_prefix = path + name
+        reg.inputs.output_warped_image = path + name + '_betReg.nii'
 
-        transform = util.TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
+        transform = path + name + 'InverseComposite.h5'
         reg.output_inverse_warped_image = True
 
         print("starting be registration")
@@ -186,7 +188,9 @@ def pre_process(img, do_bet=True):
         Various stages involving FAST segmentation-based bias field removal
         and standard-space masking are combined to produce a result which
         can often give better results than just running bet2."""
-        bet.inputs.reduce_bias = True
+        # bet.inputs.reduce_bias = True
+        bet.inputs.mask = True
+
         bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
@@ -199,6 +203,9 @@ def registration(moving_img, fixed, reg_type):
     # pylint: disable= too-many-statements
     """Image2Image registration """
     reg = ants.Registration()
+
+    path = moving_img.temp_data_path
+    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
 
     init_moving_transform = moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
@@ -262,15 +269,14 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.convergence_threshold = [1e-06]
 
     reg.inputs.write_composite_transform = True
-    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
-    reg.inputs.output_transform_prefix = util.TEMP_FOLDER_PATH + name
-    reg.inputs.output_warped_image = util.TEMP_FOLDER_PATH + name + '.nii'
+    reg.inputs.output_transform_prefix = path + name
+    reg.inputs.output_warped_image = path + name + '.nii'
 
-    result = util.TEMP_FOLDER_PATH + name + 'InverseComposite.h5'
+    result = path + name + 'InverseComposite.h5'
     reg.output_inverse_warped_image = result
 
     moving_img.transform = result
-    moving_img.processed_filepath = util.TEMP_FOLDER_PATH + name + '.nii'
+    moving_img.processed_filepath = path + name + '.nii'
     print(result)
     if os.path.exists(result):
         # generate_image(reg.inputs.output_warped_image, fixed)
@@ -287,8 +293,11 @@ def process_dataset(args):
     print(moving_image_id)
 
     start_time = datetime.datetime.now()
-    img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+    util.mkdir_p(util.TEMP_FOLDER_PATH + str(moving_image_id))
+    img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH + str(moving_image_id))
     img = pre_process(img)
+
+    return img
 
     bet_time = datetime.datetime.now() - start_time
     for k in range(3):
