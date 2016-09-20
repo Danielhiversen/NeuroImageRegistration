@@ -9,9 +9,7 @@ import os
 import util
 
 if __name__ == "__main__":
-    os.nice(19)
-    import time
-    time.sleep(60*60*5)
+
 
 #    if False:
 #        import do_img_registration_LGG_POST as do_img_registration
