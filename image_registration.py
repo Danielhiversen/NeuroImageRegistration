@@ -52,7 +52,7 @@ from img_data import img_data
 import util
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-#MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -219,7 +219,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
-    reg.inputs.num_threads = 8
+    reg.inputs.num_threads = 1
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
         reg.inputs.metric = ['MI']
