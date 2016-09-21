@@ -39,7 +39,7 @@ def find_images_with_qol():
     pids_with_qol = []
     for row in cursor:
         if row:
-            pids_with_qol.extend(row[0])
+            pids_with_qol.append(row[0])
     cursor.close()
 
     cursor = conn.execute('''SELECT pid from Patient''')
