@@ -130,7 +130,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.moving_image = util.TEMPLATE_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 8
+        reg.inputs.num_threads = 1
         reg.inputs.initial_moving_transform_com = True
 
         reg.inputs.transforms = ['Rigid', 'Affine']
@@ -218,7 +218,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
-    reg.inputs.num_threads = 1
+    reg.inputs.num_threads = 8
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
         reg.inputs.metric = ['MI']
