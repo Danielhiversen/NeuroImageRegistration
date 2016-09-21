@@ -212,10 +212,11 @@ def registration(moving_img, fixed, reg_type):
         print("Found initial transform")
         # reg.inputs.initial_moving_transform = init_moving_transform
         reg.inputs.initial_moving_transform_com = False
+        mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform, True)
     else:
         reg.inputs.initial_moving_transform_com = True
+        mask = moving_img.label_inv_filepath
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
-    mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform, True)
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
     reg.inputs.num_threads = 1
@@ -306,7 +307,6 @@ def process_dataset(args):
     bet_time = datetime.datetime.now() - start_time
     print("\n\n\n\n -- Run time BET: ")
     print(bet_time)
-    return img
 
     for k in range(3):
         try:
