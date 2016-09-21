@@ -30,6 +30,35 @@ def find_images():
     return ids
 
 
+def find_images_with_qol():
+    """ Find images for registration """
+    conn = sqlite3.connect(util.DB_PATH)
+    conn.text_factory = str
+
+    cursor = conn.execute('''SELECT pid from QualityOfLife''')
+    pids_with_qol = []
+    for row in cursor:
+        if row:
+            pids_with_qol.extend(row[0])
+    cursor.close()
+
+    cursor = conn.execute('''SELECT pid from Patient''')
+    ids = []
+    for row in cursor:
+        pid = row[0]
+        if pid not in pids_with_qol:
+            continue
+        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (pid, "pre"))
+
+        for _id in cursor2:
+            ids.append(_id[0])
+        cursor2.close()
+
+    cursor.close()
+    conn.close()
+    return ids
+
+
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
@@ -37,7 +66,7 @@ if __name__ == "__main__":
 
     image_registration.prepare_template(util.TEMPLATE_VOLUME, util.TEMPLATE_MASK)
 
-    moving_datasets_ids = find_images()
+    moving_datasets_ids = find_images_with_qol()
     print(moving_datasets_ids)
     data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN)
 
