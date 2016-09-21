@@ -204,6 +204,7 @@ def registration(moving_img, fixed, reg_type):
 
     path = moving_img.temp_data_path
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
+    moving_img.processed_filepath = path + name + '_to_' + str(moving_img.fixed_image) + '.nii'
 
     init_moving_transform = moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
@@ -252,11 +253,11 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.radius_or_number_of_bins = [32, 32, 5]
         reg.inputs.convergence_window_size = [5, 5, 5]
         if reg.inputs.initial_moving_transform_com:
-            reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
-                                                [10000, 10000, 10000, 10000],
+            reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
+                                                [10000, 10000, 1000, 1000, 1000],
                                                 [100, 75, 75, 75]])
-            reg.inputs.shrink_factors = [[9, 5, 3, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
+            reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         else:
             reg.inputs.number_of_iterations = ([[10000], [1000, 1000, 1000, 1000, 1000],
                                                 [100, 75, 75, 75]])
@@ -277,21 +278,21 @@ def registration(moving_img, fixed, reg_type):
 
     reg.inputs.write_composite_transform = True
     reg.inputs.output_transform_prefix = path + name
-    reg.inputs.output_warped_image = path + name + '.nii'
+    reg.inputs.output_warped_image = False
 
     transform = path + name + 'InverseComposite.h5'
-    reg.output_inverse_warped_image = True
+    reg.output_inverse_warped_image = moving_img.processed_filepath
 
     print(transform)
-    if os.path.exists(path + name + '.nii.gz') and\
+    if moving_img.processed_filepath and\
        os.path.exists(transform):
         # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
 
-    shutil.copy(transform, path + name + '_to_template.h5')
-    moving_img.transform = path + name + '_to_template.h5'
-    moving_img.processed_filepath = util.transform_volume(moving_img.pre_processed_filepath, transform)
+    transform_res = path + name + '_to_' + str(moving_img.fixed_image) + '.h5'
+    shutil.copy(transform, transform_res)
+    moving_img.transform = transform_res
 
     util.generate_image(moving_img.processed_filepath, fixed)
 
