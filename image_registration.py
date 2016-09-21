@@ -51,10 +51,8 @@ import numpy as np
 from img_data import img_data
 import util
 
-# from dipy.align.aniso2iso import resample
-
 MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+#MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -280,17 +278,21 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.output_transform_prefix = path + name
     reg.inputs.output_warped_image = path + name + '.nii'
 
-    result = path + name + 'InverseComposite.h5'
-    reg.output_inverse_warped_image = result
+    transform = path + name + 'InverseComposite.h5'
+    reg.output_inverse_warped_image = True
 
-    moving_img.transform = result
-    moving_img.processed_filepath = path + name + '.nii'
-    print(result)
-    if os.path.exists(result):
+    print(transform)
+    if os.path.exists(path + name + '.nii.gz') and\
+       os.path.exists(transform):
         # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
-    util.generate_image(reg.inputs.output_warped_image, fixed)
+
+    shutil.copy(transform, path + name + '_to_template.h5')
+    moving_img.transform = path + name + '_to_template.h5'
+    moving_img.processed_filepath = util.transform_volume(moving_img.pre_processed_filepath, transform)
+
+    util.generate_image(moving_img.processed_filepath, fixed)
 
     return moving_img
 
