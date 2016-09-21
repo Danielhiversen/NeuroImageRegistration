@@ -188,7 +188,7 @@ def transform_volume(vol, transform, label_img=False):
     for _transform in ensure_list(transform):
         transforms.append(decompress_file(_transform))
 
-    result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii'
+    result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii.gz'
     apply_transforms = ants.ApplyTransforms()
     if label_img:
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
@@ -293,8 +293,8 @@ def compress_vol(vol):
     """Compress volume"""
     if vol[-3:] == ".gz":
         return vol
-    temp = nib.load(vol)
     res = vol + ".gz"
+    temp = nib.load(vol)
     temp.to_filename(res)
     return res
 
