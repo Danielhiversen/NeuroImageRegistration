@@ -253,11 +253,11 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.radius_or_number_of_bins = [32, 32, 5]
         reg.inputs.convergence_window_size = [5, 5, 5]
         if reg.inputs.initial_moving_transform_com:
-            reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
-                                                [10000, 10000, 1000, 1000, 1000],
-                                                [100, 75, 75, 75]])
-            reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
+            reg.inputs.number_of_iterations = ([[10000, 5000, 5000],
+                                                [10000, 5000, 5000],
+                                                [100, 100, 75]])
+            reg.inputs.shrink_factors = [[5, 2, 1], [4, 2, 1], [3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[4, 1, 0], [3, 1, 0], [2, 1, 0]]
         else:
             reg.inputs.number_of_iterations = ([[10000], [1000, 1000, 1000, 1000, 1000],
                                                 [100, 75, 75, 75]])
