@@ -286,7 +286,7 @@ def registration(moving_img, fixed, reg_type):
         return moving_img
     reg.run()
 
-    util.transform_volume(moving_img.pre_processed_filepath,transform,
+    util.transform_volume(moving_img.pre_processed_filepath, transform,
                           outputpath=moving_img.processed_filepath)
     shutil.copy(transform, moving_img.transform)
     util.generate_image(moving_img.processed_filepath, fixed)
