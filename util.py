@@ -182,13 +182,16 @@ def find_reg_label_images(moving_image_id):
     return images
 
 
-def transform_volume(vol, transform, label_img=False):
+def transform_volume(vol, transform, label_img=False, outputpath=None):
     """Transform volume """
     transforms = []
     for _transform in ensure_list(transform):
         transforms.append(decompress_file(_transform))
 
-    result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii.gz'
+    if outputpath:
+        result = outputpath
+    else:
+        result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii.gz'
     apply_transforms = ants.ApplyTransforms()
     if label_img:
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
