@@ -59,9 +59,9 @@ AFFINE = 'affine'
 SYN = 'syn'
 
 
-BE_METHOD = 1
+BE_METHOD = 0
 
-os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
+#os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
 def prepare_template(template_vol, template_mask):
@@ -84,11 +84,11 @@ def pre_process(img, do_bet=True):
 
     input_file = img.img_filepath
     n4_file = path + splitext(splitext(basename(input_file))[0])[0]\
-        + '_n4.nii'
+        + '_n4.nii.gz'
     norm_file = path + splitext(basename(n4_file))[0]\
-        + '_norm.nii'
+        + '_norm.nii.gz'
     resampled_file = path + splitext(basename(norm_file))[0]\
-        + '_resample.nii'
+        + '_resample.nii.gz'
     img.pre_processed_filepath = path +\
         splitext(basename(resampled_file))[0] +\
         '_bet.nii.gz'
@@ -99,7 +99,7 @@ def pre_process(img, do_bet=True):
        (os.path.exists(path + name + 'Composite.h5') or BE_METHOD == 1):
         if BE_METHOD == 0:
             img.init_transform = path + name + 'Composite.h5'
-#        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
+        #util.generate_image(img.pre_processed_filepath, util.TEMPLATE_VOLUME)
         return img
 
     n4bias = ants.N4BiasFieldCorrection()
@@ -141,6 +141,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.convergence_window_size = [5, 5]
         reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
                                             [10000, 10000, 10000, 10000]])
+
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
@@ -150,7 +151,7 @@ def pre_process(img, do_bet=True):
 
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
-        reg.inputs.output_warped_image = path + name + '_betReg.nii'
+        reg.inputs.output_warped_image = path + name + '_betReg.nii.gz'
 
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
@@ -168,6 +169,7 @@ def pre_process(img, do_bet=True):
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
+        util.generate_image(img.pre_processed_filepath, reg_volume)
     elif BE_METHOD == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
         bet = fsl.BET(command="fsl5.0-bet")
@@ -191,7 +193,7 @@ def pre_process(img, do_bet=True):
         bet.inputs.out_file = img.pre_processed_filepath
 
         bet.run()
-    util.generate_image(img.pre_processed_filepath, resampled_file)
+        util.generate_image(img.pre_processed_filepath, resampled_file)
     print("---BET", img.pre_processed_filepath)
     return img
 
@@ -311,7 +313,7 @@ def process_dataset(args):
     bet_time = datetime.datetime.now() - start_time
     print("\n\n\n\n -- Run time BET: ")
     print(bet_time)
-
+    return img
     for k in range(3):
         try:
             img = registration(img,
@@ -353,7 +355,7 @@ def move_vol(moving, transform, label_img=False):
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
         resampled_file = util.TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-            + '_resample.nii'
+            + '_resample.nii.gz'
         # pylint: disable= no-member
         img_3d_affine.to_filename(resampled_file)
 

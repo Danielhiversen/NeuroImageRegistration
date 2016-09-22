@@ -89,7 +89,7 @@ class img_data(object):
         temp_img = 1 - temp_img
         result_img = nib.Nifti1Image(temp_img, img_3d_affine.affine, img_3d_affine.header)
 
-        self._label_filepath = self.temp_data_path + splitext(splitext(basename(self.label_filepath))[0])[0] + "maskInv.nii"
+        self._label_filepath = self.temp_data_path + splitext(splitext(basename(self.label_filepath))[0])[0] + "maskInv.nii.gz"
         nib.save(result_img, self._label_filepath)
 
         return self._label_filepath
