@@ -97,7 +97,8 @@ def pre_process(img, do_bet=True):
 
     if os.path.exists(img.pre_processed_filepath) and\
        (os.path.exists(path + name + 'Composite.h5') or BE_METHOD == 1):
-        img.init_transform = path + name + 'Composite.h5'
+        if BE_METHOD == 0:
+            img.init_transform = path + name + 'Composite.h5'
 #        generate_image(img.pre_processed_filepath, TEMPLATE_VOLUME)
         return img
 
@@ -152,8 +153,6 @@ def pre_process(img, do_bet=True):
         reg.inputs.output_warped_image = path + name + '_betReg.nii'
 
         transform = path + name + 'InverseComposite.h5'
-        reg.output_inverse_warped_image = True
-
         print("starting be registration")
         reg.run()
         print("Finished be registration")
@@ -204,7 +203,8 @@ def registration(moving_img, fixed, reg_type):
 
     path = moving_img.temp_data_path
     name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
-    moving_img.processed_filepath = path + name + '_to_' + str(moving_img.fixed_image) + '.nii'
+    moving_img.processed_filepath = path + name + '_RegTo' + str(moving_img.fixed_image) + '.nii.gz'
+    moving_img.transform = path + name + '_RegTo' + str(moving_img.fixed_image) + '.h5'
 
     init_moving_transform = moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
@@ -278,22 +278,17 @@ def registration(moving_img, fixed, reg_type):
 
     reg.inputs.write_composite_transform = True
     reg.inputs.output_transform_prefix = path + name
-    reg.inputs.output_warped_image = False
-
     transform = path + name + 'InverseComposite.h5'
-    reg.output_inverse_warped_image = moving_img.processed_filepath
 
-    print(transform)
-    if moving_img.processed_filepath and\
-       os.path.exists(transform):
+    if os.path.exists(moving_img.processed_filepath) and\
+       os.path.exists(moving_img.transform):
         # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
     reg.run()
 
-    transform_res = path + name + '_to_' + str(moving_img.fixed_image) + '.h5'
-    shutil.copy(transform, transform_res)
-    moving_img.transform = transform_res
-
+    util.transform_volume(moving_img.pre_processed_filepath,transform,
+                          outputpath=moving_img.processed_filepath)
+    shutil.copy(transform, moving_img.transform)
     util.generate_image(moving_img.processed_filepath, fixed)
 
     return moving_img
