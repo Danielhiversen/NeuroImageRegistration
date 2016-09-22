@@ -202,18 +202,18 @@ def qol_to_db(data_type):
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
-    cursor.executescript('drop table if exists QualityOfLife;')
-    cursor.execute('''CREATE TABLE "QualityOfLife" (
-        `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-        `pid`    INTEGER NOT NULL,
-        'Index_value'     REAL,
-        'Global_index'    INTEGER,
-        'Mobility'    INTEGER,
-        'Selfcare'    INTEGER,
-        'Activity'    INTEGER,
-        'Pain'    INTEGER,
-        'Anxiety'    INTEGER,
-        FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
+#    cursor.executescript('drop table if exists QualityOfLife;')
+#    cursor.execute('''CREATE TABLE "QualityOfLife" (
+#        `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
+#        `pid`    INTEGER NOT NULL,
+#        'Index_value'     REAL,
+#        'Global_index'    INTEGER,
+#        'Mobility'    INTEGER,
+#        'Selfcare'    INTEGER,
+#        'Activity'    INTEGER,
+#        'Pain'    INTEGER,
+#        'Anxiety'    INTEGER,
+#        FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
 
     data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas.xlsx')['Ark2']
 
@@ -312,14 +312,12 @@ if __name__ == "__main__":
 #    except OSError:
 #        pass
     util.mkdir_p(util.DATA_FOLDER)
-    create_db(util.DB_PATH)
-    convert_gbm_data(MAIN_FOLDER + "Segmenteringer_GBM/")
-    qol_to_db("gbm")
+    #create_db(util.DB_PATH)
+    #convert_gbm_data(MAIN_FOLDER + "Segmenteringer_GBM/")
+    #qol_to_db("gbm")
 
-    util.mkdir_p(util.DATA_FOLDER)
-    create_db(util.DB_PATH)
-    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
-    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
+ #   convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
+ #   convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
     qol_to_db("lgg")
 
     vacuum_db()
