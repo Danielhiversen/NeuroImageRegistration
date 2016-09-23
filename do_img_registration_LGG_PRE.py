@@ -1,4 +1,4 @@
-# pylint: disable= invalid-name
+# pylint: disable= invalid-name, duplicate-code
 # -*- coding: utf-8 -*-
 """
 Created on Wed Apr 20 15:02:02 2016
