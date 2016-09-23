@@ -52,7 +52,7 @@ from img_data import img_data
 import util
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-#MULTITHREAD = "max"
+MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -212,7 +212,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 8
+        reg.inputs.num_threads = 1
         reg.inputs.initial_moving_transform_com = True
 
         reg.inputs.transforms = ['Rigid', 'Affine']
@@ -284,7 +284,6 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.transforms = ['Rigid']
         reg.inputs.metric = ['MI']
         reg.inputs.radius_or_number_of_bins = [32]
-
         reg.inputs.convergence_window_size = [5]
         reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000]])
         reg.inputs.shrink_factors = [[5, 4, 3, 2, 1]]
@@ -308,7 +307,6 @@ def registration(moving_img, fixed, reg_type):
                                            (0.15,)]
         reg.inputs.use_histogram_matching = [False, True]
         reg.inputs.metric_weight = [1.0]*2
-
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
         reg.inputs.metric = ['MI', 'MI', ['Mattes', 'CC']]
@@ -325,21 +323,19 @@ def registration(moving_img, fixed, reg_type):
             reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
             reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         else:
-            reg.inputs.number_of_iterations = ([[10000], [1000, 1000, 1000, 1000, 1000],
+            reg.inputs.number_of_iterations = ([[10000, 5000, 5000], [1000, 1000, 1000, 1000, 1000],
                                                 [100, 75, 75, 75]])
-            reg.inputs.shrink_factors = [[5], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[4], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
+            reg.inputs.shrink_factors = [[3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         reg.inputs.sigma_units = ['vox']*3
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.25,),
                                            (0.15, 3.0, 0.0)]
         reg.inputs.use_histogram_matching = [False, False, True]
-
     else:
         raise Exception("Wrong registration format " + reg_type)
     reg.inputs.winsorize_lower_quantile = 0.005
     reg.inputs.winsorize_upper_quantile = 0.995
-
     reg.inputs.write_composite_transform = True
     reg.inputs.output_transform_prefix = path + name
     transform = path + name + 'InverseComposite.h5'
@@ -370,7 +366,7 @@ def process_dataset(args):
     bet_time = datetime.datetime.now() - start_time
     print("\n\n\n\n -- Run time BET: ")
     print(bet_time)
-    return img
+
     for k in range(3):
         try:
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)

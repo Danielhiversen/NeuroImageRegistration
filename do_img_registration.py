@@ -62,7 +62,7 @@ def find_images_with_qol():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}_BE0".format(datetime.datetime.now()) + "/")
+    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/")
 
     moving_datasets_ids = find_images_with_qol()
     print(moving_datasets_ids)
