@@ -61,7 +61,7 @@ SYN = 'syn'
 
 BE_METHOD = 0
 
-#os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
+os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 
 def prepare_template(template_vol, template_mask):
@@ -99,7 +99,7 @@ def pre_process(img, do_bet=True):
        (os.path.exists(path + name + 'Composite.h5') or BE_METHOD == 1):
         if BE_METHOD == 0:
             img.init_transform = path + name + 'Composite.h5'
-        #util.generate_image(img.pre_processed_filepath, util.TEMPLATE_VOLUME)
+        # util.generate_image(img.pre_processed_filepath, util.TEMPLATE_VOLUME)
         return img
 
     n4bias = ants.N4BiasFieldCorrection()
