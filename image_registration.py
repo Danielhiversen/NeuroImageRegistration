@@ -313,7 +313,7 @@ def process_dataset(args):
     bet_time = datetime.datetime.now() - start_time
     print("\n\n\n\n -- Run time BET: ")
     print(bet_time)
-    return img
+
     for k in range(3):
         try:
             img = registration(img,
