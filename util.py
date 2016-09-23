@@ -7,39 +7,45 @@ Created on Mon Sep 12 11:54:08 2016
 
 from __future__ import print_function
 from __future__ import division
+import sys
+import errno
+import gzip
 import os
 from os.path import basename
 from os.path import splitext
 import sqlite3
-from nilearn.image import resample_img
-import matplotlib.cm as cm
-import matplotlib.pyplot as plt
+from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
-import sys
-import errno
+import matplotlib
+matplotlib.use('Agg')
+# pylint: disable= wrong-import-position
+import matplotlib.pyplot as plt  # noqa
+import matplotlib.cm as cm  # noqa
 
-from img_data import img_data
-import image_registration
 
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""
 DB_PATH = ""
 
+TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
+TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 
-def setup(temp_path, datatype):
+
+def setup(temp_path, datatype=""):
     """setup for current computer """
     # pylint: disable= global-statement
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
+    mkdir_p(TEMP_FOLDER_PATH)
     setup_paths(datatype)
 
 
-def setup_paths(datatype):
+def setup_paths(datatype=""):
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long
-    if datatype not in ["LGG", "GBM"]:
+    if datatype not in ["LGG", "GBM", ""]:
         print("Unkown datatype " + datatype)
         raise Exception
 
@@ -85,85 +91,65 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-def post_calculations(moving_dataset_image_ids):
+# pylint: disable= dangerous-default-value
+def post_calculations(moving_dataset_image_ids, result=dict()):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
-    result = dict()
+
     for _id in moving_dataset_image_ids:
+        print(_id)
         transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
+        cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
-        img = DATA_FOLDER + db_temp[0]
-        print(img, transforms)
-        temp = move_vol(img, transforms)
+        if db_temp[0] is None:
+            continue
+        vol = DATA_FOLDER + db_temp[0]
+        print(vol, transforms)
         label = "img"
         if label in result:
-            result[label].append(temp)
+            result[label].append(vol)
         else:
-            result[label] = [temp]
+            result[label] = [vol]
 
-        for (segmentation, label) in find_seg_images(_id):
-            temp = move_vol(segmentation, transforms, True)
+        for (segmentation, label) in find_reg_label_images(_id):
             if label in result:
-                result[label].append(temp)
+                result[label].append(segmentation)
             else:
-                result[label] = [temp]
+                result[label] = [segmentation]
 
-    cursor.close()
+        cursor.close()
     conn.close()
 
-    for label in result:
-        avg_calculation(result[label], label)
+    return result
 
 
-def post_calculations_qol():
-    """ Transform images and calculate avg"""
+def get_image_id_and_qol(qol_param):
+    """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
 
-    result = dict()
+    image_id = []
+    qol = []
     for pid in cursor:
-        print(pid)
-        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid[0], )).fetchone()
+        pid = pid[0]
+        _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
+                            (pid, )).fetchone()[0]
+        if _qol is None:
+            continue
+
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
             continue
         _id = _id[0]
-        qol_index = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''',
-                                 (pid[0], )).fetchone()[0]
-        if qol_index is None:
-            continue
-        transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (_id,))
-        if len(transforms) < 1:
-            continue
-        db_temp = cursor.fetchone()
-        img = DATA_FOLDER + db_temp[0]
-        print(img, transforms)
-        temp = move_vol(img, transforms)
-        label = "img"
-        if label in result:
-            result[label].append(temp)
-        else:
-            result[label] = [temp]
 
-        for (segmentation, label) in find_seg_images(_id):
-            temp_qol = move_vol(segmentation, transforms, True, qol_index*100)
-            temp = move_vol(segmentation, transforms, True)
-            if label in result:
-                result[label + '_qol'].append(temp_qol)
-                result[label].append(temp)
-            else:
-                result[label + '_qol'] = [temp_qol]
-                result[label] = [temp]
-
+        image_id.extend([_id])
+        qol.extend([_qol*100])
     cursor.close()
     conn.close()
 
-    for label in result:
-        print(len(result[label]))
-        avg_calculation(result[label], label)
+    return (image_id, qol)
 
 
 def find_seg_images(moving_image_id):
@@ -181,14 +167,31 @@ def find_seg_images(moving_image_id):
     return images
 
 
-def ensure_list(value):
-    """Wrap value in list if it is not one."""
-    return value if isinstance(value, list) else [value]
+def find_reg_label_images(moving_image_id):
+    """ Find reg segmentation images"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT filepath_reg, description from Labels where image_id = ? ''',
+                          (moving_image_id,))
+    images = []
+    for (row, label) in cursor:
+        images.append((DATA_FOLDER + row, label))
+
+    cursor.close()
+    conn.close()
+    return images
 
 
-def transform_volume(vol, transform, label_img=False):
-    transform = ensure_list(transform)
-    result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii'
+def transform_volume(vol, transform, label_img=False, outputpath=None):
+    """Transform volume """
+    transforms = []
+    for _transform in ensure_list(transform):
+        transforms.append(decompress_file(_transform))
+
+    if outputpath:
+        result = outputpath
+    else:
+        result = TEMP_FOLDER_PATH + splitext(splitext(basename(vol))[0])[0] + '_reg.nii.gz'
     apply_transforms = ants.ApplyTransforms()
     if label_img:
         apply_transforms.inputs.interpolation = 'NearestNeighbor'
@@ -196,68 +199,59 @@ def transform_volume(vol, transform, label_img=False):
         apply_transforms.inputs.interpolation = 'Linear'
     apply_transforms.inputs.dimension = 3
     apply_transforms.inputs.input_image = vol
-    apply_transforms.inputs.reference_image = image_registration.TEMPLATE_VOLUME
+    apply_transforms.inputs.reference_image = TEMPLATE_VOLUME
     apply_transforms.inputs.output_image = result
     apply_transforms.inputs.default_value = 0
-    apply_transforms.inputs.transforms = transform
-    apply_transforms.inputs.invert_transform_flags = [False]*len(transform)
+    apply_transforms.inputs.transforms = transforms
+    apply_transforms.inputs.invert_transform_flags = [False]*len(transforms)
     apply_transforms.run()
 
     return apply_transforms.inputs.output_image
 
 
-def move_vol(moving, transform, label_img=False, qol=None):
-    """ Move data with transform """
-    if label_img:
-        # resample volume to 1 mm slices
-        target_affine_3x3 = np.eye(3) * 1
-        img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
-                                     interpolation='nearest')
-        if qol:
-            # pylint: disable= no-member
-            temp = img_3d_affine.get_data()
-            res = np.array(temp) * qol
-            img_3d_affine = nib.Nifti1Image(res, img_3d_affine.affine)
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_qol_resample.nii'
-        else:
-            resampled_file = TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-                + '_resample.nii'
-        img_3d_affine.to_filename(resampled_file)
+def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
+    """ Calculate sum volumes """
+    path_n = folder + 'total_' + label + '.nii'
+    path_n = path_n.replace('label', 'tumor')
 
-    else:
-        img = img_data(-1, DATA_FOLDER, TEMP_FOLDER_PATH)
-        img.set_img_filepath(moving)
-        resampled_file = image_registration.pre_process(img, False).pre_processed_filepath
+    if not val:
+        val = [1]*len(images)
 
-    result = transform_volume(moving, transform, label_img)
-    generate_image(result, image_registration.TEMPLATE_VOLUME)
-    return result
+    _sum = None
+    _total = None
+    for (file_name, val_i) in zip(images, val):
+        if val_i is None:
+            continue
+        img = nib.load(file_name)
+        if _sum is None:
+            _sum = np.zeros(img.get_data().shape)
+            _total = np.zeros(img.get_data().shape)
+        _sum = _sum + np.array(img.get_data())*val_i
+        temp = np.array(img.get_data())
+        temp[temp != 0] = 1.0
+        _total = _total + temp
+    if save:
+        result_img = nib.Nifti1Image(_sum, img.affine)
+        result_img.to_filename(path_n)
+        generate_image(path_n, TEMPLATE_VOLUME)
+
+    return (_sum, _total)
 
 
-def avg_calculation(images, label):
+def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
     """ Calculate average volumes """
-    path = TEMP_FOLDER_PATH + 'avg_' + label + '.nii'
+    path = folder + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
-    path_N = TEMP_FOLDER_PATH + 'total_' + label + '.nii'
-    path_N = path.replace('label', 'tumor')
+    (_sum, _total) = sum_calculation(images, label, val, save=False)
+    average = _sum / _total
 
-    average = None
-    for file_name in images:
-        img = nib.load(file_name)
-        if average is None:
-            average = np.zeros(img.get_data().shape)
-        average = average + np.array(img.get_data())
-
-    result_img = nib.Nifti1Image(average, img.affine)
-    result_img.to_filename(path_N)
-
-    average = average / float(len(images))
-    result_img = nib.Nifti1Image(average, img.affine)
-    result_img.to_filename(path)
-
-    generate_image(path, image_registration.TEMPLATE_VOLUME)
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(average, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+    return average
 
 
 def generate_image(path, path2):
@@ -299,12 +293,42 @@ def generate_image(path, path2):
 
 
 def compress_vol(vol):
+    """Compress volume"""
     if vol[-3:] == ".gz":
         return vol
-    temp = nib.load(vol)
     res = vol + ".gz"
+    temp = nib.load(vol)
     temp.to_filename(res)
     return res
+
+
+def ensure_list(value):
+    """Wrap value in list if it is not one."""
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
+
+
+def decompress_file(gzip_path):
+    """Decompress file """
+    if gzip_path[:-3] != '.gz':
+        return gzip_path
+
+    in_file = gzip.open(gzip_path, 'rb')
+    # uncompress the gzip_path INTO THE 'data' variable
+    data = in_file.read()
+    in_file.close()
+
+    # get gzip filename (without directories)
+    gzip_fname = os.path.basename(gzip_path)
+    # get original filename (remove 3 characters from the end: ".gz")
+    fname = gzip_fname[:-3]
+    uncompressed_path = os.path.join(TEMP_FOLDER_PATH, fname)
+
+    # store uncompressed file data from 'data' variable
+    open(uncompressed_path, 'w').write(data)
+
+    return uncompressed_path
 
 
 def mkdir_p(path):

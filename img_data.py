@@ -12,6 +12,8 @@ import sqlite3
 import nibabel as nib
 from nilearn.image import resample_img
 
+import util
+
 
 class img_data(object):
     def __init__(self, image_id, data_path, temp_data_path):
@@ -23,6 +25,7 @@ class img_data(object):
         self.processed_filepath = None
         self.init_transform = None
         self.transform = None
+        self.fixed_image = -1
 
         self._img_filepath = None
         self._label_filepath = None
@@ -40,6 +43,22 @@ class img_data(object):
         conn.close()
 
         return self._img_filepath
+
+    def load_db_transforms(self):
+        print(self.db_path, self.image_id)
+        conn = sqlite3.connect(self.db_path)
+        conn.text_factory = str
+        cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (self.image_id,))
+        db_temp = cursor.fetchone()
+        if db_temp is None:
+            return
+        self.transform = []
+        for _transform in db_temp[0].split(","):
+            self.transform.append(self.data_path + _transform.strip())
+
+        self.fixed_image_id = db_temp[1]
+        cursor.close()
+        conn.close()
 
     @property
     def label_filepath(self):
@@ -70,7 +89,7 @@ class img_data(object):
         temp_img = 1 - temp_img
         result_img = nib.Nifti1Image(temp_img, img_3d_affine.affine, img_3d_affine.header)
 
-        self._label_filepath = self.temp_data_path + splitext(splitext(basename(self.label_filepath))[0])[0] + "maskInv.nii"
+        self._label_filepath = self.temp_data_path + splitext(splitext(basename(self.label_filepath))[0])[0] + "maskInv.nii.gz"
         nib.save(result_img, self._label_filepath)
 
         return self._label_filepath
@@ -84,5 +103,5 @@ class img_data(object):
 
     def get_transforms(self):
         if self.init_transform is None:
-            return [self.transform]
+            return util.ensure_list(self.transform)
         return [self.transform, self.init_transform]

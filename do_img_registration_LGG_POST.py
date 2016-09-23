@@ -69,7 +69,9 @@ def process_dataset(args, num_tries=3):
 #
 #            print("Finished 2 of 2")
 
-    return (img, pre_image_id)
+    img.fixed_image = pre_image_id
+
+    return img
 
 
 # pylint: disable= invalid-name
