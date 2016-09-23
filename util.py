@@ -32,7 +32,8 @@ DB_PATH = ""
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
-TEMLATE_MASKED_VOLUME = ""
+TEMPLATE_MASKED_VOLUME = ""
+
 
 def setup(temp_path, datatype=""):
     """setup for current computer """
@@ -74,8 +75,9 @@ def setup_paths(datatype=""):
 
 def prepare_template(template_vol, template_mask):
     """ prepare template volumemoving"""
-    global TEMPLATE_MASKED_VOLUME    
-    
+    # pylint: disable= global-statement,
+    global TEMPLATE_MASKED_VOLUME
+
     TEMPLATE_MASKED_VOLUME = TEMP_FOLDER_PATH + "masked_template.nii"
     mult = ants.MultiplyImages()
     mult.inputs.dimension = 3

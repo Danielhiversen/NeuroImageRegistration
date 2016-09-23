@@ -4,7 +4,7 @@ Created on Tue Sep 20 15:51:02 2016
 
 @author: dahoiv
 """
-
+from __future__ import print_function
 import os
 import datetime
 import sqlite3
@@ -20,7 +20,8 @@ def find_images():
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
-        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (row[0], "pre"))
+        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
+                               (row[0], "pre"))
         for _id in cursor2:
             ids.append(_id[0])
         cursor2.close()
@@ -48,7 +49,8 @@ def find_images_with_qol():
         pid = row[0]
         if pid not in pids_with_qol:
             continue
-        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (pid, "pre"))
+        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
+                               (pid, "pre"))
 
         for _id in cursor2:
             ids.append(_id[0])
@@ -68,4 +70,4 @@ if __name__ == "__main__":
     print(moving_datasets_ids)
     data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN)
 
-    #image_registration.save_transform_to_database(data_transforms)
+    image_registration.save_transform_to_database(data_transforms)
