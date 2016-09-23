@@ -78,11 +78,7 @@ def process_dataset(args, num_tries=3):
 if __name__ == "__main__":
     os.nice(19)
     util.setup("LGG_POST/", "LGG")
-    if not os.path.exists(util.TEMP_FOLDER_PATH):
-        os.makedirs(util.TEMP_FOLDER_PATH)
 
-    #  image_registration.prepare_template(image_registration.TEMPLATE_VOLUME,
-    #                                    image_registration.TEMPLATE_MASK)
     post_images = find_images()
 
     data_transforms = image_registration.get_transforms(post_images, process_dataset_func=process_dataset)

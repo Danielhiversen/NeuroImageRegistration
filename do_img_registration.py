@@ -62,12 +62,10 @@ def find_images_with_qol():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
-
-    image_registration.prepare_template(util.TEMPLATE_VOLUME, util.TEMPLATE_MASK)
+    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}_BE0".format(datetime.datetime.now()) + "/")
 
     moving_datasets_ids = find_images_with_qol()
     print(moving_datasets_ids)
     data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN)
 
-    image_registration.save_transform_to_database(data_transforms)
+    #image_registration.save_transform_to_database(data_transforms)

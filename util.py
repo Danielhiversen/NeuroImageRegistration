@@ -24,6 +24,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa
 import matplotlib.cm as cm  # noqa
 
+os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
 
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""
@@ -31,7 +32,7 @@ DB_PATH = ""
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
-
+TEMLATE_MASKED_VOLUME = ""
 
 def setup(temp_path, datatype=""):
     """setup for current computer """
@@ -40,6 +41,7 @@ def setup(temp_path, datatype=""):
     TEMP_FOLDER_PATH = temp_path
     mkdir_p(TEMP_FOLDER_PATH)
     setup_paths(datatype)
+    prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
 
 def setup_paths(datatype=""):
@@ -68,6 +70,21 @@ def setup_paths(datatype=""):
 
     DATA_FOLDER = DATA_FOLDER + datatype + "/"
     DB_PATH = DATA_FOLDER + "brainSegmentation.db"
+
+
+def prepare_template(template_vol, template_mask):
+    """ prepare template volumemoving"""
+    global TEMPLATE_MASKED_VOLUME    
+    
+    TEMPLATE_MASKED_VOLUME = TEMP_FOLDER_PATH + "masked_template.nii"
+    mult = ants.MultiplyImages()
+    mult.inputs.dimension = 3
+    mult.inputs.first_input = template_vol
+    mult.inputs.second_input = template_mask
+    mult.inputs.output_product_image = TEMPLATE_MASKED_VOLUME
+    if os.path.exists(mult.inputs.output_product_image):
+        return
+    mult.run()
 
 
 def get_transforms_from_db(img_id, conn):

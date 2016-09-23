@@ -34,11 +34,6 @@ def find_images():
 if __name__ == "__main__":
     os.nice(19)
     util.setup("GBM/", "GBM")
-    if not os.path.exists(util.TEMP_FOLDER_PATH):
-        os.makedirs(util.TEMP_FOLDER_PATH)
-
-    image_registration.prepare_template(util.TEMPLATE_VOLUME,
-                                        util.TEMPLATE_MASK)
 
     moving_datasets_ids = find_images()
 
