@@ -323,7 +323,7 @@ def registration(moving_img, fixed, reg_type):
             reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
             reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         else:
-            reg.inputs.number_of_iterations = ([[10000, 5000, 5000, 1000], [5000, 1000, 1000, 1000, 1000],
+            reg.inputs.number_of_iterations = ([[10000, 5000, 5000, 1000], [5000, 1000, 1000, 1000],
                                                 [100, 75, 75, 75]])
             reg.inputs.shrink_factors = [[5, 3, 2, 1], [5, 3, 2, 1], [5, 3, 2, 1]]
             reg.inputs.smoothing_sigmas = [[4, 2, 1, 0], [4, 2, 1, 0], [4, 2, 1, 0]]
