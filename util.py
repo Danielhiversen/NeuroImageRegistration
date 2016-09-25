@@ -360,6 +360,7 @@ def mkdir_p(path):
         else:
             raise
 
+
 def get_basename(filepath):
     """Get basename of filepath"""
     return splitext(splitext(basename(filepath))[0])[0]
