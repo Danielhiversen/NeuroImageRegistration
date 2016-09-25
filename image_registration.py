@@ -217,7 +217,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
         reg.inputs.sampling_strategy = ['Regular'] * 2
-        reg.inputs.sampling_percentage = [0.3] * 2
+        reg.inputs.sampling_percentage = [0.4] * 2
         reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
                                             [10000, 10000, 10000, 10000]])
         reg.inputs.convergence_threshold = [1.e-6]*2
