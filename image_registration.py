@@ -36,7 +36,6 @@ import gzip
 from multiprocessing import Pool
 import os
 from os.path import basename
-from os.path import splitext
 import datetime
 import sqlite3
 import shutil
@@ -68,13 +67,10 @@ def pre_process(img, do_bet=True):
     path = img.temp_data_path
 
     input_file = img.img_filepath
-    n4_file = path + splitext(splitext(basename(input_file))[0])[0]\
-        + '_n4.nii.gz'
-    norm_file = path + splitext(basename(n4_file))[0]\
-        + '_norm.nii.gz'
-    resampled_file = path + splitext(basename(norm_file))[0]\
-        + '_resample.nii.gz'
-    name = splitext(splitext(basename(resampled_file))[0])[0] + "_be"
+    n4_file = path + util.get_basename(input_file) + '_n4.nii.gz'
+    norm_file = path + util.get_basename(n4_file) + '_norm.nii.gz'
+    resampled_file = path + util.get_basename(norm_file) + '_resample.nii.gz'
+    name = util.get_basename(resampled_file) + "_be"
     img.pre_processed_filepath = path + name + '.nii.gz'
 
     if os.path.exists(img.pre_processed_filepath) and\
@@ -178,7 +174,7 @@ def pre_process(img, do_bet=True):
         bet.run()
         util.generate_image(img.pre_processed_filepath, resampled_file)
     elif BE_METHOD == 2:
-        name = splitext(splitext(basename(resampled_file))[0])[0] + "_bet"
+        name = util.get_basename(resampled_file) + "_bet"
 
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
         bet = fsl.BET(command="fsl5.0-bet")
@@ -262,7 +258,7 @@ def registration(moving_img, fixed, reg_type):
     reg = ants.Registration()
 
     path = moving_img.temp_data_path
-    name = splitext(splitext(basename(moving_img.pre_processed_filepath))[0])[0] + '_' + reg_type
+    name = util.get_basename(moving_img.pre_processed_filepath) + '_' + reg_type
     moving_img.processed_filepath = path + name + '_RegTo' + str(moving_img.fixed_image) + '.nii.gz'
     moving_img.transform = path + name + '_RegTo' + str(moving_img.fixed_image) + '.h5'
 
@@ -323,7 +319,7 @@ def registration(moving_img, fixed, reg_type):
             reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
             reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         else:
-            reg.inputs.number_of_iterations = ([[10000, 5000, 5000, 1000], [5000, 1000, 1000, 1000],
+            reg.inputs.number_of_iterations = ([[10000, 5000, 5000, 1000], [5000, 1000, -1000, 1000],
                                                 [100, 75, 75, 75]])
             reg.inputs.shrink_factors = [[5, 3, 2, 1], [5, 3, 2, 1], [5, 3, 2, 1]]
             reg.inputs.smoothing_sigmas = [[4, 2, 1, 0], [4, 2, 1, 0], [4, 2, 1, 0]]
@@ -405,8 +401,7 @@ def move_vol(moving, transform, label_img=False):
         target_affine_3x3 = np.eye(3) * 1
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
-        resampled_file = util.TEMP_FOLDER_PATH + splitext(splitext(basename(moving))[0])[0]\
-            + '_resample.nii.gz'
+        resampled_file = util.TEMP_FOLDER_PATH + util.get_basename(moving) + '_resample.nii.gz'
         # pylint: disable= no-member
         img_3d_affine.to_filename(resampled_file)
 
@@ -437,7 +432,7 @@ def save_transform_to_database(data_transforms):
         print(img.get_transforms())
         for _transform in img.get_transforms():
             print(_transform)
-            dst_file = folder + basename(_transform) + '.gz'
+            dst_file = folder + util.get_basename(_transform) + '.gz'
             if os.path.exists(dst_file):
                 os.remove(dst_file)
             with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
