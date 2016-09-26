@@ -218,8 +218,8 @@ def pre_process(img, do_bet=True):
         reg.inputs.convergence_window_size = [5, 5]
         reg.inputs.sampling_strategy = ['Regular'] * 2
         reg.inputs.sampling_percentage = [0.4] * 2
-        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
-                                            [10000, 10000, 10000, 10000]])
+        reg.inputs.number_of_iterations = ([[10000, 10000, 5000, 1000],
+                                            [10000, 10000, 5000, 1000]])
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
@@ -305,12 +305,12 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.metric_weight = [1.0]*2
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
-        reg.inputs.metric = ['MI', 'MI', ['Mattes', 'CC']]
-        reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
-        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 4]]
+        reg.inputs.metric = ['MI', 'MI', 'CC']
+        reg.inputs.metric_weight = [1] * 3
+        reg.inputs.radius_or_number_of_bins = [32, 32, 5]
         reg.inputs.convergence_window_size = [5, 5, 5]
-        reg.inputs.sampling_strategy = ['Regular'] * 2 + [[None, None]]
-        reg.inputs.sampling_percentage = [0.3] * 2 + [[None, None]]
+        reg.inputs.sampling_strategy = ['Regular'] * 2 + [None]
+        reg.inputs.sampling_percentage = [0.4] * 2 + [None]
         reg.inputs.convergence_threshold = [1.e-8] * 2 + [-0.01]
         if reg.inputs.initial_moving_transform_com:
             reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
@@ -319,11 +319,11 @@ def registration(moving_img, fixed, reg_type):
             reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
             reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         else:
-            reg.inputs.number_of_iterations = ([[1000, 1000, 1000, 1000],
-                                                [1000, 1000, 1000],
-                                                [100, 75, 50]])
-            reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 2, 1], [4, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 1, 0], [1, 0.5, 0]]
+            reg.inputs.number_of_iterations = ([[1000, 1000, 500, 500],
+                                                [1000, 1000, 500, 500],
+                                                [100, 75, 75, 75]])
+            reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [4, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [2, 1, 0.5, 0]]
         reg.inputs.sigma_units = ['vox']*3
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.25,),
