@@ -82,7 +82,7 @@ class img_data(object):
 
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
-        img_3d_affine = resample_img(self.label_filepath, target_affine=target_affine_3x3)
+        img_3d_affine = resample_img(self.label_filepath, target_affine=target_affine_3x3, interpolation='nearest')
 
         temp_img = img_3d_affine.get_data()
         temp_img[temp_img > 0] = 1

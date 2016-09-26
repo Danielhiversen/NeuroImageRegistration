@@ -88,7 +88,8 @@ def pre_process(img, do_bet=True):
 
     # normalization [0,100], same as template
     normalize_img = nib.load(n4_file)
-    temp_img = nib.Nifti1Image(normalize_img.get_data()/np.amax(normalize_img.get_data())*100,
+    temp_data = normalize_img.get_data()
+    temp_img = nib.Nifti1Image(temp_data/np.amax(temp_data)*100,
                                normalize_img.affine, normalize_img.header)
     temp_img.to_filename(norm_file)
 
