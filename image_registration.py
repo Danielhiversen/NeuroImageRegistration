@@ -234,8 +234,10 @@ def pre_process(img, do_bet=True):
 
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
+        start_time = datetime.datetime.now()
         reg.run()
-        print("Finished be registration")
+        print("Finished be registration: ")
+        print(datetime.datetime.now() - start_time)
 
         reg_volume = util.transform_volume(resampled_file, transform)
         shutil.copy(transform, img.init_transform)
@@ -361,9 +363,8 @@ def process_dataset(args):
     img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     img = pre_process(img)
 
-    bet_time = datetime.datetime.now() - start_time
-    print("\n\n\n\n -- Run time BET: ")
-    print(bet_time)
+    print("\n\n\n\n -- Run time preprocess: ")
+    print(datetime.datetime.now() - start_time)
 
     for k in range(3):
         try:
