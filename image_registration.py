@@ -361,7 +361,7 @@ def registration(moving_img, fixed, reg_type):
 
 def process_dataset(args):
     """ pre process and registrate volume"""
-    (moving_image_id, reg_type) = args
+    (moving_image_id, reg_type, saveToDb) = args
     print(moving_image_id)
 
     start_time = datetime.datetime.now()
@@ -380,10 +380,12 @@ def process_dataset(args):
             print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
     print("\n\n\n\n -- Run time: ")
     print(datetime.datetime.now() - start_time)
+    if saveToDb:
+        save_transform_to_database([img])
     return img
 
 
-def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset):
+def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset, saveToDb=False):
     """Calculate transforms """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
@@ -393,12 +395,14 @@ def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func
         # http://stackoverflow.com/a/1408476/636384
         result = pool.map_async(process_dataset_func,
                                 zip(moving_dataset_image_ids,
-                                    [reg_type]*len(moving_dataset_image_ids))).get(999999999)
+                                    [reg_type]*len(moving_dataset_image_ids),
+                                    saveToDb=False)).get(999999999)
         pool.close()
         pool.join()
     else:
         result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
-                                                    [reg_type]*len(moving_dataset_image_ids))))
+                                                    [reg_type]*len(moving_dataset_image_ids),
+                                                    saveToDb=False)))
     return result
 
 
@@ -477,5 +481,5 @@ def save_transform_to_database(data_transforms):
         cursor.close()
         cursor2.close()
 
-    cursor = conn.execute('''VACUUM; ''')
+#    cursor = conn.execute('''VACUUM; ''')
     conn.close()
