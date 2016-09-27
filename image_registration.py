@@ -51,7 +51,7 @@ from img_data import img_data
 import util
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+# MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -209,7 +209,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.fixed_image = bet.inputs.out_file
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 8
         reg.inputs.initial_moving_transform_com = True
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
@@ -249,10 +249,10 @@ def pre_process(img, do_bet=True):
 
         reg = ants.Registration()
         reg.inputs.collapse_output_transforms = True
-        reg.inputs.fixed_image = resampled_file
+        reg.inputs.fixed_image = pre_processed_filepath1
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath  # reg_mask
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 8
         reg.inputs.initial_moving_transform = transform
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
