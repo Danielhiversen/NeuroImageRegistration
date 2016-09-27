@@ -397,13 +397,13 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
         result = pool.map_async(process_dataset_func,
                                 zip(moving_dataset_image_ids,
                                     [reg_type]*len(moving_dataset_image_ids),
-                                    save_to_db=False)).get(999999999)
+                                    save_to_db)).get(999999999)
         pool.close()
         pool.join()
     else:
         result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
                                                     [reg_type]*len(moving_dataset_image_ids),
-                                                    save_to_db=False)))
+                                                    save_to_db)))
     return result
 
 
