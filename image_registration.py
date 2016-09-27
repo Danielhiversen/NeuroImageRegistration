@@ -330,7 +330,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.sigma_units = ['vox']*3
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.25,),
-                                           (0.15, 3.0, 0.0)]
+                                           (0.2, 3.0, 0.0)]
         reg.inputs.use_estimate_learning_rate_once = [True] * 3
         reg.inputs.use_histogram_matching = [False, False, True]
     else:
