@@ -310,7 +310,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
         reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]
         reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
-        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 5]]
+        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 4]]
         reg.inputs.convergence_window_size = [5, 5, 5]
         reg.inputs.sampling_strategy = ['Regular'] * 2 + [[None, None]]
         reg.inputs.sampling_percentage = [0.5] * 2 + [[None, None]]
