@@ -356,16 +356,16 @@ def registration(moving_img, fixed, reg_type):
     elif reg_type == SYN:
         reg.inputs.transforms = ['Affine', 'SyN']
         reg.inputs.metric = ['MI', ['MI', 'CC']]
-        reg.inputs.metric_weight = [1]  + [[0.5, 0.5]]
+        reg.inputs.metric_weight = [1] + [[0.5, 0.5]]
         reg.inputs.radius_or_number_of_bins = [32, [32, 5]]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.sampling_strategy = ['Regular']  + [[None, None]]
-        reg.inputs.sampling_percentage = [0.5]  + [[None, None]]
+        reg.inputs.sampling_strategy = ['Regular'] + [[None, None]]
+        reg.inputs.sampling_percentage = [0.5] + [[None, None]]
         reg.inputs.number_of_iterations = ([[1000, 1000],
                                             [100, 75, 75, 75]])
         reg.inputs.shrink_factors = [[2, 1], [5, 3, 2, 1]]
         reg.inputs.smoothing_sigmas = [[1, 0], [4, 2, 1, 0]]
-        reg.inputs.convergence_threshold = [1.e-6]  + [-0.01]
+        reg.inputs.convergence_threshold = [1.e-6] + [-0.01]
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.15, 3.0, 0.0)]
