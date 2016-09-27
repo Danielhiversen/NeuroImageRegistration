@@ -308,7 +308,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.metric_weight = [1.0]*2
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
-        reg.inputs.metric = ['MI', 'MI',  ['MI', 'CC']]
+        reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]
         reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
         reg.inputs.radius_or_number_of_bins = [32, 32, [32, 5]]
         reg.inputs.convergence_window_size = [5, 5, 5]
