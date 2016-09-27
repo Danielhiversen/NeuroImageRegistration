@@ -237,7 +237,7 @@ def pre_process(img, do_bet=True):
         print("Finished be registration1: ")
         print(datetime.datetime.now() - start_time)
 
-        reg__template_mask = util.transform_volume(util.TEMPLATE_MASK, transform)
+        reg_template_mask = util.transform_volume(util.TEMPLATE_MASK, transform)
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
         mult.inputs.first_input = resampled_file
@@ -246,7 +246,7 @@ def pre_process(img, do_bet=True):
         mult.run()
 
         # reg_mask = util.transform_volume(img.label_inv_filepath, transform)
-        
+
         reg = ants.Registration()
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = resampled_file
