@@ -310,7 +310,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
         reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]
         reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
-        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 4]]
+        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 5]]
         reg.inputs.convergence_window_size = [5, 5, 5]
         reg.inputs.sampling_strategy = ['Regular'] * 2 + [[None, None]]
         reg.inputs.sampling_percentage = [0.5] * 2 + [[None, None]]
@@ -323,14 +323,14 @@ def registration(moving_img, fixed, reg_type):
         else:
             reg.inputs.number_of_iterations = ([[5000, 5000, 1000, 500],
                                                 [5000, 5000, 1000, 500],
-                                                [100, 75, 50]])
+                                                [100, 100, 75]])
             reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [4, 2, 1]]
             reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [1, 0.5, 0]]
         reg.inputs.convergence_threshold = [1.e-6] * 2 + [-0.01]
         reg.inputs.sigma_units = ['vox']*3
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.25,),
-                                           (0.2, 3.0, 0.0)]
+                                           (0.15, 3.0, 0.0)]
         reg.inputs.use_estimate_learning_rate_once = [True] * 3
         reg.inputs.use_histogram_matching = [False, False, True]
     else:
@@ -361,7 +361,7 @@ def registration(moving_img, fixed, reg_type):
 
 def process_dataset(args):
     """ pre process and registrate volume"""
-    (moving_image_id, reg_type, saveToDb) = args
+    (moving_image_id, reg_type, save_to_db) = args
     print(moving_image_id)
 
     start_time = datetime.datetime.now()
@@ -380,12 +380,13 @@ def process_dataset(args):
             print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
     print("\n\n\n\n -- Run time: ")
     print(datetime.datetime.now() - start_time)
-    if saveToDb:
+    if save_to_db:
         save_transform_to_database([img])
     return img
 
 
-def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func=process_dataset, saveToDb=False):
+def get_transforms(moving_dataset_image_ids, reg_type=None,
+                   process_dataset_func=process_dataset, save_to_db=False):
     """Calculate transforms """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
@@ -396,13 +397,13 @@ def get_transforms(moving_dataset_image_ids, reg_type=None, process_dataset_func
         result = pool.map_async(process_dataset_func,
                                 zip(moving_dataset_image_ids,
                                     [reg_type]*len(moving_dataset_image_ids),
-                                    saveToDb=False)).get(999999999)
+                                    save_to_db=False)).get(999999999)
         pool.close()
         pool.join()
     else:
         result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
                                                     [reg_type]*len(moving_dataset_image_ids),
-                                                    saveToDb=False)))
+                                                    save_to_db=False)))
     return result
 
 
