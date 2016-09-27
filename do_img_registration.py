@@ -68,6 +68,7 @@ if __name__ == "__main__":
 
     moving_datasets_ids = find_images_with_qol()
     print(moving_datasets_ids)
-    data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN)
+    data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN,
+                                                        saveToDb=True)
 
-    image_registration.save_transform_to_database(data_transforms)
+    # image_registration.save_transform_to_database(data_transforms)
