@@ -201,19 +201,16 @@ def pre_process(img, do_bet=True):
         name = name + "_be"
         pre_processed_filepath1 = path + name + '.nii.gz'
         name = name + "_be"
-        img.pre_processed_filepath1 = path + name + '.nii.gz'
+        img.pre_processed_filepath = path + name + '.nii.gz'
         img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
 
         reg = ants.Registration()
-        # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = bet.inputs.out_file
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
-
         reg.inputs.num_threads = 1
         reg.inputs.initial_moving_transform_com = True
-
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
@@ -229,7 +226,6 @@ def pre_process(img, do_bet=True):
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
-
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
         reg.inputs.output_warped_image = path + name + '_beReg.nii.gz'
@@ -241,24 +237,23 @@ def pre_process(img, do_bet=True):
         print("Finished be registration1: ")
         print(datetime.datetime.now() - start_time)
 
-        reg_mask = util.transform_volume(util.TEMPLATE_MASK, transform)
+        reg__template_mask = util.transform_volume(util.TEMPLATE_MASK, transform)
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
         mult.inputs.first_input = resampled_file
-        mult.inputs.second_input = reg_mask
+        mult.inputs.second_input = reg_template_mask
         mult.inputs.output_product_image = pre_processed_filepath1
         mult.run()
 
+        # reg_mask = util.transform_volume(img.label_inv_filepath, transform)
+        
         reg = ants.Registration()
-        # reg.inputs.args = "--verbose 1"
-        reg.inputs.collapse_output_transforms = transform
+        reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = resampled_file
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
-        reg.inputs.fixed_image_mask = img.label_inv_filepath
-
+        reg.inputs.fixed_image_mask = img.label_inv_filepath  # reg_mask
         reg.inputs.num_threads = 1
-        reg.inputs.initial_moving_transform = True
-
+        reg.inputs.initial_moving_transform = transform
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
@@ -274,11 +269,9 @@ def pre_process(img, do_bet=True):
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
-
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
         reg.inputs.output_warped_image = path + name + '_beReg.nii.gz'
-
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
         start_time = datetime.datetime.now()
@@ -293,7 +286,7 @@ def pre_process(img, do_bet=True):
         mult.inputs.dimension = 3
         mult.inputs.first_input = reg_volume
         mult.inputs.second_input = util.TEMPLATE_MASK
-        mult.inputs.output_product_image = pre_processed_filepath1
+        mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
         util.generate_image(img.pre_processed_filepath, reg_volume)
@@ -409,7 +402,7 @@ def process_dataset(args):
 
     print("\n\n\n\n -- Run time preprocess: ")
     print(datetime.datetime.now() - start_time)
-
+    return img
     for k in range(3):
         try:
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
