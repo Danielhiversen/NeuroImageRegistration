@@ -273,7 +273,7 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     return average
 
 
-def generate_image(path, path2):
+def generate_image(path, path2, name=None):
     """ generate png images"""
     img = nib.load(path).get_data()
     img_template = nib.load(path2).get_data()
@@ -304,10 +304,10 @@ def generate_image(path, path2):
     slices_template = [slice_0, slice_1, slice_2]
 
     show_slices(slices, slices_template)
-    name = splitext(splitext(basename(path))[0])[0]
+    name = name if name else get_basename(path)
     plt.suptitle(name)
 
-    plt.savefig(splitext(splitext(path)[0])[0] + ".png")
+    plt.savefig(name + ".png")
     plt.close()
 
 
