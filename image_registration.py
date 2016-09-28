@@ -361,7 +361,6 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.convergence_threshold = [1.e-6] + [-0.01]
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.transform_parameters = [(0.25,),
-                                           (0.25,),
                                            (0.15, 3.0, 0.0)]
         reg.inputs.use_estimate_learning_rate_once = [True] * 2
         reg.inputs.use_histogram_matching = [False, True]
