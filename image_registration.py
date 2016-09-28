@@ -196,7 +196,12 @@ def pre_process(img, do_bet=True):
         bet.inputs.reduce_bias = True
         bet.inputs.mask = True
         bet.inputs.out_file = path + name + '.nii.gz'
-        bet.run()
+        print("starting bet registration")
+        start_time = datetime.datetime.now()
+        if not os.path.exists(bet.inputs.out_file):
+            bet.run()
+        print("Finished bet registration 0: ")
+        print(datetime.datetime.now() - start_time)
 
         name = name + "_be"
         pre_processed_filepath1 = path + name + '.nii.gz'
@@ -229,15 +234,17 @@ def pre_process(img, do_bet=True):
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
         reg.inputs.output_warped_image = path + name + '_beReg.nii.gz'
-
-        transform = path + name + 'Composite.h5'
+        transform1 = path + name + 'Composite.h5'
+        print(transform1)
         print("starting be registration")
         start_time = datetime.datetime.now()
-        reg.run()
-        print("Finished be registration1: ")
+        if not os.path.exists(reg.inputs.output_warped_image):
+            reg.run()
+        print("Finished be registration 1: ")
         print(datetime.datetime.now() - start_time)
 
-        reg_template_mask = util.transform_volume(util.TEMPLATE_MASK, transform)
+        reg_template_mask = util.transform_volume(util.TEMPLATE_MASK, transform1,
+                                                  ref_img=resampled_file)
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
         mult.inputs.first_input = resampled_file
@@ -249,11 +256,11 @@ def pre_process(img, do_bet=True):
 
         reg = ants.Registration()
         reg.inputs.collapse_output_transforms = True
-        reg.inputs.fixed_image = pre_processed_filepath1
+        reg.inputs.fixed_image = resampled_file
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath  # reg_mask
         reg.inputs.num_threads = 8
-        reg.inputs.initial_moving_transform = transform
+        reg.inputs.initial_moving_transform = transform1
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
@@ -271,15 +278,17 @@ def pre_process(img, do_bet=True):
         reg.inputs.use_estimate_learning_rate_once = [True, True]
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
-        reg.inputs.output_warped_image = path + name + '_beReg.nii.gz'
+        reg.inputs.output_warped_image = path + name + '_bebeReg.nii.gz'
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
         start_time = datetime.datetime.now()
-        reg.run()
+        if not os.path.exists(reg.inputs.output_warped_image):
+            reg.run()
         print("Finished be registration2: ")
         print(datetime.datetime.now() - start_time)
 
-        reg_volume = util.transform_volume(resampled_file, transform)
+        reg_volume = util.transform_volume(resampled_file, transform1)
+        reg_volume = util.transform_volume(reg_volume, transform)
         shutil.copy(transform, img.init_transform)
 
         mult = ants.MultiplyImages()
@@ -355,7 +364,7 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.sampling_strategy = ['Regular'] + [[None, None]]
         reg.inputs.sampling_percentage = [0.5] + [[None, None]]
         reg.inputs.number_of_iterations = ([[1000, 1000],
-                                            [100, 75, 75,]])
+                                            [100, 75, 75]])
         reg.inputs.shrink_factors = [[2, 1], [4, 2, 1]]
         reg.inputs.smoothing_sigmas = [[1, 0], [1, 0.5, 0]]
         reg.inputs.convergence_threshold = [1.e-6] + [-0.01]
@@ -401,7 +410,7 @@ def process_dataset(args):
 
     print("\n\n\n\n -- Run time preprocess: ")
     print(datetime.datetime.now() - start_time)
-    return img
+
     for k in range(3):
         try:
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
@@ -434,7 +443,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
     else:
         result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
                                                     [reg_type]*len(moving_dataset_image_ids),
-                                                    save_to_db)))
+                                                    [save_to_db]*len(moving_dataset_image_ids))))
     return result
 
 
