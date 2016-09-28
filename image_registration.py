@@ -403,7 +403,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
     else:
         result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
                                                     [reg_type]*len(moving_dataset_image_ids),
-                                                    save_to_db)))
+                                                    [save_to_db)]*len(moving_dataset_image_ids)))
     return result
 
 
