@@ -51,7 +51,7 @@ from img_data import img_data
 import util
 
 MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+# MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -196,22 +196,26 @@ def pre_process(img, do_bet=True):
         bet.inputs.reduce_bias = True
         bet.inputs.mask = True
         bet.inputs.out_file = path + name + '.nii.gz'
-        bet.run()
+        print("starting bet registration")
+        start_time = datetime.datetime.now()
+        if not os.path.exists(bet.inputs.out_file):
+            bet.run()
+        print("Finished bet registration 0: ")
+        print(datetime.datetime.now() - start_time)
 
+        name = name + "_be"
+        pre_processed_filepath1 = path + name + '.nii.gz'
         name = name + "_be"
         img.pre_processed_filepath = path + name + '.nii.gz'
         img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
 
         reg = ants.Registration()
-        # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = bet.inputs.out_file
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
-
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 8
         reg.inputs.initial_moving_transform_com = True
-
         reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
@@ -227,19 +231,64 @@ def pre_process(img, do_bet=True):
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
-
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
         reg.inputs.output_warped_image = path + name + '_beReg.nii.gz'
+        transform1 = path + name + 'Composite.h5'
+        print(transform1)
+        print("starting be registration")
+        start_time = datetime.datetime.now()
+        if not os.path.exists(reg.inputs.output_warped_image):
+            reg.run()
+        print("Finished be registration 1: ")
+        print(datetime.datetime.now() - start_time)
 
+        reg_template_mask = util.transform_volume(util.TEMPLATE_MASK, transform1,
+                                                  ref_img=resampled_file)
+        mult = ants.MultiplyImages()
+        mult.inputs.dimension = 3
+        mult.inputs.first_input = resampled_file
+        mult.inputs.second_input = reg_template_mask
+        mult.inputs.output_product_image = pre_processed_filepath1
+        mult.run()
+
+        # reg_mask = util.transform_volume(img.label_inv_filepath, transform)
+
+        reg = ants.Registration()
+        reg.inputs.collapse_output_transforms = True
+        reg.inputs.fixed_image = resampled_file
+        reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
+        reg.inputs.fixed_image_mask = img.label_inv_filepath  # reg_mask
+        reg.inputs.num_threads = 8
+        reg.inputs.initial_moving_transform = transform1
+        reg.inputs.transforms = ['Rigid', 'Affine']
+        reg.inputs.metric = ['MI', 'MI']
+        reg.inputs.radius_or_number_of_bins = [32, 32]
+        reg.inputs.metric_weight = [1, 1]
+        reg.inputs.convergence_window_size = [5, 5]
+        reg.inputs.sampling_strategy = ['Regular'] * 2
+        reg.inputs.sampling_percentage = [0.5] * 2
+        reg.inputs.number_of_iterations = ([[10000, 10000, 5000, 5000],
+                                            [10000, 10000, 5000, 5000]])
+        reg.inputs.shrink_factors = [[7, 5, 3, 1], [9, 5, 3, 1]]
+        reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
+        reg.inputs.transform_parameters = [(0.75,), (0.75,)]
+        reg.inputs.convergence_threshold = [1.e-6]*2
+        reg.inputs.sigma_units = ['vox']*2
+        reg.inputs.use_estimate_learning_rate_once = [True, True]
+        reg.inputs.write_composite_transform = True
+        reg.inputs.output_transform_prefix = path + name
+        reg.inputs.output_warped_image = path + name + '_bebeReg.nii.gz'
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
         start_time = datetime.datetime.now()
-        reg.run()
-        print("Finished be registration: ")
+        if not os.path.exists(reg.inputs.output_warped_image):
+            reg.run()
+        print("Finished be registration2: ")
         print(datetime.datetime.now() - start_time)
 
-        reg_volume = util.transform_volume(resampled_file, transform)
+        reg_volume = util.transform_volume(resampled_file, transform1)
+        reg_volume = util.transform_volume(reg_volume, transform)
         shutil.copy(transform, img.init_transform)
 
         mult = ants.MultiplyImages()
@@ -270,7 +319,8 @@ def registration(moving_img, fixed, reg_type):
         print("Found initial transform")
         # reg.inputs.initial_moving_transform = init_moving_transform
         reg.inputs.initial_moving_transform_com = False
-        mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform, True)
+        mask = util.transform_volume(moving_img.label_inv_filepath,
+                                     moving_img.init_transform, label_img=True)
     else:
         reg.inputs.initial_moving_transform_com = True
         mask = moving_img.label_inv_filepath
@@ -307,32 +357,23 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.use_histogram_matching = [False, True]
         reg.inputs.metric_weight = [1.0]*2
     elif reg_type == SYN:
-        reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
-        reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]
-        reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
-        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 4]]
-        reg.inputs.convergence_window_size = [5, 5, 5]
-        reg.inputs.sampling_strategy = ['Regular'] * 2 + [[None, None]]
-        reg.inputs.sampling_percentage = [0.5] * 2 + [[None, None]]
-        if reg.inputs.initial_moving_transform_com:
-            reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
-                                                [10000, 10000, 1000, 1000, 1000],
-                                                [100, 75, 75, 75]])
-            reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
-        else:
-            reg.inputs.number_of_iterations = ([[5000, 5000, 1000, 500],
-                                                [5000, 5000, 1000, 500],
-                                                [100, 75, 75]])
-            reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [4, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [1, 0.5, 0]]
-        reg.inputs.convergence_threshold = [1.e-6] * 2 + [-0.01]
-        reg.inputs.sigma_units = ['vox']*3
+        reg.inputs.transforms = ['Affine', 'SyN']
+        reg.inputs.metric = ['MI', ['MI', 'CC']]
+        reg.inputs.metric_weight = [1] + [[0.5, 0.5]]
+        reg.inputs.radius_or_number_of_bins = [32, [32, 4]]
+        reg.inputs.convergence_window_size = [5, 5]
+        reg.inputs.sampling_strategy = ['Regular'] + [[None, None]]
+        reg.inputs.sampling_percentage = [0.5] + [[None, None]]
+        reg.inputs.number_of_iterations = ([[1000, 1000],
+                                            [100, 75, 75]])
+        reg.inputs.shrink_factors = [[2, 1], [4, 2, 1]]
+        reg.inputs.smoothing_sigmas = [[1, 0], [1, 0.5, 0]]
+        reg.inputs.convergence_threshold = [1.e-6] + [-0.01]
+        reg.inputs.sigma_units = ['vox']*2
         reg.inputs.transform_parameters = [(0.25,),
-                                           (0.25,),
                                            (0.2, 3.0, 0.0)]
-        reg.inputs.use_estimate_learning_rate_once = [True] * 3
-        reg.inputs.use_histogram_matching = [False, False, True]
+        reg.inputs.use_estimate_learning_rate_once = [True] * 2
+        reg.inputs.use_histogram_matching = [False, True]
     else:
         raise Exception("Wrong registration format " + reg_type)
     reg.inputs.winsorize_lower_quantile = 0.005
