@@ -319,7 +319,8 @@ def registration(moving_img, fixed, reg_type):
         print("Found initial transform")
         # reg.inputs.initial_moving_transform = init_moving_transform
         reg.inputs.initial_moving_transform_com = False
-        mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform, True)
+        mask = util.transform_volume(moving_img.label_inv_filepath,
+                                     moving_img.init_transform, label_img=True)
     else:
         reg.inputs.initial_moving_transform_com = True
         mask = moving_img.label_inv_filepath

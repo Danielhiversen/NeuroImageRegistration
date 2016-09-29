@@ -201,7 +201,7 @@ def find_reg_label_images(moving_image_id):
     return images
 
 
-def transform_volume(vol, transform, ref_img=TEMPLATE_VOLUME, label_img=False, outputpath=None):
+def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=TEMPLATE_VOLUME):
     """Transform volume """
     transforms = []
     for _transform in ensure_list(transform):
