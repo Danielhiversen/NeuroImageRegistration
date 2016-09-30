@@ -223,7 +223,7 @@ def pre_process(img, do_bet=True):
                                             [10000, 10000, 5000, 5000]])
         reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
-        reg.inputs.transform_parameters = [(0.75,), (0.75,)]
+        reg.inputs.transform_parameters = [(0.25,), (0.25,)]
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
