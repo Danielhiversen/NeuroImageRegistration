@@ -196,7 +196,12 @@ def pre_process(img, do_bet=True):
         bet.inputs.reduce_bias = True
         bet.inputs.mask = True
         bet.inputs.out_file = path + name + '.nii.gz'
-        bet.run()
+        print("starting bet registration")
+        start_time = datetime.datetime.now()
+        if not os.path.exists(bet.inputs.out_file):
+            bet.run()
+        print("Finished bet registration 0: ")
+        print(datetime.datetime.now() - start_time)
 
         name = name + "_be"
         img.pre_processed_filepath = path + name + '.nii.gz'
@@ -223,7 +228,7 @@ def pre_process(img, do_bet=True):
                                             [10000, 10000, 5000, 5000]])
         reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
-        reg.inputs.transform_parameters = [(0.75,), (0.75,)]
+        reg.inputs.transform_parameters = [(0.25,), (0.25,)]
         reg.inputs.convergence_threshold = [1.e-6]*2
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
@@ -235,7 +240,8 @@ def pre_process(img, do_bet=True):
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
         start_time = datetime.datetime.now()
-        reg.run()
+        if not os.path.exists(reg.inputs.output_warped_image):
+            reg.run()
         print("Finished be registration: ")
         print(datetime.datetime.now() - start_time)
 
@@ -270,7 +276,8 @@ def registration(moving_img, fixed, reg_type):
         print("Found initial transform")
         # reg.inputs.initial_moving_transform = init_moving_transform
         reg.inputs.initial_moving_transform_com = False
-        mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform, True)
+        mask = util.transform_volume(moving_img.label_inv_filepath,
+                                     moving_img.init_transform, label_img=True)
     else:
         reg.inputs.initial_moving_transform_com = True
         mask = moving_img.label_inv_filepath
@@ -323,7 +330,7 @@ def registration(moving_img, fixed, reg_type):
         else:
             reg.inputs.number_of_iterations = ([[5000, 5000, 1000, 500],
                                                 [5000, 5000, 1000, 500],
-                                                [100, 75, 75]])
+                                                [100, 90, 75]])
             reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [4, 2, 1]]
             reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [1, 0.5, 0]]
         reg.inputs.convergence_threshold = [1.e-6] * 2 + [-0.01]
@@ -445,13 +452,13 @@ def save_transform_to_database(data_transforms):
         print(img.get_transforms())
         for _transform in img.get_transforms():
             print(_transform)
-            dst_file = folder + util.get_basename(_transform) + '.gz'
+            dst_file = folder + util.get_basename(_transform) + '.h5.gz'
             if os.path.exists(dst_file):
                 os.remove(dst_file)
             with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
             transform_paths += str(pid) + "/registration_transforms/" +\
-                basename(_transform) + '.gz' + ", "
+                basename(_transform) + '.h5.gz' + ", "
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
