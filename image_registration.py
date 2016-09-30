@@ -445,13 +445,13 @@ def save_transform_to_database(data_transforms):
         print(img.get_transforms())
         for _transform in img.get_transforms():
             print(_transform)
-            dst_file = folder + util.get_basename(_transform) + '.gz'
+            dst_file = folder + util.get_basename(_transform) + '.h5.gz'
             if os.path.exists(dst_file):
                 os.remove(dst_file)
             with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
             transform_paths += str(pid) + "/registration_transforms/" +\
-                basename(_transform) + '.gz' + ", "
+                basename(_transform) + '.h5.gz' + ", "
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
