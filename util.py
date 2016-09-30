@@ -89,27 +89,6 @@ def prepare_template(template_vol, template_mask):
     mult.run()
 
 
-def get_transforms_from_db(img_id, conn):
-    """Get transforms from the database """
-    cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (img_id,))
-    db_temp = cursor.fetchone()
-
-    fixed_image_id = db_temp[1]
-    if fixed_image_id > 0:
-        transforms = get_transforms_from_db(fixed_image_id, conn)
-    else:
-        transforms = []
-
-    if db_temp[0] is None:
-        return []
-
-    img_transforms = db_temp[0].split(",")
-    for _transform in img_transforms:
-        transforms.append(DATA_FOLDER + _transform.strip())
-
-    return transforms
-
-
 # pylint: disable= dangerous-default-value
 def post_calculations(moving_dataset_image_ids, result=dict()):
     """ Transform images and calculate avg"""
@@ -141,6 +120,27 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
     conn.close()
 
     return result
+
+
+def get_transforms_from_db(img_id, conn):
+    """Get transforms from the database """
+    cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (img_id,))
+    db_temp = cursor.fetchone()
+
+    fixed_image_id = db_temp[1]
+    if fixed_image_id > 0:
+        transforms = get_transforms_from_db(fixed_image_id, conn)
+    else:
+        transforms = []
+
+    if db_temp[0] is None:
+        return []
+
+    img_transforms = db_temp[0].split(",")
+    for _transform in img_transforms:
+        transforms.append(DATA_FOLDER + _transform.strip())
+
+    return transforms
 
 
 def get_image_id_and_qol(qol_param):
@@ -322,13 +322,6 @@ def compress_vol(vol):
     return res
 
 
-def ensure_list(value):
-    """Wrap value in list if it is not one."""
-    if value is None:
-        return []
-    return value if isinstance(value, list) else [value]
-
-
 def decompress_file(gzip_path):
     """Decompress file """
     if gzip_path[:-3] != '.gz':
@@ -349,6 +342,13 @@ def decompress_file(gzip_path):
     open(uncompressed_path, 'w').write(data)
 
     return uncompressed_path
+
+
+def ensure_list(value):
+    """Wrap value in list if it is not one."""
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
 
 
 def mkdir_p(path):
