@@ -323,7 +323,7 @@ def registration(moving_img, fixed, reg_type):
         else:
             reg.inputs.number_of_iterations = ([[5000, 5000, 1000, 500],
                                                 [5000, 5000, 1000, 500],
-                                                [100, 75, 75]])
+                                                [100, 90, 75]])
             reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [4, 2, 1]]
             reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [1, 0.5, 0]]
         reg.inputs.convergence_threshold = [1.e-6] * 2 + [-0.01]
