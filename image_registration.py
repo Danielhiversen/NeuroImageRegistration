@@ -196,7 +196,12 @@ def pre_process(img, do_bet=True):
         bet.inputs.reduce_bias = True
         bet.inputs.mask = True
         bet.inputs.out_file = path + name + '.nii.gz'
-        bet.run()
+        print("starting bet registration")
+        start_time = datetime.datetime.now()
+        if not os.path.exists(bet.inputs.out_file):
+            bet.run()
+        print("Finished bet registration 0: ")
+        print(datetime.datetime.now() - start_time)
 
         name = name + "_be"
         img.pre_processed_filepath = path + name + '.nii.gz'
@@ -235,7 +240,8 @@ def pre_process(img, do_bet=True):
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
         start_time = datetime.datetime.now()
-        reg.run()
+        if not os.path.exists(reg.inputs.output_warped_image):
+            reg.run()
         print("Finished be registration: ")
         print(datetime.datetime.now() - start_time)
 
@@ -270,7 +276,8 @@ def registration(moving_img, fixed, reg_type):
         print("Found initial transform")
         # reg.inputs.initial_moving_transform = init_moving_transform
         reg.inputs.initial_moving_transform_com = False
-        mask = util.transform_volume(moving_img.label_inv_filepath, moving_img.init_transform, True)
+        mask = util.transform_volume(moving_img.label_inv_filepath,
+                                     moving_img.init_transform, label_img=True)
     else:
         reg.inputs.initial_moving_transform_com = True
         mask = moving_img.label_inv_filepath
