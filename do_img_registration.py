@@ -23,6 +23,10 @@ def find_images():
         cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
                                (row[0], "pre"))
         for _id in cursor2:
+            cursor3 = conn.execute('''SELECT filepath from Images where id = ? ''', (_id[0],))
+            _img_filepath = util.DATA_FOLDER + cursor3.fetchone()[0]
+            if _img_filepath and os.path.exists(_img_filepath):
+                continue
             ids.append(_id[0])
         cursor2.close()
 
@@ -66,9 +70,9 @@ if __name__ == "__main__":
     os.nice(19)
     util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/")
 
-    moving_datasets_ids = find_images_with_qol()
+    moving_datasets_ids = find_images()
     print(moving_datasets_ids)
-    data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN,
+    data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.AFFINE,
                                                         save_to_db=True)
 
     # image_registration.save_transform_to_database(data_transforms)
