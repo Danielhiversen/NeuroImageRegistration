@@ -97,13 +97,12 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
 
     for _id in moving_dataset_image_ids:
         print(_id)
-        transforms = get_transforms_from_db(_id, conn)
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         if db_temp[0] is None:
             continue
         vol = DATA_FOLDER + db_temp[0]
-        print(vol, transforms)
+        print(vol)
         label = "img"
         if label in result:
             result[label].append(vol)
@@ -271,6 +270,32 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
         result_img.to_filename(path)
         generate_image(path, TEMPLATE_VOLUME)
     return average
+
+
+def calculate_t_test(images, label, save=False, folder=TEMP_FOLDER_PATH):
+    """ Calculate sum volumes """
+    path_n = folder + 't-test_.nii'
+    path_n = path_n.replace('label', 'tumor')
+
+    _sum = None
+    _total = None
+    for (file_name, val_i) in zip(images, val):
+        if val_i is None:
+            continue
+        img = nib.load(file_name)
+        if _sum is None:
+            _sum = np.zeros(img.get_data().shape)
+            _total = np.zeros(img.get_data().shape)
+        _sum = _sum + np.array(img.get_data())*val_i
+        temp = np.array(img.get_data())
+        temp[temp != 0] = 1.0
+        _total = _total + temp
+    if save:
+        result_img = nib.Nifti1Image(_sum, img.affine)
+        result_img.to_filename(path_n)
+        generate_image(path_n, TEMPLATE_VOLUME)
+
+    return (_sum, _total)
 
 
 def generate_image(path, path2, out_path=None):
