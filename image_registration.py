@@ -214,7 +214,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 8
         reg.inputs.initial_moving_transform_com = True
 
         reg.inputs.transforms = ['Rigid', 'Affine']
@@ -235,7 +235,7 @@ def pre_process(img, do_bet=True):
 
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
-        reg.inputs.output_warped_image = path + name + '_beReg.nii.gz'
+        reg.inputs.output_warped_image = path + name + '_TemplateReg.nii.gz'
 
         transform = path + name + 'InverseComposite.h5'
         print("starting be registration")
@@ -285,7 +285,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
-    reg.inputs.num_threads = 1
+    reg.inputs.num_threads = 8
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
         reg.inputs.metric = ['MI']
@@ -300,19 +300,28 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.metric_weight = [1.0]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine']
-        reg.inputs.metric = ['MI', 'CC']
-        reg.inputs.radius_or_number_of_bins = [32, 5]
-
+        reg.inputs.metric = ['MI', ['MI', 'CC']]
+        reg.inputs.metric_weight = [1] + [[0.5, 0.5]]
+        reg.inputs.radius_or_number_of_bins = [32, [32, 4]]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
-                                            [10000, 10000, 1000, 1000, 1000]])
-        reg.inputs.shrink_factors = [[5, 4, 3, 2, 1], [5, 4, 3, 2, 1]]
-        reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0], [4, 3, 2, 1, 0]]
+        reg.inputs.sampling_strategy = ['Regular'] + [[None, None]]
+        reg.inputs.sampling_percentage = [0.5] + [[None, None]]
+        if reg.inputs.initial_moving_transform_com:
+            reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
+                                                [10000, 10000, 1000, 1000, 1000]])
+            reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0]]
+        else:
+            reg.inputs.number_of_iterations = ([[5000, 5000, 1000, 500],
+                                                [5000, 5000, 1000, 500]])
+            reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0]]
+        reg.inputs.convergence_threshold = [1.e-6] + [-0.01]
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.transform_parameters = [(0.25,),
-                                           (0.15,)]
+                                           (0.25,)]
+        reg.inputs.use_estimate_learning_rate_once = [True] * 2
         reg.inputs.use_histogram_matching = [False, True]
-        reg.inputs.metric_weight = [1.0]*2
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
         reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]

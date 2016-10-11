@@ -34,7 +34,7 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("LGG_PRE/", "LGG")
+    util.setup("LGG_PRE/")
 
     pre_images = find_images()
 

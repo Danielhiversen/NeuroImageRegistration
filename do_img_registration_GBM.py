@@ -34,7 +34,7 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("GBM/", "GBM")
+    util.setup("GBM/")
 
     moving_datasets_ids = find_images()
 

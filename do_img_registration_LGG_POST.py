@@ -63,16 +63,6 @@ def process_dataset(args, num_tries=3):
     print("\n\n\n\n -- Total run time: ")
     print(datetime.datetime.now() - start_time)
 
-#            print("Finished 1 of 2")
-#
-#            pre_image_pre2 = image_registration.pre_process(pre_image, True)
-#            trans2 = image_registration.registration(pre_image_pre2,
-#                                                     image_registration.TEMP_FOLDER_PATH +
-#                                                     "masked_template.nii",
-#                                                     image_registration.AFFINE)
-#
-#            print("Finished 2 of 2")
-
     img.fixed_image = pre_image_id
 
     return img
@@ -81,11 +71,11 @@ def process_dataset(args, num_tries=3):
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("LGG_POST/", "LGG")
+    util.setup("LGG_POST/")
 
     post_images = find_images()
-
     data_transforms = image_registration.get_transforms(post_images,
-                                                        process_dataset_func=process_dataset)
+                                                        process_dataset_func=process_dataset,
+                                                        save_to_db=True)
 
-    image_registration.save_transform_to_database(data_transforms)
+#    image_registration.save_transform_to_database(data_transforms)

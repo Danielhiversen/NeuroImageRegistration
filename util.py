@@ -35,28 +35,24 @@ TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 TEMPLATE_MASKED_VOLUME = ""
 
 
-def setup(temp_path, datatype=""):
+def setup(temp_path):
     """setup for current computer """
     # pylint: disable= global-statement
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
     mkdir_p(TEMP_FOLDER_PATH)
-    setup_paths(datatype)
+    setup_paths()
     prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
 
-def setup_paths(datatype=""):
+def setup_paths():
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long
-    if datatype not in ["LGG", "GBM", ""]:
-        print("Unkown datatype " + datatype)
-        raise Exception
-
     global DATA_FOLDER, DB_PATH
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/mnt/dokumneter/data/database2/"
+        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database2/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
@@ -69,7 +65,6 @@ def setup_paths(datatype=""):
         print("Add your host name path to " + sys.argv[0])
         raise Exception
 
-    DATA_FOLDER = DATA_FOLDER + datatype + "/"
     DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
 
@@ -87,6 +82,37 @@ def prepare_template(template_vol, template_mask):
     if os.path.exists(mult.inputs.output_product_image):
         return
     mult.run()
+
+
+# pylint: disable= dangerous-default-value
+def post_calculations(moving_dataset_image_ids, result=dict()):
+    """ Transform images and calculate avg"""
+    conn = sqlite3.connect(DB_PATH)
+    conn.text_factory = str
+
+    for _id in moving_dataset_image_ids:
+        cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
+        db_temp = cursor.fetchone()
+        if db_temp[0] is None:
+            print("No data for ", _id)
+            continue
+        vol = DATA_FOLDER + db_temp[0]
+        label = "img"
+        if label in result:
+            result[label].append(vol)
+        else:
+            result[label] = [vol]
+
+        for (segmentation, label) in find_reg_label_images(_id):
+            if label in result:
+                result[label].append(segmentation)
+            else:
+                result[label] = [segmentation]
+
+        cursor.close()
+    conn.close()
+
+    return result
 
 
 def get_transforms_from_db(img_id, conn):
@@ -110,39 +136,6 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-# pylint: disable= dangerous-default-value
-def post_calculations(moving_dataset_image_ids, result=dict()):
-    """ Transform images and calculate avg"""
-    conn = sqlite3.connect(DB_PATH)
-    conn.text_factory = str
-
-    for _id in moving_dataset_image_ids:
-        print(_id)
-        transforms = get_transforms_from_db(_id, conn)
-        cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
-        db_temp = cursor.fetchone()
-        if db_temp[0] is None:
-            continue
-        vol = DATA_FOLDER + db_temp[0]
-        print(vol, transforms)
-        label = "img"
-        if label in result:
-            result[label].append(vol)
-        else:
-            result[label] = [vol]
-
-        for (segmentation, label) in find_reg_label_images(_id):
-            if label in result:
-                result[label].append(segmentation)
-            else:
-                result[label] = [segmentation]
-
-        cursor.close()
-    conn.close()
-
-    return result
-
-
 def get_image_id_and_qol(qol_param):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH)
@@ -155,11 +148,12 @@ def get_image_id_and_qol(qol_param):
         pid = pid[0]
         _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
                             (pid, )).fetchone()[0]
-        if _qol is None:
-            continue
-
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
+            print("No data for ", pid)
+            continue
+        if _qol is None:
+            print("No qol data for ", _id[0])
             continue
         _id = _id[0]
 
@@ -201,8 +195,10 @@ def find_reg_label_images(moving_image_id):
     return images
 
 
-def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=TEMPLATE_VOLUME):
+def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=None):
     """Transform volume """
+    if not ref_img:
+        ref_img = TEMPLATE_VOLUME
     transforms = []
     for _transform in ensure_list(transform):
         transforms.append(decompress_file(_transform))
@@ -228,8 +224,10 @@ def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=T
     return apply_transforms.inputs.output_image
 
 
-def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
+def sum_calculation(images, label, val=None, save=False, folder=None):
     """ Calculate sum volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
     path_n = folder + 'total_' + label + '.nii'
     path_n = path_n.replace('label', 'tumor')
 
@@ -257,8 +255,38 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     return (_sum, _total)
 
 
-def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
+def std_calculation(images, avg_img, save=False, folder=None):
+    """ Calculate std volume """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'std.nii'
+
+    _std = None
+    _total = None
+    for file_name in images:
+        img = nib.load(file_name)
+        if _std is None:
+            _std = np.zeros(img.get_data().shape)
+            _total = np.zeros(img.get_data().shape)
+        temp = np.array(img.get_data())
+        _std = _std + (temp - avg_img)**2
+        temp[temp != 0] = 1.0
+        _total = _total + temp
+
+    _std = np.sqrt(1 / (_total - 1) * _std**2)
+
+    if save:
+        result_img = nib.Nifti1Image(_std, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+
+    return _std
+
+
+def avg_calculation(images, label, val=None, save=False, folder=None):
     """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
@@ -271,6 +299,26 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
         result_img.to_filename(path)
         generate_image(path, TEMPLATE_VOLUME)
     return average
+
+
+def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None):
+    """ Calculate t-test volume """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 't-test_.nii'
+
+    (_sum, _total) = sum_calculation(images, label, save=False)
+    _std = std_calculation(images, _sum / _total, save=True)
+
+    t_img = (_sum / _total - mu_h0) / _std * np.sqrt(_total)
+
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(t_img, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+
+    return t_img
 
 
 def generate_image(path, path2, out_path=None):
@@ -322,13 +370,6 @@ def compress_vol(vol):
     return res
 
 
-def ensure_list(value):
-    """Wrap value in list if it is not one."""
-    if value is None:
-        return []
-    return value if isinstance(value, list) else [value]
-
-
 def decompress_file(gzip_path):
     """Decompress file """
     if gzip_path[:-3] != '.gz':
@@ -349,6 +390,13 @@ def decompress_file(gzip_path):
     open(uncompressed_path, 'w').write(data)
 
     return uncompressed_path
+
+
+def ensure_list(value):
+    """Wrap value in list if it is not one."""
+    if value is None:
+        return []
+    return value if isinstance(value, list) else [value]
 
 
 def mkdir_p(path):
