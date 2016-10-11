@@ -56,7 +56,7 @@ def setup_paths(datatype=""):
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/mnt/dokumneter/data/database2/"
+        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database2/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
@@ -96,13 +96,12 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
     conn.text_factory = str
 
     for _id in moving_dataset_image_ids:
-        print(_id)
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         if db_temp[0] is None:
+            print("No data for ", _id)
             continue
         vol = DATA_FOLDER + db_temp[0]
-        print(vol)
         label = "img"
         if label in result:
             result[label].append(vol)
@@ -256,6 +255,33 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     return (_sum, _total)
 
 
+def std_calculation(images, avg_img, save=False, folder=TEMP_FOLDER_PATH):
+    """ Calculate sum volumes """
+    path_n = folder + 'total_std.nii'
+    path_n = path_n.replace('label', 'tumor')
+
+    _std = None
+    _total = None
+    for file_name in images:
+        img = nib.load(file_name)
+        if _std is None:
+            _std = np.zeros(img.get_data().shape)
+            _total = np.zeros(img.get_data().shape)
+        temp = np.array(img.get_data())
+        _std = _std + (temp - avg_img)**2
+        temp[temp != 0] = 1.0
+        _total = _total + temp
+
+    _std = np.sqrt(1 / (_total -1) * _std**2)
+
+    if save:
+        result_img = nib.Nifti1Image(_std, img.affine)
+        result_img.to_filename(path_n)
+        generate_image(path_n, TEMPLATE_VOLUME)
+
+    return _std
+
+
 def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
     """ Calculate average volumes """
     path = folder + 'avg_' + label + '.nii'
@@ -272,30 +298,23 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     return average
 
 
-def calculate_t_test(images, label, save=False, folder=TEMP_FOLDER_PATH):
+def calculate_t_test(images, mu, label='Index_value', save=True, folder=TEMP_FOLDER_PATH):
     """ Calculate sum volumes """
     path_n = folder + 't-test_.nii'
     path_n = path_n.replace('label', 'tumor')
 
-    _sum = None
-    _total = None
-    for (file_name, val_i) in zip(images, val):
-        if val_i is None:
-            continue
-        img = nib.load(file_name)
-        if _sum is None:
-            _sum = np.zeros(img.get_data().shape)
-            _total = np.zeros(img.get_data().shape)
-        _sum = _sum + np.array(img.get_data())*val_i
-        temp = np.array(img.get_data())
-        temp[temp != 0] = 1.0
-        _total = _total + temp
+    (_sum, _total) = sum_calculation(images, label, save=False)
+    _std = std_calculation(images, _sum / _total, save=False)
+
+    t_img = (_sum / _total - mu) / _std * np.sqrt(_total)
+
     if save:
-        result_img = nib.Nifti1Image(_sum, img.affine)
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(t_img, img.affine)
         result_img.to_filename(path_n)
         generate_image(path_n, TEMPLATE_VOLUME)
 
-    return (_sum, _total)
+    return t_img
 
 
 def generate_image(path, path2, out_path=None):

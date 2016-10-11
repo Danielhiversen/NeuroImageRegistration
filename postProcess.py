@@ -22,10 +22,13 @@ if __name__ == "__main__":
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
     util.mkdir_p("LGG_GBM_RES")
 
-    FOLDER = "LGG_GBM_RES/GBM/"  # "LGG_GBM_RES/GBM"
-    util.setup(FOLDER, "GBM")
-    util.mkdir_p(FOLDER)
-    util.mkdir_p(util.TEMP_FOLDER_PATH)
+    FOLDER = "LGG_GBM_RES/"  # "LGG_GBM_RES/GBM"
+    util.setup(FOLDER)
+
+    (image_ids, qol) = util.get_image_id_and_qol('Index_value')
+    print(image_ids, len(image_ids))
+    result = util.post_calculations(image_ids)
+    util.calculate_t_test(result['all'], 0.85)
 
     for qol_param in params:
         (image_ids, qol) = util.get_image_id_and_qol(qol_param)
