@@ -148,11 +148,12 @@ def get_image_id_and_qol(qol_param):
         pid = pid[0]
         _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
                             (pid, )).fetchone()[0]
-        if _qol is None:
-            continue
-
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
+            print("No data for ", pid)
+            continue
+        if _qol is None:
+            print("No qol data for ", _id[0])
             continue
         _id = _id[0]
 
@@ -194,8 +195,10 @@ def find_reg_label_images(moving_image_id):
     return images
 
 
-def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=TEMPLATE_VOLUME):
+def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=None):
     """Transform volume """
+    if not ref_img:
+        ref_img = TEMPLATE_VOLUME
     transforms = []
     for _transform in ensure_list(transform):
         transforms.append(decompress_file(_transform))
@@ -221,8 +224,10 @@ def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=T
     return apply_transforms.inputs.output_image
 
 
-def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
+def sum_calculation(images, label, val=None, save=False, folder=None):
     """ Calculate sum volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
     path_n = folder + 'total_' + label + '.nii'
     path_n = path_n.replace('label', 'tumor')
 
@@ -250,10 +255,11 @@ def sum_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     return (_sum, _total)
 
 
-def std_calculation(images, avg_img, save=False, folder=TEMP_FOLDER_PATH):
-    """ Calculate sum volumes """
-    path_n = folder + 'total_std.nii'
-    path_n = path_n.replace('label', 'tumor')
+def std_calculation(images, avg_img, save=False, folder=None):
+    """ Calculate std volume """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'std.nii'
 
     _std = None
     _total = None
@@ -267,18 +273,20 @@ def std_calculation(images, avg_img, save=False, folder=TEMP_FOLDER_PATH):
         temp[temp != 0] = 1.0
         _total = _total + temp
 
-    _std = np.sqrt(1 / (_total -1) * _std**2)
+    _std = np.sqrt(1 / (_total - 1) * _std**2)
 
     if save:
         result_img = nib.Nifti1Image(_std, img.affine)
-        result_img.to_filename(path_n)
-        generate_image(path_n, TEMPLATE_VOLUME)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
 
     return _std
 
 
-def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH):
+def avg_calculation(images, label, val=None, save=False, folder=None):
     """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
@@ -293,21 +301,22 @@ def avg_calculation(images, label, val=None, save=False, folder=TEMP_FOLDER_PATH
     return average
 
 
-def calculate_t_test(images, mu, label='Index_value', save=True, folder=TEMP_FOLDER_PATH):
-    """ Calculate sum volumes """
-    path_n = folder + 't-test_.nii'
-    path_n = path_n.replace('label', 'tumor')
+def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None):
+    """ Calculate t-test volume """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 't-test_.nii'
 
     (_sum, _total) = sum_calculation(images, label, save=False)
     _std = std_calculation(images, _sum / _total, save=True)
 
-    t_img = (_sum / _total - mu) / _std * np.sqrt(_total)
+    t_img = (_sum / _total - mu_h0) / _std * np.sqrt(_total)
 
     if save:
         img = nib.load(images[0])
         result_img = nib.Nifti1Image(t_img, img.affine)
-        result_img.to_filename(path_n)
-        generate_image(path_n, TEMPLATE_VOLUME)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
 
     return t_img
 

@@ -71,7 +71,7 @@ def process_dataset(args, num_tries=3):
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("LGG_POST/", "LGG")
+    util.setup("LGG_POST/")
 
     post_images = find_images()
     data_transforms = image_registration.get_transforms(post_images,

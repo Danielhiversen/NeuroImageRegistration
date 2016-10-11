@@ -17,17 +17,22 @@ def find_images():
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
+
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
         cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
                                (row[0], "pre"))
         for _id in cursor2:
-            cursor3 = conn.execute('''SELECT filepath from Images where id = ? ''', (_id[0],))
-            _img_filepath = util.DATA_FOLDER + cursor3.fetchone()[0]
-            if _img_filepath and os.path.exists(_img_filepath):
+            cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id[0],))
+
+            _img_filepath = cursor3.fetchone()[0]
+            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
+                cursor3.close()
                 continue
             ids.append(_id[0])
+            cursor3.close()
+
         cursor2.close()
 
     cursor.close()
@@ -71,7 +76,7 @@ if __name__ == "__main__":
     util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/")
 
     moving_datasets_ids = find_images()
-    print(moving_datasets_ids)
+    print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
                                                         image_registration.RIGID,
                                                         save_to_db=True)
