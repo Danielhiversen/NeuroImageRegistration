@@ -30,8 +30,6 @@ if __name__ == "__main__":
     result = util.post_calculations(image_ids)
     util.calculate_t_test(result['all'], 0.85)
 
-    a=b
-
     for qol_param in params:
         (image_ids, qol) = util.get_image_id_and_qol(qol_param)
         print(image_ids)
