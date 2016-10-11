@@ -35,23 +35,19 @@ TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 TEMPLATE_MASKED_VOLUME = ""
 
 
-def setup(temp_path, datatype=""):
+def setup(temp_path):
     """setup for current computer """
     # pylint: disable= global-statement
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
     mkdir_p(TEMP_FOLDER_PATH)
-    setup_paths(datatype)
+    setup_paths()
     prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
 
-def setup_paths(datatype=""):
+def setup_paths():
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long
-    if datatype not in ["LGG", "GBM", ""]:
-        print("Unkown datatype " + datatype)
-        raise Exception
-
     global DATA_FOLDER, DB_PATH
 
     hostname = os.uname()[1]
@@ -69,7 +65,6 @@ def setup_paths(datatype=""):
         print("Add your host name path to " + sys.argv[0])
         raise Exception
 
-    DATA_FOLDER = DATA_FOLDER + datatype + "/"
     DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
 
@@ -304,7 +299,7 @@ def calculate_t_test(images, mu, label='Index_value', save=True, folder=TEMP_FOL
     path_n = path_n.replace('label', 'tumor')
 
     (_sum, _total) = sum_calculation(images, label, save=False)
-    _std = std_calculation(images, _sum / _total, save=False)
+    _std = std_calculation(images, _sum / _total, save=True)
 
     t_img = (_sum / _total - mu) / _std * np.sqrt(_total)
 
