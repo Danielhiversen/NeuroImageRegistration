@@ -380,15 +380,16 @@ def process_dataset(args):
     (moving_image_id, reg_type, save_to_db) = args
     print(moving_image_id)
 
-    start_time = datetime.datetime.now()
-    img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-    img = pre_process(img)
-
-    print("\n\n\n\n -- Run time preprocess: ")
-    print(datetime.datetime.now() - start_time)
 
     for k in range(3):
         try:
+            start_time = datetime.datetime.now()
+            img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+            img = pre_process(img)
+
+            print("\n\n\n\n -- Run time preprocess: ")
+            print(datetime.datetime.now() - start_time)
+
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
             break
         # pylint: disable= broad-except

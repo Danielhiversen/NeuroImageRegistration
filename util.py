@@ -305,7 +305,7 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
     """ Calculate t-test volume """
     if not folder:
         folder = TEMP_FOLDER_PATH
-    path = folder + 't-test_.nii'
+    path = folder + 't-test.nii'
 
     (_sum, _total) = sum_calculation(images, label, save=False)
     _std = std_calculation(images, _sum / _total, save=True)
