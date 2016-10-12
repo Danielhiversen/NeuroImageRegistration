@@ -28,7 +28,7 @@ if __name__ == "__main__":
     (image_ids, qol) = util.get_image_id_and_qol('Index_value')
     print(image_ids, len(image_ids))
     result = util.post_calculations(image_ids)
-    util.calculate_t_test(result['all'], 0.85)
+    util.calculate_t_test(result['all'], 0.85*100)
 
     for qol_param in params:
         (image_ids, qol) = util.get_image_id_and_qol(qol_param)
@@ -45,3 +45,4 @@ if __name__ == "__main__":
     util.avg_calculation(result['img'], label, None, True, FOLDER)
     util.avg_calculation(result['all'], label, None, True, FOLDER)
     util.sum_calculation(result['all'], label, None, True, FOLDER)
+    

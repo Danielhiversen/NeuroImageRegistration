@@ -380,7 +380,6 @@ def process_dataset(args):
     (moving_image_id, reg_type, save_to_db) = args
     print(moving_image_id)
 
-
     for k in range(3):
         try:
             start_time = datetime.datetime.now()
