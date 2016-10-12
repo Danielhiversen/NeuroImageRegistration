@@ -45,4 +45,3 @@ if __name__ == "__main__":
     util.avg_calculation(result['img'], label, None, True, FOLDER)
     util.avg_calculation(result['all'], label, None, True, FOLDER)
     util.sum_calculation(result['all'], label, None, True, FOLDER)
-    

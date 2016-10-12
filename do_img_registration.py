@@ -18,6 +18,8 @@ def find_images():
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
 
+    qol_idx = util.find_images_with_qol()
+
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
@@ -26,10 +28,14 @@ def find_images():
         for _id in cursor2:
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id[0],))
 
-            _img_filepath = cursor3.fetchone()[0]
-            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
+            if _id in qol_idx:
                 cursor3.close()
                 continue
+
+            # _img_filepath = cursor3.fetchone()[0]
+            # if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
+            #     cursor3.close()
+            #     continue
             ids.append(_id[0])
             cursor3.close()
 
@@ -48,7 +54,7 @@ if __name__ == "__main__":
     moving_datasets_ids = find_images()
     print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
-                                                        image_registration.RIGID,
+                                                        image_registration.SYN,
                                                         save_to_db=True)
 
     # image_registration.save_transform_to_database(data_transforms)
