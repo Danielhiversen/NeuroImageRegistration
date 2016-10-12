@@ -39,5 +39,9 @@ if __name__ == "__main__":
             if label == 'img':
                 continue
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, FOLDER)
+
+    image_ids = util.find_images_with_qol()
+    result = util.post_calculations(image_ids)
     util.avg_calculation(result['img'], label, None, True, FOLDER)
-    util.sum_calculation(result['img'], label, None, True, FOLDER)
+    util.avg_calculation(result['all'], label, None, True, FOLDER)
+    util.sum_calculation(result['all'], label, None, True, FOLDER)
