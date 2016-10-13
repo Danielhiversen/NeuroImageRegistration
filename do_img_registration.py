@@ -26,7 +26,8 @@ def find_images():
         cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
                                (row[0], "pre"))
         for _id in cursor2:
-            cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id[0],))
+            _id = _id[0]
+            cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
             if _id in qol_idx:
                 cursor3.close()
@@ -36,7 +37,7 @@ def find_images():
             # if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
             #     cursor3.close()
             #     continue
-            ids.append(_id[0])
+            ids.append(_id)
             cursor3.close()
 
         cursor2.close()
