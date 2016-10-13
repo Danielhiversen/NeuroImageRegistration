@@ -87,7 +87,7 @@ def prepare_template(template_vol, template_mask):
 # pylint: disable= dangerous-default-value
 def post_calculations(moving_dataset_image_ids, result=dict()):
     """ Transform images and calculate avg"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
 
     for _id in moving_dataset_image_ids:
@@ -138,7 +138,7 @@ def get_transforms_from_db(img_id, conn):
 
 def get_image_id_and_qol(qol_param):
     """ Get image id and qol """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
 
@@ -167,7 +167,7 @@ def get_image_id_and_qol(qol_param):
 
 def find_seg_images(moving_image_id):
     """ Find segmentation images"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
     cursor = conn.execute('''SELECT filepath, description from Labels where image_id = ? ''',
                           (moving_image_id,))
@@ -182,7 +182,7 @@ def find_seg_images(moving_image_id):
 
 def find_reg_label_images(moving_image_id):
     """ Find reg segmentation images"""
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
     cursor = conn.execute('''SELECT filepath_reg, description from Labels where image_id = ? ''',
                           (moving_image_id,))
@@ -197,7 +197,7 @@ def find_reg_label_images(moving_image_id):
 
 def find_images_with_qol():
     """ Find images for registration """
-    conn = sqlite3.connect(DB_PATH)
+    conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
 
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
