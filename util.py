@@ -158,7 +158,7 @@ def get_image_id_and_qol(qol_param):
         _id = _id[0]
 
         image_id.extend([_id])
-        qol.extend([_qol*100])
+        qol.extend([_qol])
     cursor.close()
     conn.close()
 
@@ -321,11 +321,13 @@ def avg_calculation(images, label, val=None, save=False, folder=None):
     path = path.replace('label', 'tumor')
 
     (_sum, _total) = sum_calculation(images, label, val, save=False)
-    _total[_total==0] = np.inf
+    _total[_total == 0] = np.inf
     if val:
         average = _sum / _total
     else:
         average = _sum / len(images)
+
+    print(np.amax(average))
 
     if save:
         img = nib.load(images[0])
