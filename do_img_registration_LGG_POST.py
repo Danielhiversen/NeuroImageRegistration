@@ -69,7 +69,6 @@ def process_dataset(args, num_tries=3):
     return img
 
 
-# pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
     util.setup("LGG_POST/")
