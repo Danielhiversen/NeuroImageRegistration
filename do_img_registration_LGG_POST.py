@@ -68,7 +68,6 @@ def process_dataset(args, num_tries=3):
     if save_to_db:
         image_registration.save_transform_to_database([img])
     return img
-    return img
 
 
 if __name__ == "__main__":
