@@ -34,10 +34,14 @@ if __name__ == "__main__":
     (image_ids, qol) = util.get_image_id_and_qol('Index_value')
     print(image_ids, len(image_ids))
     result = util.post_calculations(image_ids)
-    util.calculate_t_test(result['all'], 1*100)
+    util.calculate_t_test(result['all'], 1)
 
     for qol_param in params:
         (image_ids, qol) = util.get_image_id_and_qol(qol_param)
+        if qol_param == 'Index_value':
+            qol = [(_temp+1) * 100 for _temp in qol]
+        else:
+            qol = [_temp * 100 for _temp in qol]
         print(image_ids)
         result = util.post_calculations(image_ids)
         for label in result:
