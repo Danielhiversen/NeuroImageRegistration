@@ -22,13 +22,19 @@ if __name__ == "__main__":
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety']
     util.mkdir_p("LGG_GBM_RES")
 
-    FOLDER = "LGG_GBM_RES/"  # "LGG_GBM_RES/GBM"
+    FOLDER = "LGG_GBM_RES3/"  # "LGG_GBM_RES/GBM"
     util.setup(FOLDER)
+
+    image_ids = util.find_images_with_qol()
+    result = util.post_calculations(image_ids)
+    util.avg_calculation(result['img'], 'img', None, True, FOLDER)
+    util.avg_calculation(result['all'], 'all', None, True, FOLDER)
+    util.sum_calculation(result['all'], 'all', None, True, FOLDER)
 
     (image_ids, qol) = util.get_image_id_and_qol('Index_value')
     print(image_ids, len(image_ids))
     result = util.post_calculations(image_ids)
-    util.calculate_t_test(result['all'], 0.85*100)
+    util.calculate_t_test(result['all'], 1*100)
 
     for qol_param in params:
         (image_ids, qol) = util.get_image_id_and_qol(qol_param)
@@ -39,9 +45,3 @@ if __name__ == "__main__":
             if label == 'img':
                 continue
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, FOLDER)
-
-    image_ids = util.find_images_with_qol()
-    result = util.post_calculations(image_ids)
-    util.avg_calculation(result['img'], label, None, True, FOLDER)
-    util.avg_calculation(result['all'], label, None, True, FOLDER)
-    util.sum_calculation(result['all'], label, None, True, FOLDER)
