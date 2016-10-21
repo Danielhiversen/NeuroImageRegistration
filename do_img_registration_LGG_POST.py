@@ -36,7 +36,7 @@ def find_images():
 def process_dataset(args, num_tries=3):
     """ pre process and registrate volume"""
     # pylint: disable= unused-argument
-    moving_image_id = args[0]
+    (moving_image_id, _, save_to_db) = args
     print(moving_image_id)
 
     conn = sqlite3.connect(util.DB_PATH)
@@ -65,7 +65,9 @@ def process_dataset(args, num_tries=3):
     print(datetime.datetime.now() - start_time)
 
     img.fixed_image = pre_image_id
-
+    if save_to_db:
+        image_registration.save_transform_to_database([img])
+    return img
     return img
 
 
