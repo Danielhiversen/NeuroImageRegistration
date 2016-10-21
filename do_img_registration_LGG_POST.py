@@ -55,6 +55,7 @@ def process_dataset(args, num_tries=3):
     start_time = datetime.datetime.now()
     pre_img = img_data(pre_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     post_img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+    post_img.fixed_image = pre_image_id
 
     pre_img = image_registration.pre_process(pre_img, False)
     post_img = image_registration.pre_process(post_img, False)
