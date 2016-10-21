@@ -38,6 +38,7 @@ if __name__ == "__main__":
             filepath = os.path.join(root, filepath).replace(util.DATA_FOLDER, "")
             if filepath not in all_filepaths:
                 print("Delete " + filepath)
+                # os.remove(os.path.join(util.DATA_FOLDER, filepath))
             else:
                 all_filepaths.remove(filepath)
 
