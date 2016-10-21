@@ -13,7 +13,7 @@ import util
 if __name__ == "__main__":
     os.nice(19)
 
-    util.setup("temp/", "")
+    util.setup("temp/")
 
     all_filepaths = ['brainSegmentation.db']
 
@@ -41,4 +41,4 @@ if __name__ == "__main__":
             else:
                 all_filepaths.remove(filepath)
 
-    print("Delete ", all_filepaths)
+    print("Delete from db", all_filepaths)

@@ -52,7 +52,7 @@ def setup_paths():
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database2/"
+        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
@@ -273,8 +273,8 @@ def sum_calculation(images, label, val=None, save=False, folder=None):
         if _sum is None:
             _sum = np.zeros(img.get_data().shape)
             _total = np.zeros(img.get_data().shape)
-        _sum = _sum + np.array(img.get_data())*val_i
         temp = np.array(img.get_data())
+        _sum = _sum + temp*val_i
         temp[temp != 0] = 1.0
         _total = _total + temp
     if save:
@@ -321,7 +321,11 @@ def avg_calculation(images, label, val=None, save=False, folder=None):
     path = path.replace('label', 'tumor')
 
     (_sum, _total) = sum_calculation(images, label, val, save=False)
-    average = _sum / _total
+    _total[_total==0] = np.inf
+    if val:
+        average = _sum / _total
+    else:
+        average = _sum / len(images)
 
     if save:
         img = nib.load(images[0])
@@ -340,7 +344,9 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
     (_sum, _total) = sum_calculation(images, label, save=False)
     _std = std_calculation(images, _sum / _total, save=True)
 
-    t_img = (_sum / _total - mu_h0) / _std * np.sqrt(_total)
+    temp = mu_h0 - _sum / _total
+    # temp[temp<0] = 0
+    t_img = (temp) / _std * np.sqrt(_total)
 
     if save:
         img = nib.load(images[0])
