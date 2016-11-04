@@ -23,7 +23,7 @@ import util
 # DATA_PATH_LGG = MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/"
 
 MAIN_FOLDER = "/home/dahoiv/disk/data/Segmentations/"
-DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.5/cli-modules/DWIConvert"
+DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/DWIConvert"
 
 
 def create_db(path):
@@ -109,9 +109,10 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
 
     volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
     print("--->", volume_out)
-    os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out + " --conversionMode NrrdToFSL")
+    os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out +
+              " --conversionMode NrrdToFSL --allowLossyConversion")
     volume_out_db = volume_out.replace(util.DATA_FOLDER, "")
-    cursor.execute('''UPDATE Images SET filepath = ? WHERE id = ?''', (volume_out_db, img_id))
+    cursor.execute('''UPDATE Images SET filepath = ?, filepath_reg = ? WHERE id = ?''', (volume_out_db, None, img_id))
     os.remove(volume_temp)
 
     for volume_label in volume_labels:
@@ -126,17 +127,101 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
         volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type\
             + "_label_all.nii.gz"
         os.system(DWICONVERT_PATH + " --inputVolume " + volume_label_temp + " -o " +
-                  volume_label_out + " --conversionMode NrrdToFSL")
+                  volume_label_out + " --conversionMode NrrdToFSL --allowLossyConversion")
         volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
-        cursor.execute('''UPDATE Labels SET filepath = ? WHERE id = ?''',
-                       (volume_label_out_db, label_id))
+        cursor.execute('''UPDATE Labels SET filepath = ?, filepath_reg = ? WHERE id = ?''',
+                       (volume_label_out_db,  None, label_id))
         os.remove(volume_label_temp)
 
 
-def convert_gbm_data(path):
+def qol_to_db(data_type):
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas_041116.xlsx')['Ark2']
+
+    k = 0
+    for row in data:
+        k = k +1
+        if not row:
+            continue
+        if data_type == "extra" and k < 53:
+            continue
+        elif k < 4:
+            continue
+
+        if data_type == "gbm":
+            idx1 = 1
+            idx2 = 0
+            idx3 = 7
+        elif data_type == "lgg" or data_type == "extra":
+            idx1 = 12
+            idx2 = 11
+            idx3 = 18
+        if len(row) < idx3 - 1:
+            continue
+        print(row)
+
+        if row[idx1] is None:
+            gl_idx = None
+        elif row[idx1] > 0.85:
+            gl_idx = 1
+        elif row[idx1] > 0.50:
+            gl_idx = 2
+        else:
+            gl_idx = 3
+
+        val = [None]*7
+        idx = 0
+        for _val in row[idx2:idx3]:
+            val[idx] = _val
+            idx += 1
+        pid = val[0]
+        cursor.execute('''SELECT id from QualityOfLife where pid = ?''', (pid,))
+        _id = cursor.fetchone()
+        if _id:
+            print("-----------", row)
+            continue
+        cursor.execute('''INSERT INTO QualityOfLife(pid, Index_value, Global_index, Mobility, Selfcare, Activity, Pain, Anxiety) VALUES(?,?,?,?,?,?,?,?)''',
+                       (pid, val[1], gl_idx, val[2], val[3], val[4], val[5], val[6]))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
+def karnofsky_to_db():
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas_041116.xlsx')['Ark3']
+    try:
+        conn.execute("alter table QualityOfLife add column 'karnofsky' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+
+    k = 0
+    for row in data:
+        k = k +1
+        if not row:
+            continue
+        if k < 3:
+            continue
+        print(row)
+
+        cursor.execute('''UPDATE QualityOfLife SET karnofsky = ? WHERE pid = ?''',
+                       (row[1], row[0]))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
+def convert_data(path, glioma_grade, update=False):
     """Convert gbm data """
     # pylint: disable= too-many-locals, too-many-branches
-
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
@@ -148,6 +233,15 @@ def convert_gbm_data(path):
             continue
 
         pid = str(case_id)
+        if update:
+            for _file in glob.glob(util.DATA_FOLDER + str(pid) + "/volumes_labels/*"):
+                _file = _file.replace(util.DATA_FOLDER, "")
+                cursor.execute("DELETE FROM Images WHERE filepath=?", (_file,))
+                cursor.execute("DELETE FROM Labels WHERE filepath=?", (_file,))
+            try:
+                shutil.rmtree(util.DATA_FOLDER + str(pid))
+            except OSError:
+                pass
 
         data_path = path + str(case_id) + "/"
         if not os.path.exists(data_path):
@@ -162,7 +256,9 @@ def convert_gbm_data(path):
         if len(volume_label) == 0:
             volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
         if len(volume_label) > 1:
-            log = log + "\n Warning!! More than one file with label found " + volume_label
+            log = log + "\n Warning!! More than one file with label found "
+            for vl in volume_label:
+                log = log + vl
             continue
         if len(volume_label) == 0:
             file_type_nrrd = False
@@ -171,6 +267,8 @@ def convert_gbm_data(path):
                 log = log + "\n Warning!! No volumes found" + data_path + volume
 
             volume_label = data_path + "k" + pid + "_" + "preop" + "_" + "hele-label" + ".nii"
+            if not os.path.exists(volume_label):
+                volume_label = glob.glob(data_path + '/*label.nii')[0]
             if not os.path.exists(volume_label):
                 log = log + "\n Warning!! No label found " + data_path + volume_label
 
@@ -188,69 +286,11 @@ def convert_gbm_data(path):
                     log = log + "\n Warning!! No volume found " + data_path
                 volume = volume[0]
 
-        convert_and_save_dataset(pid, cursor, "pre", [volume_label], volume, 3)
+        convert_and_save_dataset(pid, cursor, "pre", [volume_label], volume, glioma_grade)
         conn.commit()
 
     with open("Log.txt", "w") as text_file:
         text_file.write(log)
-    cursor.close()
-    conn.close()
-
-
-def qol_to_db(data_type):
-    """Convert qol data to database """
-    conn = sqlite3.connect(util.DB_PATH)
-    cursor = conn.cursor()
-
-#    cursor.executescript('drop table if exists QualityOfLife;')
-#    cursor.execute('''CREATE TABLE "QualityOfLife" (
-#        `id`    INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT UNIQUE,
-#        `pid`    INTEGER NOT NULL,
-#        'Index_value'     REAL,
-#        'Global_index'    INTEGER,
-#        'Mobility'    INTEGER,
-#        'Selfcare'    INTEGER,
-#        'Activity'    INTEGER,
-#        'Pain'    INTEGER,
-#        'Anxiety'    INTEGER,
-#        FOREIGN KEY(`pid`) REFERENCES `Patient`(`pid`))''')
-
-    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas.xlsx')['Ark2']
-
-    for row in data[4:]:
-        print(row)
-        if not row:
-            continue
-
-        if data_type == "gbm":
-            idx1 = 1
-            idx2 = 0
-            idx3 = 7
-        elif data_type == "lgg":
-            idx1 = 12
-            idx2 = 11
-            idx3 = 18
-        if len(row) < idx3 - 1:
-            continue
-
-        if row[idx1] is None:
-            gl_idx = None
-        elif row[idx1] > 0.85:
-            gl_idx = 1
-        elif row[idx1] > 0.50:
-            gl_idx = 2
-        else:
-            gl_idx = 3
-
-        val = [None]*7
-        idx = 0
-        for _val in row[idx2:idx3]:
-            val[idx] = _val
-            idx += 1
-        cursor.execute('''INSERT INTO QualityOfLife(pid, Index_value, Global_index, Mobility, Selfcare, Activity, Pain, Anxiety) VALUES(?,?,?,?,?,?,?,?)''',
-                       (val[0], val[1], gl_idx, val[2], val[3], val[4], val[5], val[6]))
-        conn.commit()
-
     cursor.close()
     conn.close()
 
@@ -311,13 +351,20 @@ if __name__ == "__main__":
 #        shutil.rmtree(util.DATA_FOLDER)
 #    except OSError:
 #        pass
-    util.mkdir_p(util.DATA_FOLDER)
-    create_db(util.DB_PATH)
-    convert_gbm_data(MAIN_FOLDER + "Segmenteringer_GBM/")
-    qol_to_db("gbm")
+#    util.mkdir_p(util.DATA_FOLDER)
+#    create_db(util.DB_PATH)
+#    convert_data(MAIN_FOLDER + "Segmenteringer_GBM/", 3)
+#    qol_to_db("gbm")
 
-    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
-    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
-    qol_to_db("lgg")
+#    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
+#    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
+#    qol_to_db("lgg")
+
+#    qol_to_db("extra")
+#    convert_data(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 1, True)
+#    convert_data(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 2)
+
+#    convert_data(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 3, True)
+    karnofsky_to_db()
 
     vacuum_db()

@@ -18,8 +18,6 @@ def find_images():
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
 
-    qol_idx = util.find_images_with_qol()
-
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
@@ -29,14 +27,10 @@ def find_images():
             _id = _id[0]
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
-            if _id in qol_idx:
+            _img_filepath = cursor3.fetchone()[0]
+            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
                 cursor3.close()
                 continue
-
-            # _img_filepath = cursor3.fetchone()[0]
-            # if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
-            #     cursor3.close()
-            #     continue
             ids.append(_id)
             cursor3.close()
 

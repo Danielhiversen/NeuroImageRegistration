@@ -52,7 +52,7 @@ def setup_paths():
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database/"
+        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database2/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
@@ -136,7 +136,7 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-def get_image_id_and_qol(qol_param):
+def get_image_id_and_qol(qol_param, exclude=[]):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
@@ -156,7 +156,8 @@ def get_image_id_and_qol(qol_param):
             print("No qol data for ", _id[0])
             continue
         _id = _id[0]
-
+        if _id in exclude:
+            continue
         image_id.extend([_id])
         qol.extend([_qol])
     cursor.close()
@@ -195,7 +196,7 @@ def find_reg_label_images(moving_image_id):
     return images
 
 
-def find_images_with_qol():
+def find_images_with_qol(exclude=[]):
     """ Find images for registration """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
@@ -217,6 +218,8 @@ def find_images_with_qol():
                                (pid, "pre"))
 
         for _id in cursor2:
+            if _id[0] in exclude:
+                continue
             ids.append(_id[0])
         cursor2.close()
 
