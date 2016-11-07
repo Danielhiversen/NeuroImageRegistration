@@ -130,11 +130,12 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
                   volume_label_out + " --conversionMode NrrdToFSL --allowLossyConversion")
         volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
         cursor.execute('''UPDATE Labels SET filepath = ?, filepath_reg = ? WHERE id = ?''',
-                       (volume_label_out_db,  None, label_id))
+                       (volume_label_out_db, None, label_id))
         os.remove(volume_label_temp)
 
 
 def qol_to_db(data_type):
+    # pylint: disable= too-many-branches
     """Convert qol data to database """
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
@@ -221,7 +222,7 @@ def karnofsky_to_db():
 
 def convert_data(path, glioma_grade, update=False):
     """Convert gbm data """
-    # pylint: disable= too-many-locals, too-many-branches
+    # pylint: disable= too-many-locals, too-many-branches, too-many-statements
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
@@ -257,8 +258,8 @@ def convert_data(path, glioma_grade, update=False):
             volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
         if len(volume_label) > 1:
             log = log + "\n Warning!! More than one file with label found "
-            for vl in volume_label:
-                log = log + vl
+            for volume_label_i in volume_label:
+                log = log + volume_label_i
             continue
         if len(volume_label) == 0:
             file_type_nrrd = False
