@@ -360,11 +360,11 @@ if __name__ == "__main__":
 #    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
 #    qol_to_db("lgg")
 
-#    qol_to_db("extra")
-#    convert_data(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 1, True)
-#    convert_data(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 2)
+    qol_to_db("extra")
+    convert_data(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 1, True)
+    convert_data(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 2)
 
-#    convert_data(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 3, True)
+    convert_data(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 3, True)
     karnofsky_to_db()
 
     vacuum_db()
