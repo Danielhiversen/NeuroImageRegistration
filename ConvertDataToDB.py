@@ -143,7 +143,7 @@ def qol_to_db(data_type):
 
     k = 0
     for row in data:
-        k = k +1
+        k = k + 1
         if not row:
             continue
         if data_type == "extra" and k < 53:
@@ -204,7 +204,7 @@ def karnofsky_to_db():
 
     k = 0
     for row in data:
-        k = k +1
+        k = k + 1
         if not row:
             continue
         if k < 3:
