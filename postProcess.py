@@ -39,13 +39,13 @@ def _process(folder, glioma_grades):
 
 if __name__ == "__main__":
     folder = "RES_1/"
-    glioma_grades=[1,2,3]
+    glioma_grades = [1, 2, 3]
     _process(folder, glioma_grades)
 
     folder = "RES_2/"
-    glioma_grades=[3]
+    glioma_grades = [3]
     _process(folder, glioma_grades)
 
     folder = "RES_3/"
-    glioma_grades=[2,3]
+    glioma_grades = [2, 3]
     _process(folder, glioma_grades)

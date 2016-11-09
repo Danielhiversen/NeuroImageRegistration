@@ -132,7 +132,7 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1,2,3]):
+def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1, 2, 3]):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
@@ -149,13 +149,13 @@ def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1,2,3]):
         if not _glioma_grade:
             print("No data for ", pid, qol_param)
             continue
-        if not _glioma_grade[0] in glioma_grades:
+        if  _glioma_grade[0] not in glioma_grades:
             continue
         if not _id:
             print("No data for ", pid, qol_param)
             continue
         if _qol is None:
-            print("No qol data for ", _id[0] , qol_param)
+            print("No qol data for ", _id[0], qol_param)
             continue
         _id = _id[0]
         if pid in exclude_pid:
@@ -168,7 +168,7 @@ def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1,2,3]):
     return (image_id, qol)
 
 
-def find_images_with_qol(exclude_pid=[], glioma_grades=[1,2,3]):
+def find_images_with_qol(exclude_pid=[], glioma_grades=[1, 2, 3]):
     """ Find images for registration """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
