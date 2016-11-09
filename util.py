@@ -145,11 +145,12 @@ def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1, 2, 3]):
         _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
                             (pid, )).fetchone()[0]
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
-        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''', (pid, )).fetchone()
+        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
+                                     (pid, )).fetchone()
         if not _glioma_grade:
             print("No data for ", pid, qol_param)
             continue
-        if  _glioma_grade[0] not in glioma_grades:
+        if _glioma_grade[0] not in glioma_grades:
             continue
         if not _id:
             print("No data for ", pid, qol_param)
@@ -181,7 +182,8 @@ def find_images_with_qol(exclude_pid=[], glioma_grades=[1, 2, 3]):
         pid = row[0]
         if pid in exclude_pid:
             continue
-        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''', (pid, )).fetchone()
+        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
+                                     (pid, )).fetchone()
         if not _glioma_grade:
             print("No glioma_grade for ", pid)
             continue
@@ -329,6 +331,7 @@ def std_calculation(images, avg_img, save=False, folder=None):
     return _std
 
 
+# pylint: disable= too-many-arguments
 def avg_calculation(images, label, val=None, save=False, folder=None, save_sum=False):
     """ Calculate average volumes """
     if not folder:
