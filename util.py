@@ -52,7 +52,7 @@ def setup_paths():
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database2/"
+        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database3/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         DATA_FOLDER = "/home/dahoiv/database/"
@@ -111,7 +111,6 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
 
         cursor.close()
     conn.close()
-
     return result
 
 
@@ -125,18 +124,15 @@ def get_transforms_from_db(img_id, conn):
         transforms = get_transforms_from_db(fixed_image_id, conn)
     else:
         transforms = []
-
     if db_temp[0] is None:
         return []
-
     img_transforms = db_temp[0].split(",")
     for _transform in img_transforms:
         transforms.append(DATA_FOLDER + _transform.strip())
-
     return transforms
 
 
-def get_image_id_and_qol(qol_param, exclude=[]):
+def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1,2,3]):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
@@ -149,14 +145,20 @@ def get_image_id_and_qol(qol_param, exclude=[]):
         _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
                             (pid, )).fetchone()[0]
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
+        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''', (pid, )).fetchone()
+        if not _glioma_grade:
+            print("No data for ", pid, qol_param)
+            continue
+        if not _glioma_grade in glioma_grades:
+            continue
         if not _id:
-            print("No data for ", pid)
+            print("No data for ", pid, qol_param)
             continue
         if _qol is None:
-            print("No qol data for ", _id[0])
+            print("No qol data for ", _id[0] , qol_param)
             continue
         _id = _id[0]
-        if _id in exclude:
+        if pid in exclude_pid:
             continue
         image_id.extend([_id])
         qol.extend([_qol])
@@ -164,6 +166,46 @@ def get_image_id_and_qol(qol_param, exclude=[]):
     conn.close()
 
     return (image_id, qol)
+
+
+def find_images_with_qol(exclude_pid=[], glioma_grades=[1,2,3]):
+    """ Find images for registration """
+    conn = sqlite3.connect(DB_PATH, timeout=120)
+    conn.text_factory = str
+
+    cursor = conn.execute('''SELECT pid from QualityOfLife''')
+    pids_with_qol = []
+    for row in cursor:
+        if not row:
+            continue
+        pid = row[0]
+        if pid in exclude_pid:
+            continue
+        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''', (pid, )).fetchone()
+        if not _glioma_grade:
+            print("No glioma_grade for ", pid)
+            continue
+        if not _glioma_grade[0] in glioma_grades:
+            continue
+        pids_with_qol.append(pid)
+    cursor.close()
+
+    cursor = conn.execute('''SELECT pid from Patient''')
+    ids = []
+    for row in cursor:
+        pid = row[0]
+        if pid not in pids_with_qol:
+            continue
+        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
+                               (pid, "pre"))
+
+        for _id in cursor2:
+            ids.append(_id[0])
+        cursor2.close()
+
+    cursor.close()
+    conn.close()
+    return ids
 
 
 def find_seg_images(moving_image_id):
@@ -194,38 +236,6 @@ def find_reg_label_images(moving_image_id):
     cursor.close()
     conn.close()
     return images
-
-
-def find_images_with_qol(exclude=[]):
-    """ Find images for registration """
-    conn = sqlite3.connect(DB_PATH, timeout=120)
-    conn.text_factory = str
-
-    cursor = conn.execute('''SELECT pid from QualityOfLife''')
-    pids_with_qol = []
-    for row in cursor:
-        if row:
-            pids_with_qol.append(row[0])
-    cursor.close()
-
-    cursor = conn.execute('''SELECT pid from Patient''')
-    ids = []
-    for row in cursor:
-        pid = row[0]
-        if pid not in pids_with_qol:
-            continue
-        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
-                               (pid, "pre"))
-
-        for _id in cursor2:
-            if _id[0] in exclude:
-                continue
-            ids.append(_id[0])
-        cursor2.close()
-
-    cursor.close()
-    conn.close()
-    return ids
 
 
 def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=None):
@@ -280,6 +290,8 @@ def sum_calculation(images, label, val=None, save=False, folder=None):
         _sum = _sum + temp*val_i
         temp[temp != 0] = 1.0
         _total = _total + temp
+    _sum[_sum == 0] = np.NaN
+
     if save:
         result_img = nib.Nifti1Image(_sum, img.affine)
         result_img.to_filename(path_n)
@@ -306,6 +318,7 @@ def std_calculation(images, avg_img, save=False, folder=None):
         temp[temp != 0] = 1.0
         _total = _total + temp
 
+    _total[_total == 0] = np.NaN
     _std = np.sqrt(1 / (_total - 1) * _std**2)
 
     if save:
@@ -316,14 +329,14 @@ def std_calculation(images, avg_img, save=False, folder=None):
     return _std
 
 
-def avg_calculation(images, label, val=None, save=False, folder=None):
+def avg_calculation(images, label, val=None, save=False, folder=None, save_sum=False):
     """ Calculate average volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
-    (_sum, _total) = sum_calculation(images, label, val, save=False)
+    (_sum, _total) = sum_calculation(images, label, val, save=save_sum)
     _total[_total == 0] = np.inf
     if val:
         average = _sum / _total
