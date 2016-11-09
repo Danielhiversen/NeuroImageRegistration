@@ -149,7 +149,7 @@ def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1,2,3]):
         if not _glioma_grade:
             print("No data for ", pid, qol_param)
             continue
-        if not _glioma_grade in glioma_grades:
+        if not _glioma_grade[0] in glioma_grades:
             continue
         if not _id:
             print("No data for ", pid, qol_param)
