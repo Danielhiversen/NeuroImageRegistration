@@ -21,8 +21,8 @@ def _process(folder, glioma_grades):
     util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img', None, True, folder)
 
-    (image_ids, qol) = util.get_image_id_and_qol('Index_value', exclude_pid, glioma_grades=glioma_grades)
-    result = util.post_calculations(image_ids)
+    # (image_ids, qol) = util.get_image_id_and_qol('Index_value', exclude_pid, glioma_grades=glioma_grades)
+    # result = util.post_calculations(image_ids)
     # util.calculate_t_test(result['all'], 1)
 
     for qol_param in params:
@@ -38,14 +38,14 @@ def _process(folder, glioma_grades):
 
 
 if __name__ == "__main__":
-    folder = "RES_1b/"
+    folder = "RES_1/"
     glioma_grades = [2, 3, 4]
     _process(folder, glioma_grades)
 
-    folder = "RES_2b/"
+    folder = "RES_2/"
     glioma_grades = [4]
     _process(folder, glioma_grades)
 
-    folder = "RES_3b/"
+    folder = "RES_3/"
     glioma_grades = [3, 4]
     _process(folder, glioma_grades)

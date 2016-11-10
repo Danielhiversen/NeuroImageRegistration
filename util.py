@@ -133,17 +133,19 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[2, 3, 4]):
+def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from QualityOfLife''')
+    if not glioma_grades:
+        glioma_grades = [2, 3, 4]
 
     image_id = []
     qol = []
     for pid in cursor:
         pid = pid[0]
-        if pid in exclude_pid:
+        if exclude_pid and pid in exclude_pid:
             continue
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
