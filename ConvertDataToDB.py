@@ -414,19 +414,19 @@ if __name__ == "__main__":
 #    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
 #    qol_to_db("lgg")
 
- #   qol_to_db("extra")
- #   convert_data(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 2, True)
- #   convert_data(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 3)
+#    qol_to_db("extra")
+#    convert_data(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 2, True)
+#    convert_data(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 3)
 
- #   convert_data(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 4, True)
- #   karnofsky_to_db()
+#    convert_data(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 4, True)
+#    karnofsky_to_db()
 
- #   update_glioma_grade(2)
+#    update_glioma_grade(2)
 
- #   update_glioma_grade2(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 2)
- #   update_glioma_grade2(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 3)
- #   update_glioma_grade2(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 4)
- #   update_glioma_grade2(MAIN_FOLDER + "Segmenteringer_GBM/", 4)
+#    update_glioma_grade2(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 2)
+#    update_glioma_grade2(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 3)
+#    update_glioma_grade2(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 4)
+#    update_glioma_grade2(MAIN_FOLDER + "Segmenteringer_GBM/", 4)
 
     manual_add_to_db()
 

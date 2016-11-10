@@ -160,7 +160,7 @@ def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[2, 3, 4]):
             _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
                                 (pid, )).fetchone()[0]
             if _qol is None:
-                print("No qol data for ", _id[0], qol_param)
+                print("No qol data for ", _id, qol_param)
                 continue
             qol.extend([_qol])
         image_id.extend([_id])
