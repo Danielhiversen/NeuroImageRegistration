@@ -84,11 +84,12 @@ def prepare_template(template_vol, template_mask):
     mult.run()
 
 
-# pylint: disable= dangerous-default-value
-def post_calculations(moving_dataset_image_ids, result=dict()):
+def post_calculations(moving_dataset_image_ids, result=None):
     """ Transform images and calculate avg"""
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
+    if result is None:
+        result = {}
 
     for _id in moving_dataset_image_ids:
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
