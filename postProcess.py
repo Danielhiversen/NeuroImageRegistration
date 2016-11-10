@@ -13,12 +13,11 @@ def _process(folder, glioma_grades):
     util.setup(folder)
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky']
     exclude_pid = [1307, 1461]
-    image_ids = util.find_images_with_qol(exclude_pid, glioma_grades=glioma_grades)
-    print(len(image_ids))
-
+    (image_ids, qol) = util.get_image_id_and_qol(None, exclude_pid, glioma_grades=glioma_grades)
     result = util.post_calculations(image_ids)
-    util.avg_calculation(result['img'], 'img', None, True, folder)
     util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
+
+    util.avg_calculation(result['img'], 'img', None, True, folder)
 
     (image_ids, qol) = util.get_image_id_and_qol('Index_value', exclude_pid, glioma_grades=glioma_grades)
     print(image_ids, len(image_ids))
@@ -38,14 +37,14 @@ def _process(folder, glioma_grades):
 
 
 if __name__ == "__main__":
-    folder = "RES_1/"
-    glioma_grades = [1, 2, 3]
+    folder = "RES_1b/"
+    glioma_grades = [2, 3, 4]
     _process(folder, glioma_grades)
 
-    folder = "RES_2/"
-    glioma_grades = [3]
+    folder = "RES_2b/"
+    glioma_grades = [4]
     _process(folder, glioma_grades)
 
-    folder = "RES_3/"
-    glioma_grades = [2, 3]
+    folder = "RES_3b/"
+    glioma_grades = [3, 4]
     _process(folder, glioma_grades)

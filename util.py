@@ -94,7 +94,7 @@ def post_calculations(moving_dataset_image_ids, result=dict()):
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         if db_temp[0] is None:
-            print("No data for ", _id)
+            print("No volume data for image_id", _id)
             continue
         vol = DATA_FOLDER + db_temp[0]
         label = "img"
@@ -132,7 +132,7 @@ def get_transforms_from_db(img_id, conn):
     return transforms
 
 
-def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1, 2, 3]):
+def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[2, 3, 4]):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
@@ -142,72 +142,32 @@ def get_image_id_and_qol(qol_param, exclude_pid=[], glioma_grades=[1, 2, 3]):
     qol = []
     for pid in cursor:
         pid = pid[0]
-        _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
-                            (pid, )).fetchone()[0]
+        if pid in exclude_pid:
+            continue
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
+        if not _id:
+            print("---No data for ", pid, qol_param)
+            continue
+        _id = _id[0]
         _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
                                      (pid, )).fetchone()
         if not _glioma_grade:
-            print("No data for ", pid, qol_param)
+            print("No glioma_grade for ", pid, qol_param)
             continue
         if _glioma_grade[0] not in glioma_grades:
             continue
-        if not _id:
-            print("No data for ", pid, qol_param)
-            continue
-        if _qol is None:
-            print("No qol data for ", _id[0], qol_param)
-            continue
-        _id = _id[0]
-        if pid in exclude_pid:
-            continue
+        if qol_param:
+            _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
+                                (pid, )).fetchone()[0]
+            if _qol is None:
+                print("No qol data for ", _id[0], qol_param)
+                continue
+            qol.extend([_qol])
         image_id.extend([_id])
-        qol.extend([_qol])
     cursor.close()
     conn.close()
 
     return (image_id, qol)
-
-
-def find_images_with_qol(exclude_pid=[], glioma_grades=[1, 2, 3]):
-    """ Find images for registration """
-    conn = sqlite3.connect(DB_PATH, timeout=120)
-    conn.text_factory = str
-
-    cursor = conn.execute('''SELECT pid from QualityOfLife''')
-    pids_with_qol = []
-    for row in cursor:
-        if not row:
-            continue
-        pid = row[0]
-        if pid in exclude_pid:
-            continue
-        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
-                                     (pid, )).fetchone()
-        if not _glioma_grade:
-            print("No glioma_grade for ", pid)
-            continue
-        if not _glioma_grade[0] in glioma_grades:
-            continue
-        pids_with_qol.append(pid)
-    cursor.close()
-
-    cursor = conn.execute('''SELECT pid from Patient''')
-    ids = []
-    for row in cursor:
-        pid = row[0]
-        if pid not in pids_with_qol:
-            continue
-        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
-                               (pid, "pre"))
-
-        for _id in cursor2:
-            ids.append(_id[0])
-        cursor2.close()
-
-    cursor.close()
-    conn.close()
-    return ids
 
 
 def find_seg_images(moving_image_id):
@@ -345,8 +305,6 @@ def avg_calculation(images, label, val=None, save=False, folder=None, save_sum=F
         average = _sum / _total
     else:
         average = _sum / len(images)
-
-    print(np.amax(average))
 
     if save:
         img = nib.load(images[0])

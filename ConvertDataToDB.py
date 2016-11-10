@@ -346,6 +346,59 @@ def vacuum_db():
     conn.close()
 
 
+def update_glioma_grade(glioma_grade):
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+    convert_table = get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
+    for pid in convert_table.values():
+        try:
+            pid = int(pid)
+        except ValueError:
+            continue
+        cursor.execute('''UPDATE PATIENT SET glioma_grade = ? WHERE pid = ?''',
+                       (glioma_grade, pid))
+
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+
+def update_glioma_grade2(path, glioma_grade):
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    for case_id in range(2000):
+        data_path = path + str(case_id) + "/"
+        if not os.path.exists(data_path):
+            continue
+        pid = str(case_id)
+        print(pid)
+        cursor.execute('''UPDATE PATIENT SET glioma_grade = ? WHERE pid = ?''',
+                       (glioma_grade, pid))
+
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+
+def manual_add_to_db():
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    pid = 462
+    image_type = 'pre'
+    volume_labels = ['/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso-label.nrrd']
+    volume = '/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso.nrrd'
+    glioma_grade = 3
+    convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, glioma_grade)
+
+    cursor.close()
+    conn.commit()
+    conn.close()
+
 if __name__ == "__main__":
     util.setup_paths()
 #    try:
@@ -354,18 +407,27 @@ if __name__ == "__main__":
 #        pass
 #    util.mkdir_p(util.DATA_FOLDER)
 #    create_db(util.DB_PATH)
-#    convert_data(MAIN_FOLDER + "Segmenteringer_GBM/", 3)
+#    convert_data(MAIN_FOLDER + "Segmenteringer_GBM/", 4)
 #    qol_to_db("gbm")
 
 #    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/PRE_OP/")
 #    convert_lgg_data(MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/POST/")
 #    qol_to_db("lgg")
 
-    qol_to_db("extra")
-    convert_data(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 1, True)
-    convert_data(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 2)
+ #   qol_to_db("extra")
+ #   convert_data(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 2, True)
+ #   convert_data(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 3)
 
-    convert_data(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 3, True)
-    karnofsky_to_db()
+ #   convert_data(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 4, True)
+ #   karnofsky_to_db()
+
+ #   update_glioma_grade(2)
+
+ #   update_glioma_grade2(MAIN_FOLDER + "LGG_til_3D-atlas_271016/", 2)
+ #   update_glioma_grade2(MAIN_FOLDER + "AA_til_3D-atlas_271016/", 3)
+ #   update_glioma_grade2(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 4)
+ #   update_glioma_grade2(MAIN_FOLDER + "Segmenteringer_GBM/", 4)
+
+    manual_add_to_db()
 
     vacuum_db()
