@@ -27,14 +27,19 @@ def _process(folder, glioma_grades):
 
     for qol_param in params:
         (image_ids, qol) = util.get_image_id_and_qol(qol_param, exclude_pid)
-        qol = [_temp * 100 for _temp in qol]
+        if not qol_param == "karnofsky":
+            qol = [_temp * 100 for _temp in qol]
+        if not qol_param == "Index_value":
+            default_value = -100
+        else:
+            default_value = 0
         print(image_ids)
         result = util.post_calculations(image_ids)
         for label in result:
             print(label)
             if label == 'img':
                 continue
-            util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder)
+            util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
 
 
 if __name__ == "__main__":

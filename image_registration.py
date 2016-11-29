@@ -444,13 +444,13 @@ def move_vol(moving, transform, label_img=False):
     return result
 
 
-def save_transform_to_database(data_transforms):
+def save_transform_to_database(imgs):
     """ Save data transforms to database"""
     # pylint: disable= too-many-locals, bare-except
     conn = sqlite3.connect(util.DB_PATH, timeout=600)
     conn.text_factory = str
 
-    for img in data_transforms:
+    for img in imgs:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
 
@@ -486,8 +486,8 @@ def save_transform_to_database(data_transforms):
 
         cursor = conn.execute('''SELECT filepath, id from Labels where image_id = ? ''',
                               (img.image_id,))
-        for (row, label_id) in cursor:
-            temp = util.compress_vol(move_vol(util.DATA_FOLDER + row,
+        for (filepath, label_id) in cursor:
+            temp = util.compress_vol(move_vol(util.DATA_FOLDER + filepath,
                                               img.get_transforms(), True))
             shutil.copy(temp, folder)
             label_db = str(pid) + "/reg_volumes_labels/" + basename(temp)

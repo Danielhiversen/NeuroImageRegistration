@@ -232,7 +232,7 @@ def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=N
     return apply_transforms.inputs.output_image
 
 
-def sum_calculation(images, label, val=None, save=False, folder=None):
+def sum_calculation(images, label, val=None, save=False, folder=None, default_value=0):
     """ Calculate sum volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
@@ -255,7 +255,7 @@ def sum_calculation(images, label, val=None, save=False, folder=None):
         _sum = _sum + temp*val_i
         temp[temp != 0] = 1.0
         _total = _total + temp
-    _sum[_sum == 0] = np.NaN
+    _sum[_sum == 0] = default_value
 
     if save:
         result_img = nib.Nifti1Image(_sum, img.affine)
@@ -283,8 +283,6 @@ def std_calculation(images, avg_img, save=False, folder=None):
         temp[temp != 0] = 1.0
         _total = _total + temp
 
-    _total[_total == 0] = np.NaN
-    _std = np.sqrt(1 / (_total - 1) * _std**2)
 
     if save:
         result_img = nib.Nifti1Image(_std, img.affine)
@@ -295,14 +293,14 @@ def std_calculation(images, avg_img, save=False, folder=None):
 
 
 # pylint: disable= too-many-arguments
-def avg_calculation(images, label, val=None, save=False, folder=None, save_sum=False):
+def avg_calculation(images, label, val=None, save=False, folder=None, save_sum=False, default_value=0):
     """ Calculate average volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor')
 
-    (_sum, _total) = sum_calculation(images, label, val, save=save_sum)
+    (_sum, _total) = sum_calculation(images, label, val, save=save_sum, default_value=default_value)
     _total[_total == 0] = np.inf
     if val:
         average = _sum / _total
