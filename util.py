@@ -35,34 +35,57 @@ TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
 TEMPLATE_MASKED_VOLUME = ""
 
 
-def setup(temp_path):
+def setup(temp_path, data="glioma"):
     """setup for current computer """
     # pylint: disable= global-statement
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
     mkdir_p(TEMP_FOLDER_PATH)
-    setup_paths()
+    setup_paths(data)
     prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
 
-def setup_paths():
+def setup_paths(data):
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long
     global DATA_FOLDER, DB_PATH
 
     hostname = os.uname()[1]
     if hostname == 'dahoiv-Alienware-15':
-        DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database3/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
-        DATA_FOLDER = "/home/dahoiv/database/"
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
-        DATA_FOLDER = "/media/ingerid/data/daniel/database2/"
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
     else:
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
+        raise Exception    
+    
+    if data == 'glioma':
+        if hostname == 'dahoiv-Alienware-15':
+            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database3/"
+        elif hostname == 'dahoiv-Precision-M6500':
+            DATA_FOLDER = "/home/dahoiv/database/"
+        elif hostname == 'ingerid-PC':
+            DATA_FOLDER = "/media/ingerid/data/daniel/database2/"
+        else:
+            print("Unkown host name " + hostname)
+            print("Add your host name path to " + sys.argv[0])
+            raise Exception
+    elif data == 'MolekylareMarkorer':
+        if hostname == 'dahoiv-Alienware-15':
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/"
+        elif hostname == 'dahoiv-Precision-M6500':
+            DATA_FOLDER = ""
+        elif hostname == 'ingerid-PC':
+            DATA_FOLDER = ""
+        else:
+            print("Unkown host name " + hostname)
+            print("Add your host name path to " + sys.argv[0])
+            raise Exception
+    else:
+        print("Unkown data type " + data)
         raise Exception
 
     DB_PATH = DATA_FOLDER + "brainSegmentation.db"
