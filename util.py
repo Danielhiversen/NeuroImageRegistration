@@ -19,6 +19,7 @@ import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
 import matplotlib
+from scipy import ndimage
 matplotlib.use('Agg')
 # pylint: disable= wrong-import-position
 import matplotlib.pyplot as plt  # noqa
@@ -451,3 +452,12 @@ def mkdir_p(path):
 def get_basename(filepath):
     """Get basename of filepath"""
     return splitext(splitext(basename(filepath))[0])[0]
+
+
+def get_center_of_mass(filepath):
+    """Get center_of_mass of filepath"""
+    img = nib.load(filepath)
+    com = ndimage.measurements.center_of_mass(img.get_data())
+    spacing = img.header.get_zooms()
+    res = [c*s for (c,s) in zip(com, spacing)]
+    return res[0:3]
