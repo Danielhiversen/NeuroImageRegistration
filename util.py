@@ -45,9 +45,9 @@ def setup(temp_path, data="glioma"):
     prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
 
-def setup_paths(data):
+def setup_paths(data="glioma"):
     """setup for current computer """
-    # pylint: disable= global-statement, line-too-long
+    # pylint: disable= global-statement, line-too-long, too-many-branches
     global DATA_FOLDER, DB_PATH
 
     hostname = os.uname()[1]
@@ -253,6 +253,7 @@ def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=N
     return apply_transforms.inputs.output_image
 
 
+# pylint: disable= too-many-arguments
 def sum_calculation(images, label, val=None, save=False, folder=None, default_value=0):
     """ Calculate sum volumes """
     if not folder:
@@ -313,7 +314,8 @@ def std_calculation(images, avg_img, save=False, folder=None):
 
 
 # pylint: disable= too-many-arguments
-def avg_calculation(images, label, val=None, save=False, folder=None, save_sum=False, default_value=0):
+def avg_calculation(images, label, val=None, save=False, folder=None,
+                    save_sum=False, default_value=0):
     """ Calculate average volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH

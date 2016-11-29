@@ -399,6 +399,7 @@ def manual_add_to_db():
     conn.commit()
     conn.close()
 
+
 if __name__ == "__main__":
     util.setup_paths()
 #    try:

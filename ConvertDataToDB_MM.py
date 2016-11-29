@@ -81,7 +81,6 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
     if exist is None:
         cursor.execute('''INSERT INTO Patient(pid, glioma_grade) VALUES(?, ?)''', (pid, glioma_grade))
 
-
     cursor.execute('''INSERT INTO MolekylareMarkorer(pid, Subgroup, comments) VALUES(?,?,?)''',
                    (pid, subgroup, comment))
 
