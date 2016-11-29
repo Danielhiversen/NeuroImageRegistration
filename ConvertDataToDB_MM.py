@@ -80,10 +80,10 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
     exist = cursor.fetchone()
     if exist is None:
         cursor.execute('''INSERT INTO Patient(pid, glioma_grade) VALUES(?, ?)''', (pid, glioma_grade))
-        
-        
+
+
     cursor.execute('''INSERT INTO MolekylareMarkorer(pid, Subgroup, comments) VALUES(?,?,?)''',
-                       (pid, subgroup, comment))
+                   (pid, subgroup, comment))
 
     cursor.execute('''INSERT INTO Images(pid, modality, diag_pre_post) VALUES(?,?,?)''',
                    (pid, 'MR', image_type))
@@ -191,18 +191,18 @@ def convert_lgg_data(path):
         elif k < 3:
             continue
         case_id = row[0]
-        if case_id is None  or not isinstance(case_id, int):
+        if case_id is None or not isinstance(case_id, int):
             continue
         subgroup = row[1]
         if subgroup is None or not isinstance(subgroup, int):
             continue
-        comment = row[2]   
+        comment = row[2]
 
         convert_table[case_id] = (subgroup, comment)
 
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
-    for volume in  glob.glob(path + "*.nrrd"):
+    for volume in glob.glob(path + "*.nrrd"):
         if "label" in volume:
             continue
         case_id = re.findall(r'\b\d+\b', volume)
@@ -234,7 +234,6 @@ def vacuum_db():
     cursor = conn.execute('''VACUUM; ''')
     cursor.close()
     conn.close()
-
 
 
 if __name__ == "__main__":

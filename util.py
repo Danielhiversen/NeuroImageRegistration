@@ -60,18 +60,17 @@ def setup_paths(data):
     else:
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
-        raise Exception    
-    
+        raise Exception
+
     if data == 'glioma':
         if hostname == 'dahoiv-Alienware-15':
             DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database3/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
-            DATA_FOLDER = "/media/ingerid/data/daniel/database2/"
+            DATA_FOLDER = "/media/ingerid/data/daniel/database3/"
         else:
-            print("Unkown host name " + hostname)
-            print("Add your host name path to " + sys.argv[0])
+            print("Unkown data " + data)
             raise Exception
     elif data == 'MolekylareMarkorer':
         if hostname == 'dahoiv-Alienware-15':
@@ -79,10 +78,9 @@ def setup_paths(data):
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
-            DATA_FOLDER = ""
+            DATA_FOLDER = "/media/ingerid/data/daniel/database_MM/"
         else:
-            print("Unkown host name " + hostname)
-            print("Add your host name path to " + sys.argv[0])
+            print("Unkown data " + data)
             raise Exception
     else:
         print("Unkown data type " + data)
@@ -305,7 +303,6 @@ def std_calculation(images, avg_img, save=False, folder=None):
         _std = _std + (temp - avg_img)**2
         temp[temp != 0] = 1.0
         _total = _total + temp
-
 
     if save:
         result_img = nib.Nifti1Image(_std, img.affine)
