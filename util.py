@@ -75,7 +75,7 @@ def setup_paths(data="glioma"):
             raise Exception
     elif data == 'MolekylareMarkorer':
         if hostname == 'dahoiv-Alienware-15':
-            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
@@ -458,6 +458,23 @@ def get_center_of_mass(filepath):
     """Get center_of_mass of filepath"""
     img = nib.load(filepath)
     com = ndimage.measurements.center_of_mass(img.get_data())
+    qform = img.header.get_qform()
     spacing = img.header.get_zooms()
     res = [c*s for (c,s) in zip(com, spacing)]
-    return res[0:3]
+    trans =  [qform[0, 3], qform[1, 3], qform[2, 3]]
+    res = [r+t for (r,t) in zip(res, trans)]
+    return res
+
+
+def write_fcsv(filepath_out, tag_data):
+    """Write fcsv file, https://www.slicer.org/wiki/Modules:Fiducials-Documentation-3.6"""
+    buffer = '# Markups fiducial file version = 4.4' + os.linesep
+    buffer += '# visibility = 1' + os.linesep
+    buffer += '# color = 0.4,1,1' + os.linesep
+    buffer += "# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID'" + os.linesep
+
+    for val in tag_data:
+        buffer +=  val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,0," + val['Name'] +",," + os.linesep
+    fcsv_file = open(filepath_out, 'w')
+    fcsv_file.write(buffer)
+    fcsv_file.close()
