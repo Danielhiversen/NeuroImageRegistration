@@ -9,7 +9,7 @@ Created on Tue May 24 10:41:50 2016
 import util
 
 
-def _process(folder, glioma_grades):
+def process(folder, glioma_grades):
     print(folder)
     util.setup(folder)
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky']
@@ -45,12 +45,12 @@ def _process(folder, glioma_grades):
 if __name__ == "__main__":
     folder = "RES_1/"
     glioma_grades = [2, 3, 4]
-    _process(folder, glioma_grades)
+    process(folder, glioma_grades)
 
     folder = "RES_2/"
     glioma_grades = [4]
-    _process(folder, glioma_grades)
+    process(folder, glioma_grades)
 
     folder = "RES_3/"
     glioma_grades = [3, 4]
-    _process(folder, glioma_grades)
+    process(folder, glioma_grades)
