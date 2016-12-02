@@ -476,8 +476,8 @@ def write_fcsv(filepath_out, tag_data, color):
     fscv_data += os.linesep
 
     for val in tag_data:
-        fscv_data +=  val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,0,"
-        fscv_data += val['Name'] + "," + val.get("desc","") + "," + os.linesep
+        fscv_data += val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,0,"
+        fscv_data += val['Name'] + "," + val.get("desc", "") + "," + os.linesep
     fcsv_file = open(filepath_out, 'w')
     fcsv_file.write(fscv_data)
     fcsv_file.close()
