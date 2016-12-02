@@ -16,7 +16,9 @@ def process(folder):
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from MolekylareMarkorer''')
     image_ids = []
-    tag_data = []
+    tag_data_1 = []
+    tag_data_2 = []
+    tag_data_3 = []
     for pid in cursor:
         pid = pid[0]
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
@@ -31,6 +33,11 @@ def process(folder):
             print("No mm data for ", _id)
             continue
 
+        _desc = conn.execute("SELECT comments from MolekylareMarkorer where pid = ?",
+                                (pid, )).fetchone()[0]
+        if _desc is None:
+            _desc = ""
+
         _filepath = conn.execute("SELECT filepath_reg from Labels where image_id = ?",
                                 (_id, )).fetchone()[0]
         if _filepath is None:
@@ -41,16 +48,22 @@ def process(folder):
         val = {}
         val['Name'] = str(pid) + "_" + str(_mm)
         val['PositionGlobal'] = str(com[0]) + "," + str(com[1]) + "," + str(com[2]) 
-
+        val['desc'] = str(_desc)
 
         image_ids.extend([_id])
-        tag_data.append(val)
-        util.write_fcsv(folder + "test.fcsv", tag_data)
-        return
-        
+        print(_mm)
+        if _mm == 1:
+            tag_data_1.append(val)
+        elif _mm == 2:
+            tag_data_2.append(val)
+        elif _mm == 3:
+            tag_data_3.append(val)
+            
     cursor.close()
     conn.close()
-    
+    util.write_fcsv(folder + "mm_1.fcsv", tag_data_1, '1,0,0')
+    util.write_fcsv(folder + "mm_2.fcsv", tag_data_2, '0,1,0')
+    util.write_fcsv(folder + "mm_3.fcsv", tag_data_3, '0,0,1')
     result = util.post_calculations(image_ids)
     util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img', None, True, folder)

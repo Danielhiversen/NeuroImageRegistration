@@ -23,7 +23,7 @@ import util
 # PID_ANNE_LISE = MAIN_FOLDER + "Koblingsliste__Anne_Line.xlsx"
 # DATA_PATH_LGG = MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/"
 
-MAIN_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer_org/"
+MAIN_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/MolekylareMarkorer_org/"
 DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/DWIConvert"
 
 
@@ -119,67 +119,9 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
         os.remove(volume_label_temp)
 
 
-def subgroup_to_db(data_type):
-    # pylint: disable= too-many-branches
-    """Convert qol data to database """
-    conn = sqlite3.connect(util.DB_PATH)
-    cursor = conn.cursor()
-
-    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas_041116.xlsx')['Ark2']
-
-    k = 0
-    for row in data:
-        k = k + 1
-        if not row:
-            continue
-        if data_type == "extra" and k < 53:
-            continue
-        elif k < 4:
-            continue
-
-        if data_type == "gbm":
-            idx1 = 1
-            idx2 = 0
-            idx3 = 7
-        elif data_type == "lgg" or data_type == "extra":
-            idx1 = 12
-            idx2 = 11
-            idx3 = 18
-        if len(row) < idx3 - 1:
-            continue
-        print(row)
-
-        if row[idx1] is None:
-            gl_idx = None
-        elif row[idx1] > 0.85:
-            gl_idx = 1
-        elif row[idx1] > 0.50:
-            gl_idx = 2
-        else:
-            gl_idx = 3
-
-        val = [None]*7
-        idx = 0
-        for _val in row[idx2:idx3]:
-            val[idx] = _val
-            idx += 1
-        pid = val[0]
-        cursor.execute('''SELECT id from QualityOfLife where pid = ?''', (pid,))
-        _id = cursor.fetchone()
-        if _id:
-            print("-----------", row)
-            continue
-        cursor.execute('''INSERT INTO QualityOfLife(pid, Index_value, Global_index, Mobility, Selfcare, Activity, Pain, Anxiety) VALUES(?,?,?,?,?,?,?,?)''',
-                       (pid, val[1], gl_idx, val[2], val[3], val[4], val[5], val[6]))
-        conn.commit()
-
-    cursor.close()
-    conn.close()
-
-
 def convert_lgg_data(path):
     """convert_lgg_data"""
-    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/MolekylareMarkorer_org/MolekylæreMarkører_AJS_281116.xlsx')
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/MolekylareMarkorer/MolekylareMarkorer_org/MolekylæreMarkører_AJS_281116.xlsx')
 
     convert_table = {}
     k = 0
@@ -208,7 +150,7 @@ def convert_lgg_data(path):
         if len(case_id) != 1:
             print("ERROR", volume, case_id)
             return
-        case_id = case_id[0]
+        case_id = int(case_id[0])
         print(volume)
         if not os.path.exists(volume):
             continue
@@ -220,6 +162,7 @@ def convert_lgg_data(path):
         if not os.path.exists(volume_label):
             continue
 
+        (subgroup, comment) = convert_table.get(case_id, (None, None))
         convert_and_save_dataset(case_id, cursor, image_type, [volume_label], volume, 2, subgroup, comment)
         conn.commit()
 
