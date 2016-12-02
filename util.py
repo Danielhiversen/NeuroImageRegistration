@@ -18,8 +18,8 @@ from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
-import matplotlib
 from scipy import ndimage
+import matplotlib
 matplotlib.use('Agg')
 # pylint: disable= wrong-import-position
 import matplotlib.pyplot as plt  # noqa
@@ -460,22 +460,24 @@ def get_center_of_mass(filepath):
     com = ndimage.measurements.center_of_mass(img.get_data())
     qform = img.header.get_qform()
     spacing = img.header.get_zooms()
-    res = [c*s for (c,s) in zip(com, spacing)]
-    trans =  [qform[0, 3], qform[1, 3], qform[2, 3]]
-    res = [r+t for (r,t) in zip(res, trans)]
+    res = [c*s for (c, s) in zip(com, spacing)]
+    trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
+    res = [r+t for (r, t) in zip(res, trans)]
     return res
 
 
 def write_fcsv(filepath_out, tag_data, color):
     """Write fcsv file, https://www.slicer.org/wiki/Modules:Fiducials-Documentation-3.6"""
-    buffer = '# Markups fiducial file version = 4.4' + os.linesep
-    buffer += '# visibility = 1' + os.linesep
-    buffer += '# color = ' + color + os.linesep
-    buffer += '# selectedColor = ' + color + os.linesep
-    buffer += '# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID' + os.linesep
+    fscv_data = '# Markups fiducial file version = 4.4' + os.linesep
+    fscv_data += '# visibility = 1' + os.linesep
+    fscv_data += '# color = ' + color + os.linesep
+    fscv_data += '# selectedColor = ' + color + os.linesep
+    fscv_data += '# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID'
+    fscv_data += os.linesep
 
     for val in tag_data:
-        buffer +=  val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,0," + val['Name'] + "," + val.get("desc","") + "," + os.linesep
+        fscv_data +=  val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,0,"
+        fscv_data += val['Name'] + "," + val.get("desc","") + "," + os.linesep
     fcsv_file = open(filepath_out, 'w')
-    fcsv_file.write(buffer)
+    fcsv_file.write(fscv_data)
     fcsv_file.close()
