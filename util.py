@@ -374,7 +374,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
 
     total = {}
     _id = 0
-    for file_name in  label_paths:
+    for file_name in label_paths:
         print(file_name)
         img = nib.load(file_name)
         label_idx = np.where(img.get_data() == 1)
@@ -409,6 +409,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
                     if permutation_res[n][k, l, m] < res['statistic'][k, l, m]:
                         total_res[k, l, m] = total_res[k, l, m] + 1
                 total_res[k, l, m] = total_res[k, l, m] / (n_permutations + 1)
+
 
 def permutation_test(total, values, shape, alternative, shuffle):
     """Do permutation test."""
@@ -477,10 +478,8 @@ def brunner_munzel_test(x, y, alternative="two_sided"):
     rank_mean1 = np.mean(ranks[0:nx])
     rank_mean2 = np.mean(ranks[nx:nx+ny])
 
-    # pst = (rank_mean2 - (ny + 1)/2)/nx
-
     v1_set = [(i - j - rank_mean1 + (nx + 1)/2)**2 for (i, j) in zip(ranks[0:nx], rankx)]
-    v2_set = [(i - j - rank_mean2 + (ny + 1)/2)**2 for (i, j) in zip(ranks[nx :nx+ny], ranky)]
+    v2_set = [(i - j - rank_mean2 + (ny + 1)/2)**2 for (i, j) in zip(ranks[nx:nx+ny], ranky)]
 
     v1 = np.sum(v1_set)/(nx - 1)
     v2 = np.sum(v2_set)/(ny - 1)

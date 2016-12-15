@@ -10,6 +10,7 @@ import util
 
 exclude_pid = [1307, 1461]
 
+
 def process(folder, glioma_grades):
     print(folder)
     util.setup(folder)
@@ -41,6 +42,7 @@ def process(folder, glioma_grades):
                 continue
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
 
+
 def process_vlsm(folder, glioma_grades):
     print(folder)
     util.setup(folder)
@@ -53,14 +55,15 @@ def process_vlsm(folder, glioma_grades):
             print(label)
             if label == 'img':
                 continue
-            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=2)
-        
+            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=100)
+
+
 if __name__ == "__main__":
     folder = "RES_1b/"
     glioma_grades = [2, 3, 4]
     process_vlsm(folder, glioma_grades)
-    
-if False:    
+
+if False:
     folder = "RES_1/"
     glioma_grades = [2, 3, 4]
     process(folder, glioma_grades)
