@@ -8,12 +8,12 @@ Created on Tue May 24 10:41:50 2016
 # import os
 import util
 
+exclude_pid = [1307, 1461]
 
 def process(folder, glioma_grades):
     print(folder)
     util.setup(folder)
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky']
-    exclude_pid = [1307, 1461]
     (image_ids, qol) = util.get_image_id_and_qol(None, exclude_pid, glioma_grades=glioma_grades)
     print(len(image_ids))
     result = util.post_calculations(image_ids)
@@ -41,8 +41,26 @@ def process(folder, glioma_grades):
                 continue
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
 
-
+def process_vlsm(folder, glioma_grades):
+    print(folder)
+    util.setup(folder)
+    params = ['Index_value']
+    for qol_param in params:
+        (image_ids, qol) = util.get_image_id_and_qol(qol_param, exclude_pid)
+        print(image_ids)
+        result = util.post_calculations(image_ids)
+        for label in result:
+            print(label)
+            if label == 'img':
+                continue
+            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=2)
+        
 if __name__ == "__main__":
+    folder = "RES_1b/"
+    glioma_grades = [2, 3, 4]
+    process_vlsm(folder, glioma_grades)
+    
+if False:    
     folder = "RES_1/"
     glioma_grades = [2, 3, 4]
     process(folder, glioma_grades)

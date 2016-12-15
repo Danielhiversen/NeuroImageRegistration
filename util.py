@@ -7,6 +7,7 @@ Created on Mon Sep 12 11:54:08 2016
 
 from __future__ import print_function
 from __future__ import division
+import datetime
 import sys
 import errno
 import gzip
@@ -14,11 +15,14 @@ import os
 from os.path import basename
 from os.path import splitext
 import sqlite3
+import multiprocessing
+from joblib import Parallel, delayed
 from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
 from scipy import ndimage
+from scipy import stats
 import matplotlib
 matplotlib.use('Agg')
 # pylint: disable= wrong-import-position
@@ -358,6 +362,144 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
         generate_image(path, TEMPLATE_VOLUME)
 
     return t_img
+
+
+def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
+    """ Calculate average volumes """
+    # pylint: disable= too-many-locals, invalid-name
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'vlsm_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+
+    total = {}
+    _id = 0
+    for file_name in  label_paths:
+        print(file_name)
+        img = nib.load(file_name)
+        label_idx = np.where(img.get_data() == 1)
+        for (k, l, m) in zip(label_idx[0], label_idx[1], label_idx[2]):
+            key = str(k) + "_" + str(l) + "_" + str(m)
+            if key in total:
+                total[key].append(_id)
+            else:
+                total[key] = [_id]
+        _id = _id + 1
+    shape = img.get_data().shape
+
+    res = permutation_test(total, val, shape, 'less', False)
+    if n_permutations == 0:
+        img = nib.load(label_paths[0])
+        result_img = nib.Nifti1Image(res['p_val'], img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+        return
+
+    num_cores = multiprocessing.cpu_count()
+    permutation_res = Parallel(n_jobs=num_cores)(delayed(permutation_test)
+                                                 (total, val, shape, None, True)
+                                                 for i in range(n_permutations))
+
+    total_res = np.zeros((shape[0], shape[1], shape[2])) + 1
+    for k in range(shape[0]):
+        for l in range(shape[1]):
+            for m in range(shape[2]):
+                total_res[k, l, m] = 0
+                for n in range(n_permutations):
+                    if permutation_res[n][k, l, m] < res['statistic'][k, l, m]:
+                        total_res[k, l, m] = total_res[k, l, m] + 1
+                total_res[k, l, m] = total_res[k, l, m] / (n_permutations + 1)
+
+def permutation_test(total, values, shape, alternative, shuffle):
+    """Do permutation test."""
+    # pylint: disable= too-many-locals, invalid-name
+    start_time = datetime.datetime.now()
+    if shuffle:
+        np.random.shuffle(values)
+    res = {}
+    if alternative is not None:
+        res['p_val'] = np.zeros(shape) + 1
+    res['statistic'] = np.zeros(shape)
+    for key, vox_ids in total.iteritems():
+        if len(vox_ids) < 5:
+            continue
+        _temp = key.split("_")
+        k = int(_temp[0])
+        l = int(_temp[1])
+        m = int(_temp[2])
+        group1 = [values[index] for index in vox_ids]
+        ids = range(len(values))
+        for _id in vox_ids:
+            ids.remove(_id)
+        group2 = [values[index] for index in ids]
+        (p_val, statistic) = brunner_munzel_test(group1, group2, alternative)
+        if alternative is not None:
+            res['p_val'][k, l, m] = p_val
+        res['statistic'][k, l, m] = statistic
+
+    print(datetime.datetime.now() - start_time)
+    if alternative is None:
+        return res['statistic']
+    return res
+
+
+def brunner_munzel_test(x, y, alternative="two_sided"):
+    """
+    Computes the Brunner Munzel statistic
+
+    Missing values in `x` and/or `y` are discarded.
+
+    Parameters
+    ----------
+    x : sequence
+        Input
+    y : sequence
+        Input
+    alternative : {greater, less, two_sided }
+
+    Returns
+    -------
+    statistic : float
+        The Brunner Munzel  statistics
+    pvalue : float
+        Approximate p-value assuming a t distribution.
+
+    http://codegists.com/snippet/python/brunner_munzel_testpy_katsuyaito_python
+
+     """
+    # pylint: disable= too-many-locals, invalid-name
+    x = np.ma.asarray(x).compressed().view(np.ndarray)
+    y = np.ma.asarray(y).compressed().view(np.ndarray)
+    ranks = stats.rankdata(np.concatenate([x, y]))
+    (nx, ny) = (len(x), len(y))
+    rankx = stats.rankdata(x)
+    ranky = stats.rankdata(y)
+    rank_mean1 = np.mean(ranks[0:nx])
+    rank_mean2 = np.mean(ranks[nx:nx+ny])
+
+    # pst = (rank_mean2 - (ny + 1)/2)/nx
+
+    v1_set = [(i - j - rank_mean1 + (nx + 1)/2)**2 for (i, j) in zip(ranks[0:nx], rankx)]
+    v2_set = [(i - j - rank_mean2 + (ny + 1)/2)**2 for (i, j) in zip(ranks[nx :nx+ny], ranky)]
+
+    v1 = np.sum(v1_set)/(nx - 1)
+    v2 = np.sum(v2_set)/(ny - 1)
+    statistic = nx * ny * (rank_mean2 - rank_mean1)/(nx + ny)/np.sqrt(nx * v1 + ny * v2)
+    if alternative is None:
+        return (-1, statistic)
+
+    dfbm = ((nx * v1 + ny * v2)**2)/(((nx * v1)**2)/(nx - 1) + ((ny * v2)**2)/(ny - 1))
+    if (alternative == "greater") | (alternative == "g"):
+        prob = stats.t.cdf(statistic, dfbm)
+    elif (alternative == "less") | (alternative == "l"):
+        prob = 1 - stats.t.cdf(statistic, dfbm)
+    else:
+        alternative = "two_sided"
+        abst = np.abs(statistic)
+        prob = stats.t.cdf(abst, dfbm)
+        prob = 2 * min(prob, 1 - prob)
+
+    return (prob, statistic)
 
 
 def generate_image(path, path2, out_path=None):
