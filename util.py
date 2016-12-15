@@ -396,9 +396,13 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
         return
 
     num_cores = multiprocessing.cpu_count()
+    print(n_permutations)
+
     permutation_res = Parallel(n_jobs=num_cores)(delayed(permutation_test)
                                                  (total, val, shape, None, True)
                                                  for i in range(n_permutations))
+
+    print(n_permutations, len(permutation_res))
 
     total_res = np.zeros((shape[0], shape[1], shape[2])) + 1
     for k in range(shape[0]):
@@ -416,6 +420,7 @@ def permutation_test(total, values, shape, alternative, shuffle):
     # pylint: disable= too-many-locals, invalid-name
     start_time = datetime.datetime.now()
     if shuffle:
+        # pylint: disable= no-member
         np.random.shuffle(values)
     res = {}
     if alternative is not None:
