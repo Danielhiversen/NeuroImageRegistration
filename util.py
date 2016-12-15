@@ -435,7 +435,7 @@ def permutation_test(total, values, shape, alternative, shuffle):
         m = int(_temp[2])
         group1 = [values[index] for index in vox_ids]
         ids = range(len(values))
-        group2 = [values[index] for index in ids if (index not in vox_ids)]
+        group2 = [values[index] for index in ids if index not in vox_ids]
         (p_val, statistic) = brunner_munzel_test(group1, group2, alternative)
         if alternative is not None:
             res['p_val'][k, l, m] = p_val
