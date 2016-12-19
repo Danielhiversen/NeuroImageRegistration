@@ -369,8 +369,6 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     # pylint: disable= too-many-locals, invalid-name
     if not folder:
         folder = TEMP_FOLDER_PATH
-    path = folder + 'vlsm_' + label + '.nii'
-    path = path.replace('label', 'tumor')
 
     total = {}
     _id = 0
@@ -388,11 +386,13 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     shape = img.get_data().shape
 
     res = permutation_test(total, val, shape, 'less', False)
+    path = folder + 'vlsm_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+    img = nib.load(label_paths[0])
+    result_img = nib.Nifti1Image(res['p_val'], img.affine)
+    result_img.to_filename(path)
+    generate_image(path, TEMPLATE_VOLUME)
     if n_permutations == 0:
-        img = nib.load(label_paths[0])
-        result_img = nib.Nifti1Image(res['p_val'], img.affine)
-        result_img.to_filename(path)
-        generate_image(path, TEMPLATE_VOLUME)
         return
 
     num_cores = multiprocessing.cpu_count()
@@ -410,9 +410,17 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
             for m in range(shape[2]):
                 total_res[k, l, m] = 0
                 for n in range(n_permutations):
-                    if permutation_res[n][k, l, m] < res['statistic'][k, l, m]:
+                    if permutation_res[n][k, l, m] > res['statistic'][k, l, m]:
                         total_res[k, l, m] = total_res[k, l, m] + 1
                 total_res[k, l, m] = total_res[k, l, m] / (n_permutations + 1)
+
+    path = folder + 'vlsm_permutations_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+    img = nib.load(label_paths[0])
+    result_img = nib.Nifti1Image(total_res, img.affine)
+    result_img.to_filename(path)
+    generate_image(path, TEMPLATE_VOLUME)
+
 
 
 def permutation_test(total, values, shape, alternative, shuffle):
@@ -427,7 +435,7 @@ def permutation_test(total, values, shape, alternative, shuffle):
         res['p_val'] = np.zeros(shape) + 1
     res['statistic'] = np.zeros(shape)
     for key, vox_ids in total.iteritems():
-        if len(vox_ids) < 5:
+        if len(vox_ids) < 2:
             continue
         _temp = key.split("_")
         k = int(_temp[0])
