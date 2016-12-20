@@ -59,19 +59,18 @@ def process_vlsm(folder, glioma_grades):
 
 
 if __name__ == "__main__":
-    folder = "RES_1b/"
-    glioma_grades = [2, 3, 4]
-    process_vlsm(folder, glioma_grades)
 
-if False:
     folder = "RES_1/"
     glioma_grades = [2, 3, 4]
     process(folder, glioma_grades)
+    process_vlsm(folder, glioma_grades)
 
     folder = "RES_2/"
     glioma_grades = [4]
     process(folder, glioma_grades)
+    process_vlsm(folder, glioma_grades)
 
     folder = "RES_3/"
     glioma_grades = [3, 4]
     process(folder, glioma_grades)
+    process_vlsm(folder, glioma_grades)

@@ -408,8 +408,10 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     for k in range(shape[0]):
         for l in range(shape[1]):
             for m in range(shape[2]):
-                total_res[k, l, m] = 0
+                if np.isnan(permutation_res[0][k, l, m]):
+                    continue
                 for n in range(n_permutations):
+                    total_res[k, l, m] = 0
                     if permutation_res[n][k, l, m] > res['statistic'][k, l, m]:
                         total_res[k, l, m] = total_res[k, l, m] + 1
                 total_res[k, l, m] = total_res[k, l, m] / (n_permutations + 1)
@@ -422,7 +424,6 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     generate_image(path, TEMPLATE_VOLUME)
 
 
-
 def permutation_test(total, values, shape, alternative, shuffle):
     """Do permutation test."""
     # pylint: disable= too-many-locals, invalid-name
@@ -433,7 +434,8 @@ def permutation_test(total, values, shape, alternative, shuffle):
     res = {}
     if alternative is not None:
         res['p_val'] = np.zeros(shape) + 1
-    res['statistic'] = np.zeros(shape)
+    res['statistic'] = np.empty(shape)
+    res['statistic'].fill(None)
     for key, vox_ids in total.iteritems():
         if len(vox_ids) < 2:
             continue
