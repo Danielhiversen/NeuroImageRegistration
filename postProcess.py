@@ -61,7 +61,12 @@ def process_vlsm(folder, glioma_grades):
 if __name__ == "__main__":
     folder = "RES_1b/"
     glioma_grades = [2, 3, 4]
+    import datetime
+    start_time = datetime.datetime.now()
     process_vlsm(folder, glioma_grades)
+    print("Total runtime")
+    print(datetime.datetime.now() - start_time)
+
 
 if False:
     folder = "RES_1/"
