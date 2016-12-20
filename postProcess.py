@@ -67,7 +67,6 @@ if __name__ == "__main__":
     print("Total runtime")
     print(datetime.datetime.now() - start_time)
 
-
     folder = "RES_2/"
     glioma_grades = [4]
     process(folder, glioma_grades)
