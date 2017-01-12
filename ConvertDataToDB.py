@@ -399,6 +399,50 @@ def manual_add_to_db():
     conn.commit()
     conn.close()
 
+def add_survival_days():
+    """add survival_days to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/Segmentations/Overlevelse_til_3D_atlas.xlsx')['Ark1']
+    try:
+        conn.execute("alter table Patient add column 'survival_days' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+    try:
+        conn.execute("alter table Patient add column 'op_date' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+
+    k = 0
+    for row in data:
+        k = k + 1
+        if not row:
+            continue
+        if k < 2:
+            continue
+        pid = row[0]
+        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
+        exist = cursor.fetchone()
+        if exist is None:
+            continue
+        try:
+            survival_days = row[3]
+        except IndexError:
+            op_date = None
+        try:
+            op_date = row[1]
+        except IndexError:
+            survival_days = None
+        print(pid, survival_days, op_date )
+
+        cursor.execute('''UPDATE Patient SET survival_days = ?, op_date = ? WHERE pid = ?''',
+                       (survival_days, op_date, pid))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
 
 if __name__ == "__main__":
     util.setup_paths()
@@ -429,6 +473,10 @@ if __name__ == "__main__":
 #    update_glioma_grade2(MAIN_FOLDER + "GBM_til_3D-atlas_revidert_031116/", 4)
 #    update_glioma_grade2(MAIN_FOLDER + "Segmenteringer_GBM/", 4)
 
-    manual_add_to_db()
+#    manual_add_to_db()
+
+
+    add_survival_days()
+
 
     vacuum_db()
