@@ -410,8 +410,8 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
             for m in range(shape[2]):
                 if np.isnan(permutation_res[0][k, l, m]):
                     continue
+                total_res[k, l, m] = 0
                 for n in range(n_permutations):
-                    total_res[k, l, m] = 0
                     if permutation_res[n][k, l, m] > res['statistic'][k, l, m]:
                         total_res[k, l, m] = total_res[k, l, m] + 1
                 total_res[k, l, m] = total_res[k, l, m] / (n_permutations + 1)
