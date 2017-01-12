@@ -175,7 +175,6 @@ def convert_lgg_data(path):
     conn.close()
 
 
-
 def convert_lgg_data_tromso(path):
     """convert_lgg_data"""
     data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/MolekylareMarkorer/JAMA_tromso/MolekylareMarkorer_Tromso_AJS_04.01.2017.xlsx')

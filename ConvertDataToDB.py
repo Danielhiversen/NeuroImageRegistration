@@ -399,6 +399,7 @@ def manual_add_to_db():
     conn.commit()
     conn.close()
 
+
 def add_survival_days():
     """add survival_days to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -434,7 +435,7 @@ def add_survival_days():
             op_date = row[1]
         except IndexError:
             survival_days = None
-        print(pid, survival_days, op_date )
+        print(pid, survival_days, op_date)
 
         cursor.execute('''UPDATE Patient SET survival_days = ?, op_date = ? WHERE pid = ?''',
                        (survival_days, op_date, pid))
@@ -475,8 +476,6 @@ if __name__ == "__main__":
 
 #    manual_add_to_db()
 
-
     add_survival_days()
-
 
     vacuum_db()

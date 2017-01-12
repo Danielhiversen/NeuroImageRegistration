@@ -41,6 +41,7 @@ def process(folder, glioma_grades):
             if label == 'img':
                 continue
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
+            util.std_calculation(result[label], label + '_' + qol_param, qol, True, folder)
 
 
 def process_vlsm(folder, glioma_grades):
@@ -55,7 +56,7 @@ def process_vlsm(folder, glioma_grades):
             print(label)
             if label == 'img':
                 continue
-            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=200)
+            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=3000)
 
 
 if __name__ == "__main__":
@@ -78,4 +79,4 @@ if __name__ == "__main__":
     process_vlsm(folder, glioma_grades)
     print("Total runtime")
     print(datetime.datetime.now() - start_time)
-    #process(folder, glioma_grades)
+    process(folder, glioma_grades)

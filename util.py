@@ -292,11 +292,14 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
     return (_sum, _total)
 
 
-def std_calculation(images, avg_img, save=False, folder=None):
+def std_calculation(images, label, save=False, folder=None):
     """ Calculate std volume """
     if not folder:
         folder = TEMP_FOLDER_PATH
-    path = folder + 'std.nii'
+
+    (_sum, _total) = sum_calculation(images, label, save=False)
+    avg_img = _sum / _total
+    path = folder + 'std_' + label + '.nii'
 
     _std = None
     _total = None
@@ -349,7 +352,7 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
     path = folder + 't-test.nii'
 
     (_sum, _total) = sum_calculation(images, label, save=False)
-    _std = std_calculation(images, _sum / _total, save=True)
+    _std = std_calculation(images, label, save=True)
 
     temp = mu_h0 - _sum / _total
     # temp[temp<0] = 0
