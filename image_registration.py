@@ -50,7 +50,7 @@ import numpy as np
 from img_data import img_data
 import util
 
-MULTITHREAD = 1  # 1,23,4....., "max"
+# MULTITHREAD = 1  # 1,23,4....., "max"
 MULTITHREAD = "max"
 
 RIGID = 'rigid'
@@ -112,7 +112,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.moving_image = util.TEMPLATE_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 1
+        reg.inputs.num_threads = 2
         reg.inputs.initial_moving_transform_com = True
 
         reg.inputs.transforms = ['Rigid', 'Affine']
@@ -214,7 +214,7 @@ def pre_process(img, do_bet=True):
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 8
+        reg.inputs.num_threads = 2
         reg.inputs.initial_moving_transform_com = True
 
         reg.inputs.transforms = ['Rigid', 'Affine']
@@ -285,7 +285,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
-    reg.inputs.num_threads = 8
+    reg.inputs.num_threads = 2
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid']
         reg.inputs.metric = ['MI']
@@ -380,15 +380,15 @@ def process_dataset(args):
     (moving_image_id, reg_type, save_to_db) = args
     print(moving_image_id)
 
-    start_time = datetime.datetime.now()
-    img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-    img = pre_process(img)
-
-    print("\n\n\n\n -- Run time preprocess: ")
-    print(datetime.datetime.now() - start_time)
-
     for k in range(3):
         try:
+            start_time = datetime.datetime.now()
+            img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+            img = pre_process(img)
+
+            print("\n\n\n\n -- Run time preprocess: ")
+            print(datetime.datetime.now() - start_time)
+
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
             break
         # pylint: disable= broad-except
@@ -444,13 +444,13 @@ def move_vol(moving, transform, label_img=False):
     return result
 
 
-def save_transform_to_database(data_transforms):
+def save_transform_to_database(imgs):
     """ Save data transforms to database"""
     # pylint: disable= too-many-locals, bare-except
-    conn = sqlite3.connect(util.DB_PATH)
+    conn = sqlite3.connect(util.DB_PATH, timeout=600)
     conn.text_factory = str
 
-    for img in data_transforms:
+    for img in imgs:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
 
@@ -467,7 +467,7 @@ def save_transform_to_database(data_transforms):
             with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
             transform_paths += str(pid) + "/registration_transforms/" +\
-                basename(_transform) + '.h5.gz' + ", "
+                util.get_basename(_transform) + '.h5.gz' + ", "
         transform_paths = transform_paths[:-2]
 
         cursor2 = conn.execute('''UPDATE Images SET transform = ? WHERE id = ?''',
@@ -486,8 +486,8 @@ def save_transform_to_database(data_transforms):
 
         cursor = conn.execute('''SELECT filepath, id from Labels where image_id = ? ''',
                               (img.image_id,))
-        for (row, label_id) in cursor:
-            temp = util.compress_vol(move_vol(util.DATA_FOLDER + row,
+        for (filepath, label_id) in cursor:
+            temp = util.compress_vol(move_vol(util.DATA_FOLDER + filepath,
                                               img.get_transforms(), True))
             shutil.copy(temp, folder)
             label_db = str(pid) + "/reg_volumes_labels/" + basename(temp)

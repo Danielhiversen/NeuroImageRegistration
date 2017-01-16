@@ -55,6 +55,7 @@ def test_be(moving_image_ids, reg):
     print("\n\n\n\n -- Run time BET: ")
     print(bet_time/len(moving_datasets_ids))
 
+
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)

@@ -21,8 +21,7 @@ def find_images():
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
-        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
-                               (row[0], "pre"))
+        cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
         for _id in cursor2:
             _id = _id[0]
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
@@ -44,7 +43,7 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(17)
-    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/")
+    util.setup("MM_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/", "MolekylareMarkorer")
 
     moving_datasets_ids = find_images()
     print(moving_datasets_ids, len(moving_datasets_ids))
