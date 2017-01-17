@@ -400,7 +400,6 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
 
     queue = multiprocessing.Queue()
     total_res = np.zeros((shape[0], shape[1], shape[2]))
-    valid_points = np.zeros((shape[0], shape[1], shape[2]), dtype=bool)
 
     def _help_permutation_test(index, total, values, shape, alternative, shuffle):
         permutation_res = permutation_test(total, values, shape, alternative, shuffle)
@@ -409,8 +408,8 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     def _process_res():
         (_index, permutation_res) = queue.get()
         jobs[_index].join()
+        permutation_res[permutation_res==None] = -1
         temp = permutation_res > res['statistic']
-        valid_points = valid_points or temp
         total_res[temp] = total_res[temp] + 1 / (n_permutations + 1)
 
     processes = multiprocessing.cpu_count()
@@ -440,8 +439,6 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
             finished_jobs = finished_jobs + 1
         else:
             time.sleep(2)
-
-    total_res[not valid_points] = 1
 
     path = folder + 'vlsm_permutations_' + label + '.nii'
     path = path.replace('label', 'tumor')
