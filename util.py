@@ -12,10 +12,10 @@ import sys
 import errno
 import gzip
 import os
-import time
 from os.path import basename
 from os.path import splitext
 import sqlite3
+import time
 import multiprocessing
 from nilearn import datasets
 import nipype.interfaces.ants as ants
@@ -369,7 +369,8 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
 
 def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     """ Calculate average volumes """
-    # pylint: disable= too-many-locals, invalid-name
+    # pylint: disable= too-many-locals, invalid-name, too-many-branches
+
     if not folder:
         folder = TEMP_FOLDER_PATH
 
