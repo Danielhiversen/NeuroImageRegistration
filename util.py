@@ -400,6 +400,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
 
     queue = multiprocessing.Queue()
     total_res = np.zeros((shape[0], shape[1], shape[2]))
+    jobs = []
 
     def _help_permutation_test(index, total, values, shape, alternative, shuffle):
         permutation_res = permutation_test(total, values, shape, alternative, shuffle)
@@ -408,12 +409,11 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     def _process_res():
         (_index, permutation_res) = queue.get()
         jobs[_index].join()
-        permutation_res[permutation_res==None] = -1
+        permutation_res[permutation_res is None] = -1
         temp = permutation_res > res['statistic']
         total_res[temp] = total_res[temp] + 1 / (n_permutations + 1)
 
     processes = multiprocessing.cpu_count()
-    jobs = []
     nr_of_jobs = 0
     finished_jobs = 0
     index = 0
