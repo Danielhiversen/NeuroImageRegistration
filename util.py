@@ -12,11 +12,11 @@ import sys
 import errno
 import gzip
 import os
+import time
 from os.path import basename
 from os.path import splitext
 import sqlite3
 import multiprocessing
-from joblib import Parallel, delayed
 from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
@@ -398,26 +398,51 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     if n_permutations == 0:
         return
 
-    num_cores = multiprocessing.cpu_count()
-    print(n_permutations)
+    queue = multiprocessing.Queue()
+    total_res = np.zeros((shape[0], shape[1], shape[2]))
+    valid_points = np.zeros((shape[0], shape[1], shape[2]), dtype=bool)
 
-    permutation_res = Parallel(n_jobs=num_cores)(delayed(permutation_test)
-                                                 (total, val, shape, None, True)
-                                                 for i in range(n_permutations))
+    def _help_permutation_test(index, total, values, shape, alternative, shuffle):
+        permutation_res = permutation_test(total, values, shape, alternative, shuffle)
+        queue.put(index, permutation_res)
 
-    print(n_permutations, len(permutation_res))
+    def _process_res():
+        (_index, permutation_res) = queue.get()
+        jobs[_index].join()
+        temp = permutation_res > res['statistic']
+        nonlocal valid_points
+        valid_points = valid_points or temp
+        total_res[temp] = total_res[temp] + 1 / (n_permutations + 1)
 
-    total_res = np.zeros((shape[0], shape[1], shape[2])) + 1
-    for k in range(shape[0]):
-        for l in range(shape[1]):
-            for m in range(shape[2]):
-                if np.isnan(permutation_res[0][k, l, m]):
-                    continue
-                total_res[k, l, m] = 0
-                for n in range(n_permutations):
-                    if permutation_res[n][k, l, m] > res['statistic'][k, l, m]:
-                        total_res[k, l, m] = total_res[k, l, m] + 1
-                total_res[k, l, m] = total_res[k, l, m] / (n_permutations + 1)
+    processes = multiprocessing.cpu_count()
+    jobs = []
+    nr_of_jobs = 0
+    finished_jobs = 0
+    index = 0
+    while index < n_permutations:
+        if nr_of_jobs < processes:
+            nr_of_jobs = nr_of_jobs + 1
+            process = multiprocessing.Process(target=_help_permutation_test,
+                                              args=(index, total, val, shape, None, True))
+            process.start()
+            jobs.append(process)
+            index = index + 1
+        if not queue.empty():
+            nr_of_jobs = nr_of_jobs - 1
+            _process_res()
+            finished_jobs = finished_jobs + 1
+
+        if not nr_of_jobs < processes and queue.empty():
+            time.sleep(2)
+
+    while finished_jobs < n_permutations:
+        if not queue.empty():
+            _process_res()
+            finished_jobs = finished_jobs + 1
+        else:
+            time.sleep(2)
+
+    total_res[not valid_points] = 1
 
     path = folder + 'vlsm_permutations_' + label + '.nii'
     path = path.replace('label', 'tumor')
