@@ -410,7 +410,6 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
         (_index, permutation_res) = queue.get()
         jobs[_index].join()
         temp = permutation_res > res['statistic']
-        nonlocal valid_points
         valid_points = valid_points or temp
         total_res[temp] = total_res[temp] + 1 / (n_permutations + 1)
 
