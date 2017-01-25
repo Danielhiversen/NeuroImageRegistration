@@ -79,7 +79,7 @@ def setup_paths(data="glioma"):
             raise Exception
     elif data == 'MolekylareMarkorer':
         if hostname == 'dahoiv-Alienware-15':
-            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM2/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
@@ -292,26 +292,32 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
     return (_sum, _total)
 
 
-def std_calculation(images, label, save=False, folder=None):
+def std_calculation(images, label, val=None, save=False, folder=None):
     """ Calculate std volume """
     if not folder:
         folder = TEMP_FOLDER_PATH
 
-    (_sum, _total) = sum_calculation(images, label, save=False)
+    if not val:
+        val = [1]*len(images)
+
+    (_sum, _total) = sum_calculation(images, label, val, save=False)
     avg_img = _sum / _total
     path = folder + 'std_' + label + '.nii'
 
     _std = None
     _total = None
-    for file_name in images:
+    for (file_name, val_i) in zip(images, val):
+        if val_i is None:
+            continue
         img = nib.load(file_name)
         if _std is None:
             _std = np.zeros(img.get_data().shape)
             _total = np.zeros(img.get_data().shape)
         temp = np.array(img.get_data())
-        _std = _std + (temp - avg_img)**2
+        _std = _std + (temp*val_i - avg_img)**2
         temp[temp != 0] = 1.0
         _total = _total + temp
+    _std = _std / _total
 
     if save:
         result_img = nib.Nifti1Image(_std, img.affine)
@@ -405,12 +411,12 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
 
     def _help_permutation_test(index, total, values, shape, alternative, shuffle):
         permutation_res = permutation_test(total, values, shape, alternative, shuffle)
-        queue.put(index, permutation_res)
+        print(index)
+        queue.put((index, permutation_res))
 
     def _process_res():
         (_index, permutation_res) = queue.get()
         jobs[_index].join()
-        permutation_res[permutation_res is None] = -1
         temp = permutation_res > res['statistic']
         total_res[temp] = total_res[temp] + 1 / (n_permutations + 1)
 
@@ -459,8 +465,7 @@ def permutation_test(total, values, shape, alternative, shuffle):
     res = {}
     if alternative is not None:
         res['p_val'] = np.zeros(shape) + 1
-    res['statistic'] = np.empty(shape)
-    res['statistic'].fill(None)
+    res['statistic'] = np.zeros(shape) + 1
     for key, vox_ids in total.iteritems():
         if len(vox_ids) < 2:
             continue
