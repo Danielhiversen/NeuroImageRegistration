@@ -56,7 +56,7 @@ def process_vlsm(folder, glioma_grades):
             print(label)
             if label == 'img':
                 continue
-            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=1500)
+            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=500)
 
 
 if __name__ == "__main__":
