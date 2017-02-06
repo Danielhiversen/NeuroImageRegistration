@@ -461,21 +461,24 @@ def add_study():
         conn.execute("alter table Patient add column 'study_id' 'TEXT'")
     except sqlite3.OperationalError:
         pass
-    sheet = load_workbook('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx', data_only=True)['Ark']
+    sheet = load_workbook('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx', data_only=True)['Ark3']
     column = "A"
     for row in range(3, 223):
         cell_name = "{}{}".format(column, row)
         color = sheet[cell_name].fill.start_color.index
         value = sheet[cell_name].value
-        print(value, color)
         if value and color == '00000000':
             try:
-                pid = float(value)
+                pid = int(value)
             except ValueError:
                 continue
+            print(pid, color)
             cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
                            ("qol_grade3,4", pid))
+           conn.commit()
 
+    cursor.close()
+    conn.close()
 
 if __name__ == "__main__":
     util.setup_paths()
@@ -511,7 +514,8 @@ if __name__ == "__main__":
 #    add_survival_days()
 #    manual_add_to_db()
 
-    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
-    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
+    #convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
+    #convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
     add_study()
     vacuum_db()
+    karnofsky_to_db()
