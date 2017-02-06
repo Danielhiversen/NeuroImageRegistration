@@ -480,6 +480,7 @@ def add_study():
     cursor.close()
     conn.close()
 
+
 if __name__ == "__main__":
     util.setup_paths()
 #    try:
@@ -514,8 +515,8 @@ if __name__ == "__main__":
 #    add_survival_days()
 #    manual_add_to_db()
 
-    #convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
-    #convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
+#    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
+#    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
     add_study()
     vacuum_db()
     karnofsky_to_db()
