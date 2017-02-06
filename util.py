@@ -79,7 +79,7 @@ def setup_paths(data="glioma"):
             raise Exception
     elif data == 'MolekylareMarkorer':
         if hostname == 'dahoiv-Alienware-15':
-            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM2/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
