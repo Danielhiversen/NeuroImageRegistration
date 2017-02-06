@@ -452,30 +452,30 @@ def add_survival_days():
     conn.close()
     
     
-    def add_study():
-        from openpyxl import load_workbook
-        wb = load_workbook('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx', data_only=True)
-        
-        conn = sqlite3.connect(util.DB_PATH)
-        cursor = conn.cursor()
-        try:
-            conn.execute("alter table Patient add column 'study_id' 'TEXT'")
-        except sqlite3.OperationalError:
-            pass
-        sh = wb['Ark']
-        column = "A"
-        for row in range(3, 223):
-            cell_name = "{}{}".format(column, row)
-            color = sh[cell_name].fill.start_color.index #Green Color
-            value = sh[cell_name].value
-            print(value, color)
-            if value and color == '00000000':
-                try:
-                    pid = float(value)
-                except ValueError:
-                    continue
-                cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
-                           ("qol_grade3,4", pid))
+def add_study():
+    from openpyxl import load_workbook
+    wb = load_workbook('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx', data_only=True)
+    
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+    try:
+        conn.execute("alter table Patient add column 'study_id' 'TEXT'")
+    except sqlite3.OperationalError:
+        pass
+    sh = wb['Ark']
+    column = "A"
+    for row in range(3, 223):
+        cell_name = "{}{}".format(column, row)
+        color = sh[cell_name].fill.start_color.index #Green Color
+        value = sh[cell_name].value
+        print(value, color)
+        if value and color == '00000000':
+            try:
+                pid = float(value)
+            except ValueError:
+                continue
+            cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
+                       ("qol_grade3,4", pid))
 
 if __name__ == "__main__":
     util.setup_paths()
