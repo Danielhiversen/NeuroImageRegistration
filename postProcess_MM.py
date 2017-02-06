@@ -62,7 +62,7 @@ def process(folder):
             tag_data_3.append(val)
 
     tag_data = {"tag_data_1": tag_data_1, "tag_data_2": tag_data_2, "tag_data_3": tag_data_3}
-    pickle.dump(tag_data, open( "tag_data.pickle", "wb" ) )
+    pickle.dump(tag_data, open("tag_data.pickle", "wb"))
 
     cursor.close()
     conn.close()

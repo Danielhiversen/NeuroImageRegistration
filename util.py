@@ -418,7 +418,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
         (_index, permutation_res) = queue.get()
         jobs[_index].join()
         temp = np.zeros((shape[0], shape[1], shape[2]))
-        idx = permutation_res > res['statistic'] 
+        idx = permutation_res > res['statistic']
         temp[idx] = 1.0 / (n_permutations + 1)
         total_res[(idx and (total_res == 1))] = 0
         return total_res + temp
