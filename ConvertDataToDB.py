@@ -140,7 +140,7 @@ def qol_to_db(data_type):
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
-    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas_041116.xlsx')['Ark2']
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx')['Ark2']
 
     k = 0
     for row in data:
@@ -149,6 +149,8 @@ def qol_to_db(data_type):
             continue
         if data_type == "extra" and k < 53:
             continue
+        if data_type == "siste_runde" and k < 84:
+            continue
         elif k < 4:
             continue
 
@@ -156,7 +158,7 @@ def qol_to_db(data_type):
             idx1 = 1
             idx2 = 0
             idx3 = 7
-        elif data_type == "lgg" or data_type == "extra":
+        elif data_type == "lgg" or data_type == "extra" or data_type == "siste_runde":
             idx1 = 12
             idx2 = 11
             idx3 = 18
@@ -197,7 +199,7 @@ def karnofsky_to_db():
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
-    data = pyexcel_xlsx.get_data('/mnt/dokumneter/data/Segmentations/Indexverdier_atlas_041116.xlsx')['Ark3']
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx')['Ark3']
     try:
         conn.execute("alter table QualityOfLife add column 'karnofsky' 'INTEGER'")
     except sqlite3.OperationalError:
@@ -211,6 +213,10 @@ def karnofsky_to_db():
         if k < 3:
             continue
         print(row)
+        try:
+            float(row[0])
+        except ValueError:
+            continue
 
         cursor.execute('''UPDATE QualityOfLife SET karnofsky = ? WHERE pid = ?''',
                        (row[1], row[0]))
@@ -444,7 +450,32 @@ def add_survival_days():
 
     cursor.close()
     conn.close()
-
+    
+    
+    def add_study():
+        from openpyxl import load_workbook
+        wb = load_workbook('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx', data_only=True)
+        
+        conn = sqlite3.connect(util.DB_PATH)
+        cursor = conn.cursor()
+        try:
+            conn.execute("alter table Patient add column 'study_id' 'TEXT'")
+        except sqlite3.OperationalError:
+            pass
+        sh = wb['Ark']
+        column = "A"
+        for row in range(3, 223):
+            cell_name = "{}{}".format(column, row)
+            color = sh[cell_name].fill.start_color.index #Green Color
+            value = sh[cell_name].value
+            print(value, color)
+            if value and color == '00000000':
+                try:
+                    pid = float(value)
+                except ValueError:
+                    continue
+                cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
+                           ("qol_grade3,4", pid))
 
 if __name__ == "__main__":
     util.setup_paths()
@@ -481,8 +512,6 @@ if __name__ == "__main__":
 #    manual_add_to_db()
 
     convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
-
     convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
-
-
+    add_study()
     vacuum_db()
