@@ -475,7 +475,7 @@ def add_study():
             print(pid, color)
             cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
                            ("qol_grade3,4", pid))
-           conn.commit()
+            conn.commit()
 
     cursor.close()
     conn.close()
