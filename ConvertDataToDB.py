@@ -220,7 +220,7 @@ def karnofsky_to_db():
     conn.close()
 
 
-def convert_data(path, glioma_grade, update=False):
+def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
     """Convert gbm data """
     # pylint: disable= too-many-locals, too-many-branches, too-many-statements
     conn = sqlite3.connect(util.DB_PATH)
@@ -228,7 +228,7 @@ def convert_data(path, glioma_grade, update=False):
 
     log = ""
 
-    for case_id in range(2000):
+    for case_id in case_ids:
         data_path = path + str(case_id) + "/"
         if not os.path.exists(data_path):
             continue
@@ -392,6 +392,7 @@ def manual_add_to_db():
     image_type = 'pre'
     volume_labels = ['/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso-label.nrrd']
     volume = '/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso.nrrd'
+
     glioma_grade = 3
     convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, glioma_grade)
 
@@ -476,6 +477,12 @@ if __name__ == "__main__":
 
 #    manual_add_to_db()
 
-    add_survival_days()
+#    add_survival_days()
+#    manual_add_to_db()
+
+    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
+
+    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
+
 
     vacuum_db()
