@@ -450,6 +450,12 @@ def save_transform_to_database(imgs):
     conn = sqlite3.connect(util.DB_PATH, timeout=600)
     conn.text_factory = str
 
+    try:
+        conn.execute("alter table Images add column 'registration_date' 'TEXT'")
+    except sqlite3.OperationalError:
+        pass
+
+
     for img in imgs:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
@@ -474,6 +480,9 @@ def save_transform_to_database(imgs):
                                (transform_paths, img.image_id))
         cursor2 = conn.execute('''UPDATE Images SET fixed_image = ? WHERE id = ?''',
                                (img.fixed_image, img.image_id))
+
+        cursor2 = conn.execute('''UPDATE Images SET registration_date = ? WHERE id = ?''',
+                               (datetime.datetime.now().strftime("%Y-%m-%d"), img.image_id))
 
         folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/"
         if os.path.exists(folder):

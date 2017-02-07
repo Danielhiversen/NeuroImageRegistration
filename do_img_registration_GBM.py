@@ -17,9 +17,11 @@ def find_images():
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
-    cursor = conn.execute('''SELECT pid from Patient''')
+    cursor = conn.execute('''SELECT pid from Patient where study_id = ?''', ("qol_grade3,4", ))
     ids = []
+    k = 0
     for row in cursor:
+        k += 1
         cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
         for _id in cursor2:
             ids.append(_id[0])
@@ -27,7 +29,7 @@ def find_images():
 
     cursor.close()
     conn.close()
-    print(ids)
+    print(ids, k)
     return ids
 
 
@@ -37,7 +39,6 @@ if __name__ == "__main__":
     util.setup("GBM/")
 
     moving_datasets_ids = find_images()
-
-    data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN)
+    #data_transforms = image_registration.get_transforms(moving_datasets_ids, image_registration.SYN)
 
 #    image_registration.save_transform_to_database(data_transforms)

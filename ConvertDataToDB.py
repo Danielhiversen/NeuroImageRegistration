@@ -407,6 +407,23 @@ def manual_add_to_db():
     conn.close()
 
 
+def manual_add_to_db2():
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    pid = 1061
+    image_type = 'pre'
+    volume_labels = ['/home/dahoiv/disk/data/Segmentations/Data_HansKristian_LGG/LGG_070217/1061_pre/1061_preY-label.nrrd']
+    volume = '/home/dahoiv/disk/data/Segmentations/Data_HansKristian_LGG/LGG_070217/1061_pre/1061_preY.nrrd'
+
+    glioma_grade = 2
+    convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, glioma_grade)
+
+    cursor.close()
+    conn.commit()
+    conn.close()
+
 def add_survival_days():
     """add survival_days to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -522,5 +539,9 @@ if __name__ == "__main__":
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
 #    add_study()
-    karnofsky_to_db()
+#    karnofsky_to_db()
+#    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True, case_ids=[1424])
+
+    manual_add_to_db2()
+
     vacuum_db()
