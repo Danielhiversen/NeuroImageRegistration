@@ -48,5 +48,5 @@ if __name__ == "__main__":
     moving_datasets_ids = find_images()
     print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
-                                                        image_registration.SYN,
+                                                        image_registration.AFFINE,
                                                         save_to_db=True)

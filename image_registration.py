@@ -455,15 +455,15 @@ def save_transform_to_database(imgs):
         pid = cursor.fetchone()[0]
 
         folder = util.DATA_FOLDER + str(pid) + "/registration_transforms/"
-        util.mkdir_p(folder)
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
+        os.makedirs(folder)
 
         transform_paths = ""
         print(img.get_transforms())
         for _transform in img.get_transforms():
             print(_transform)
             dst_file = folder + util.get_basename(_transform) + '.h5.gz'
-            if os.path.exists(dst_file):
-                os.remove(dst_file)
             with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
             transform_paths += str(pid) + "/registration_transforms/" +\
@@ -476,7 +476,9 @@ def save_transform_to_database(imgs):
                                (img.fixed_image, img.image_id))
 
         folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/"
-        util.mkdir_p(folder)
+        if os.path.exists(folder):
+            shutil.rmtree(folder)
+        os.makedirs(folder)
         vol_path = util.compress_vol(img.processed_filepath)
         shutil.copy(vol_path, folder)
 
