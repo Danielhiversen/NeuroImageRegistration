@@ -461,21 +461,25 @@ def add_study():
         conn.execute("alter table Patient add column 'study_id' 'TEXT'")
     except sqlite3.OperationalError:
         pass
-    sheet = load_workbook('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx', data_only=True)['Ark3']
-    column = "A"
-    for row in range(3, 223):
-        cell_name = "{}{}".format(column, row)
-        color = sheet[cell_name].fill.start_color.index
-        value = sheet[cell_name].value
-        if value and color == '00000000':
-            try:
-                pid = int(value)
-            except ValueError:
-                continue
-            print(pid, color)
-            cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
-                           ("qol_grade3,4", pid))
-            conn.commit()
+    sheet = load_workbook('/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/Indexverdier_atlas_250117.xlsx', data_only=True)['Ark2']
+    columns = ["A", "L"]
+    k = 0
+    for column in columns:
+        for row in range(3, 223):
+            cell_name = "{}{}".format(column, row)
+            color = sheet[cell_name].fill.start_color.index
+            value = sheet[cell_name].value
+            if value and color == '00000000':
+                try:
+                    pid = int(value)
+                except ValueError:
+                    continue
+                print(pid, color)
+                k += 1
+                print(k)
+                cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
+                               ("qol_grade3,4", pid))
+                conn.commit()
 
     cursor.close()
     conn.close()
@@ -518,5 +522,5 @@ if __name__ == "__main__":
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
     add_study()
+   # karnofsky_to_db()
     vacuum_db()
-    karnofsky_to_db()
