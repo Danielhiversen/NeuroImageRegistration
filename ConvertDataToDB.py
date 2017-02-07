@@ -158,7 +158,7 @@ def qol_to_db(data_type):
             idx1 = 1
             idx2 = 0
             idx3 = 7
-        elif data_type == "lgg" or data_type == "extra" or data_type == "siste_runde":
+        elif data_type in ["lgg", "extra", "siste_runde"]:
             idx1 = 12
             idx2 = 11
             idx3 = 18
@@ -521,6 +521,6 @@ if __name__ == "__main__":
 
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True)
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=False, case_ids=range(2000, 20000))
-    add_study()
-   # karnofsky_to_db()
+#    add_study()
+    karnofsky_to_db()
     vacuum_db()
