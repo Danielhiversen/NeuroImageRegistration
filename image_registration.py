@@ -50,8 +50,8 @@ import numpy as np
 from img_data import img_data
 import util
 
-MULTITHREAD = 1  # 1,23,4....., "max"
-# MULTITHREAD = "max"
+# MULTITHREAD = 1  # 1,23,4....., "max"
+MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
