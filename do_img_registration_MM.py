@@ -26,10 +26,10 @@ def find_images():
             _id = _id[0]
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
-            _img_filepath = cursor3.fetchone()[0]
-            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
-                cursor3.close()
-                continue
+#            _img_filepath = cursor3.fetchone()[0]
+#            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
+#                cursor3.close()
+#                continue
             ids.append(_id)
             cursor3.close()
 
