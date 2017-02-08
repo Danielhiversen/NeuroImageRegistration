@@ -299,29 +299,32 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.use_histogram_matching = [True]
         reg.inputs.metric_weight = [1.0]
     elif reg_type == AFFINE:
-        reg.inputs.transforms = ['Rigid', 'Affine']
-        reg.inputs.metric = ['MI', ['MI', 'CC']]
-        reg.inputs.metric_weight = [1] + [[0.5, 0.5]]
-        reg.inputs.radius_or_number_of_bins = [32, [32, 4]]
-        reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.sampling_strategy = ['Regular'] + [[None, None]]
-        reg.inputs.sampling_percentage = [0.5] + [[None, None]]
+        reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
+        reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]
+        reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
+        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 4]]
+        reg.inputs.convergence_window_size = [5, 5, 5]
+        reg.inputs.sampling_strategy = ['Regular'] * 2 + [[None, None]]
+        reg.inputs.sampling_percentage = [0.5] * 2 + [[None, None]]
         if reg.inputs.initial_moving_transform_com:
             reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
-                                                [10000, 10000, 1000, 1000, 1000]])
-            reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0]]
+                                                [10000, 10000, 1000, 1000, 1000],
+                                                [100, 75, 75, 75]])
+            reg.inputs.shrink_factors = [[9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [5, 3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [4, 2, 1, 0]]
         else:
             reg.inputs.number_of_iterations = ([[5000, 5000, 1000, 500],
-                                                [5000, 5000, 1000, 500]])
-            reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1]]
-            reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0]]
-        reg.inputs.convergence_threshold = [1.e-6] + [-0.01]
-        reg.inputs.sigma_units = ['vox']*2
+                                                [5000, 5000, 1000, 500],
+                                                [100, 90, 75]])
+            reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [4, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [1, 0.5, 0]]
+        reg.inputs.convergence_threshold = [1.e-6] * 2 + [-0.01]
+        reg.inputs.sigma_units = ['vox']*3
         reg.inputs.transform_parameters = [(0.25,),
-                                           (0.25,)]
-        reg.inputs.use_estimate_learning_rate_once = [True] * 2
-        reg.inputs.use_histogram_matching = [False, True]
+                                           (0.25,),
+                                           (0.2, 3.0, 0.0)]
+        reg.inputs.use_estimate_learning_rate_once = [True] * 3
+        reg.inputs.use_histogram_matching = [False, False, True]
     elif reg_type == SYN:
         reg.inputs.transforms = ['Rigid', 'Affine', 'SyN']
         reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]
