@@ -300,12 +300,12 @@ def registration(moving_img, fixed, reg_type):
         reg.inputs.metric_weight = [1.0]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
-        reg.inputs.metric = ['MI', 'MI', ['MI', 'CC']]
-        reg.inputs.metric_weight = [1] * 2 + [[0.5, 0.5]]
-        reg.inputs.radius_or_number_of_bins = [32, 32, [32, 4]]
+        reg.inputs.metric = ['MI', 'MI', 'MI']
+        reg.inputs.metric_weight = [1] * 2 + [1]
+        reg.inputs.radius_or_number_of_bins = [32, 32, 32]
         reg.inputs.convergence_window_size = [5, 5, 5]
-        reg.inputs.sampling_strategy = ['Regular'] * 2 + [[None, None]]
-        reg.inputs.sampling_percentage = [0.5] * 2 + [[None, None]]
+        reg.inputs.sampling_strategy = ['Regular'] * 2 + [None]
+        reg.inputs.sampling_percentage = [0.5] * 2 + [None]
         if reg.inputs.initial_moving_transform_com:
             reg.inputs.number_of_iterations = ([[10000, 10000, 1000, 1000, 1000],
                                                 [10000, 10000, 1000, 1000, 1000],
@@ -318,7 +318,7 @@ def registration(moving_img, fixed, reg_type):
                                                 [75, 50]])
             reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [2, 1]]
             reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [0.5, 0]]
-        reg.inputs.convergence_threshold = [1.e-6] * 2 + [-0.01]
+        reg.inputs.convergence_threshold = [1.e-6] * 3
         reg.inputs.sigma_units = ['vox']*3
         reg.inputs.transform_parameters = [(0.25,),
                                            (0.25,),
