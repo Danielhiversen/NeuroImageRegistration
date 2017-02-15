@@ -198,6 +198,44 @@ def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
 
     return (image_id, qol)
 
+def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
+    """ Get image id and qol """
+    conn = sqlite3.connect(DB_PATH, timeout=120)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from Patient''')
+    if not glioma_grades:
+        glioma_grades = [2, 3, 4]
+
+    image_id = []
+    survival_days = []
+    for pid in cursor:
+        pid = pid[0]
+        if exclude_pid and pid in exclude_pid:
+            continue
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
+        if not _id:
+            print("---No data for ", pid)
+            continue
+        _id = _id[0]
+        _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
+                                     (pid, )).fetchone()
+        if not _glioma_grade:
+            print("No glioma_grade for ", pid)
+            continue
+        if _glioma_grade[0] not in glioma_grades:
+            continue
+
+        _survival_days = conn.execute("SELECT survival_days from Patient where pid = ?",
+                                      (pid, )).fetchone()[0]
+        if _survival_days is None:
+            print("No survival_days data for ", _id)
+            continue
+        survival_days.extend([_survival_days])
+        image_id.extend([_id])
+    cursor.close()
+    conn.close()
+
+    return (image_id, survival_days)
 
 def find_seg_images(moving_image_id):
     """ Find segmentation images"""
@@ -395,7 +433,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
         _id = _id + 1
     shape = img.get_data().shape
 
-    res = permutation_test(total, val, shape, 'less', False)
+    res = permutation_test(total, val, shape, 'less')
     path = folder + 'vlsm_' + label + '.nii'
     path = path.replace('label', 'tumor')
     img = nib.load(label_paths[0])
@@ -406,48 +444,43 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
         return
 
     queue = multiprocessing.Queue()
-    total_res = np.ones((shape[0], shape[1], shape[2]))
     jobs = []
+    total_res = np.ones((shape[0], shape[1], shape[2]))
 
-    def _help_permutation_test(index, total, values, shape, alternative, shuffle):
-        permutation_res = permutation_test(total, values, shape, alternative, shuffle)
-        print(index)
+    def _help_permutation_test(index, total, values, shape, alternative):
+        permutation_res = permutation_test(total, values, shape, alternative)['statistic']
         queue.put((index, permutation_res))
-
-    def _process_res(total_res):
-        (_index, permutation_res) = queue.get()
-        jobs[_index].join()
-        temp = np.zeros((shape[0], shape[1], shape[2]))
-        idx = permutation_res > res['statistic']
-        temp[idx] = 1.0 / (n_permutations + 1)
-        total_res[(idx and (total_res == 1))] = 0
-        return total_res + temp
 
     processes = multiprocessing.cpu_count()
     nr_of_jobs = 0
     finished_jobs = 0
     index = 0
-    while index < n_permutations:
-        if nr_of_jobs < processes:
+    values = list(val)
+    while finished_jobs < n_permutations:
+        if nr_of_jobs < processes and index < n_permutations:
             nr_of_jobs = nr_of_jobs + 1
+            # pylint: disable= no-member
+            np.random.shuffle(values)
             process = multiprocessing.Process(target=_help_permutation_test,
-                                              args=(index, total, val, shape, None, True))
+                                              args=[index, total, values, shape, None])
             process.start()
             jobs.append(process)
             index = index + 1
+
         if not queue.empty():
+            (_index, permutation_res) = queue.get()
+            jobs[_index].join()
+
+            temp = np.zeros((shape[0], shape[1], shape[2]))
+            idx = permutation_res > res['statistic']
+            temp[idx] = 1.0 / (n_permutations + 1)
+            total_res[(idx & (total_res == 1))] = 0
+            total_res += temp
+
             nr_of_jobs = nr_of_jobs - 1
-            total_res = _process_res(total_res)
             finished_jobs = finished_jobs + 1
-
+            print(finished_jobs / n_permutations)
         if not nr_of_jobs < processes and queue.empty():
-            time.sleep(2)
-
-    while finished_jobs < n_permutations:
-        if not queue.empty():
-            total_res = _process_res(total_res)
-            finished_jobs = finished_jobs + 1
-        else:
             time.sleep(2)
 
     path = folder + 'vlsm_permutations_' + label + '.nii'
@@ -457,18 +490,15 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     result_img.to_filename(path)
     generate_image(path, TEMPLATE_VOLUME)
 
-
-def permutation_test(total, values, shape, alternative, shuffle):
+def permutation_test(total, values, shape, alternative):
     """Do permutation test."""
     # pylint: disable= too-many-locals, invalid-name
     start_time = datetime.datetime.now()
-    if shuffle:
-        # pylint: disable= no-member
-        np.random.shuffle(values)
     res = {}
     if alternative is not None:
         res['p_val'] = np.zeros(shape) + 1
-    res['statistic'] = np.zeros(shape) + 1
+    res['statistic'] = np.zeros(shape)
+
     for key, vox_ids in total.iteritems():
         if len(vox_ids) < 2:
             continue
@@ -485,8 +515,7 @@ def permutation_test(total, values, shape, alternative, shuffle):
         res['statistic'][k, l, m] = statistic
 
     print(datetime.datetime.now() - start_time)
-    if alternative is None:
-        return res['statistic']
+
     return res
 
 
