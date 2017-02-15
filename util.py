@@ -198,6 +198,7 @@ def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
 
     return (image_id, qol)
 
+
 def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
@@ -236,6 +237,7 @@ def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     conn.close()
 
     return (image_id, survival_days)
+
 
 def find_seg_images(moving_image_id):
     """ Find segmentation images"""
@@ -489,6 +491,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     result_img = nib.Nifti1Image(total_res, img.affine)
     result_img.to_filename(path)
     generate_image(path, TEMPLATE_VOLUME)
+
 
 def permutation_test(total, values, shape, alternative):
     """Do permutation test."""

@@ -79,4 +79,4 @@ if __name__ == "__main__":
     process_vlsm(folder, glioma_grades)
     print("Total runtime")
     print(datetime.datetime.now() - start_time)
-    #process(folder, glioma_grades)
+    process(folder, glioma_grades)

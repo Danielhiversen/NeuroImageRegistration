@@ -424,6 +424,7 @@ def manual_add_to_db2():
     conn.commit()
     conn.close()
 
+
 def add_survival_days():
     """add survival_days to database """
     conn = sqlite3.connect(util.DB_PATH)
