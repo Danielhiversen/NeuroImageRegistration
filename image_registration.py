@@ -458,7 +458,6 @@ def save_transform_to_database(imgs):
     except sqlite3.OperationalError:
         pass
 
-
     for img in imgs:
         cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
         pid = cursor.fetchone()[0]
