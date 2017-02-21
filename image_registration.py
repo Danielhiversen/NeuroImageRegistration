@@ -39,7 +39,6 @@ from os.path import basename
 import datetime
 import sqlite3
 import shutil
-from builtins import map
 from builtins import str
 from nilearn.image import resample_img
 import nipype.interfaces.ants as ants
@@ -50,8 +49,8 @@ import numpy as np
 from img_data import img_data
 import util
 
-# MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
+MULTITHREAD = 1  # 1,23,4....., "max"
+# MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -384,10 +383,10 @@ def process_dataset(args):
     print(moving_image_id)
 
     for k in range(3):
+        img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+        img = pre_process(img)
         try:
             start_time = datetime.datetime.now()
-            img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-            img = pre_process(img)
 
             print("\n\n\n\n -- Run time preprocess: ")
             print(datetime.datetime.now() - start_time)
@@ -420,9 +419,9 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
         pool.close()
         pool.join()
     else:
-        result = list(map(process_dataset_func, zip(moving_dataset_image_ids,
-                                                    [reg_type]*len(moving_dataset_image_ids),
-                                                    [save_to_db]*len(moving_dataset_image_ids))))
+        result = []
+        for moving_image_id in moving_dataset_image_ids:
+            result.append(process_dataset_func((moving_image_id, reg_type, save_to_db)))
     return result
 
 

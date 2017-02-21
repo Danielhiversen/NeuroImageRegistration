@@ -38,7 +38,12 @@ class img_data(object):
         conn = sqlite3.connect(self.db_path)
         conn.text_factory = str
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (self.image_id,))
-        self._img_filepath = self.data_path + cursor.fetchone()[0]
+        path = cursor.fetchone()
+        if path is None:
+            print("Could not find data for " + str(self.image_id))
+            self._img_filepath = ""
+        else:
+            self._img_filepath = self.data_path + path[0]
         cursor.close()
         conn.close()
 
