@@ -59,7 +59,7 @@ SYN = 'syn'
 BE_METHOD = 2
 
 
-def pre_process(img, do_bet=True):
+def pre_process(img, do_bet=True, slice_size=1):
     # pylint: disable= too-many-statements, too-many-locals
     """ Pre process the data"""
 
@@ -93,7 +93,7 @@ def pre_process(img, do_bet=True):
     temp_img.to_filename(norm_file)
 
     # resample volume to 1 mm slices
-    target_affine_3x3 = np.eye(3) * 1
+    target_affine_3x3 = np.eye(3) * slice_size
     img_3d_affine = resample_img(norm_file, target_affine=target_affine_3x3)
     nib.save(img_3d_affine, resampled_file)
 
