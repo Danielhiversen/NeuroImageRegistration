@@ -69,7 +69,7 @@ def setup_paths(data="glioma"):
 
     if data == 'glioma':
         if hostname == 'dahoiv-Alienware-15':
-            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database3/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database4/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':

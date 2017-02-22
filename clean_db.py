@@ -42,4 +42,5 @@ if __name__ == "__main__":
             else:
                 all_filepaths.remove(filepath)
 
-    print("Delete from db", all_filepaths)
+    if len(all_filepaths) > 0:
+        print("Delete from db", all_filepaths)

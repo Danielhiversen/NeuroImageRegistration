@@ -383,11 +383,10 @@ def process_dataset(args):
     print(moving_image_id)
 
     for k in range(3):
-        img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-        img = pre_process(img)
         try:
             start_time = datetime.datetime.now()
-
+            img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+            img = pre_process(img)
             print("\n\n\n\n -- Run time preprocess: ")
             print(datetime.datetime.now() - start_time)
 

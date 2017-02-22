@@ -425,6 +425,24 @@ def manual_add_to_db2():
     conn.close()
 
 
+def manual_add_to_db3():
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    pid = 16073
+    image_type = 'pre'
+    volume_labels = ['/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16073/68 t1_mprage_sag_p2_iso-_ERIK_label.nrrd']
+    volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16073/68 t1_mprage_sag_p2_iso.3.12.2.1107.5.2.43.66087.nrrd'
+
+    glioma_grade = 34
+    convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, glioma_grade)
+
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+
 def add_survival_days():
     """add survival_days to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -543,6 +561,6 @@ if __name__ == "__main__":
 #    karnofsky_to_db()
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True, case_ids=[1424])
 
-    manual_add_to_db2()
+    manual_add_to_db3()
 
     vacuum_db()
