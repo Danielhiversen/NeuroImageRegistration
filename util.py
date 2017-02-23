@@ -73,7 +73,7 @@ def setup_paths(data="glioma"):
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
-            DATA_FOLDER = "/media/ingerid/data/daniel/database3/"
+            DATA_FOLDER = "/media/ingerid/data/daniel/database4/"
         else:
             print("Unkown data " + data)
             raise Exception
