@@ -79,7 +79,7 @@ def setup_paths(data="glioma"):
             raise Exception
     elif data == 'MolekylareMarkorer':
         if hostname == 'dahoiv-Alienware-15':
-            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM3/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
@@ -691,6 +691,7 @@ def write_fcsv(filepath_out, tag_data, color):
     fscv_data += '# visibility = 1' + os.linesep
     fscv_data += '# color = ' + color + os.linesep
     fscv_data += '# selectedColor = ' + color + os.linesep
+    fscv_data += '# locked = 1'
     fscv_data += '# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID'
     fscv_data += os.linesep
 
