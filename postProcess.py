@@ -56,7 +56,7 @@ def process_vlsm(folder, glioma_grades):
             print(label)
             if label == 'img':
                 continue
-            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=150)
+            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=5000)
 
 
 if __name__ == "__main__":
@@ -75,9 +75,9 @@ if __name__ == "__main__":
 
     folder = "RES/"
     glioma_grades = [3, 4]
+    process(folder, glioma_grades)
     start_time = datetime.datetime.now()
     process_vlsm(folder, glioma_grades)
     print("Total runtime")
     print(datetime.datetime.now() - start_time)
-    process(folder, glioma_grades)
     
