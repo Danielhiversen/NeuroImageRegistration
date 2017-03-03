@@ -262,7 +262,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
 
 
 def registration(moving_img, fixed, reg_type):
-    # pylint: disable= too-many-statements
+    # pylint: disable= too-many-statements, too-many-branches
     """Image2Image registration """
     reg = ants.Registration()
 
