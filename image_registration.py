@@ -59,10 +59,9 @@ SYN = 'syn'
 BE_METHOD = 2
 
 
-def pre_process(img, do_bet=True, slice_size=1):
+def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
     # pylint: disable= too-many-statements, too-many-locals
     """ Pre process the data"""
-
     path = img.temp_data_path
 
     input_file = img.img_filepath
@@ -119,12 +118,11 @@ def pre_process(img, do_bet=True, slice_size=1):
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000],
-                                            [10000, 10000, 10000, 10000]])
-
+        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000, 5000, 5000],
+                                            [10000, 10000, 5000, 5000]])
+        reg.inputs.shrink_factors = [[19, 16, 12, 9, 5, 3, 1], [9, 5, 3, 1]]
+        reg.inputs.smoothing_sigmas = [[10, 10, 10, 8, 4, 1, 0], [8, 4, 1, 0]]
         reg.inputs.convergence_threshold = [1.e-6]*2
-        reg.inputs.shrink_factors = [[9, 5, 3, 1], [9, 5, 3, 1]]
-        reg.inputs.smoothing_sigmas = [[8, 4, 1, 0], [8, 4, 1, 0]]
         reg.inputs.transform_parameters = [(0.25,), (0.25,)]
         reg.inputs.sigma_units = ['vox']*2
         reg.inputs.use_estimate_learning_rate_once = [True, True]
@@ -216,7 +214,10 @@ def pre_process(img, do_bet=True, slice_size=1):
         reg.inputs.num_threads = 2
         reg.inputs.initial_moving_transform_com = True
 
-        reg.inputs.transforms = ['Rigid', 'Affine']
+        if reg_type == RIGID:
+            reg.inputs.transforms = ['Rigid', 'Rigid']
+        else:
+            reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
@@ -286,17 +287,32 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.moving_image = fixed
     reg.inputs.num_threads = 2
     if reg_type == RIGID:
-        reg.inputs.transforms = ['Rigid']
-        reg.inputs.metric = ['MI']
-        reg.inputs.radius_or_number_of_bins = [32]
-        reg.inputs.convergence_window_size = [5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000]])
-        reg.inputs.shrink_factors = [[5, 4, 3, 2, 1]]
-        reg.inputs.smoothing_sigmas = [[4, 3, 2, 1, 0]]
-        reg.inputs.sigma_units = ['vox']
-        reg.inputs.transform_parameters = [(0.25,)]
-        reg.inputs.use_histogram_matching = [True]
-        reg.inputs.metric_weight = [1.0]
+        reg.inputs.transforms = ['Rigid', 'Rigid', 'Rigid']
+        reg.inputs.metric = ['MI', 'MI', 'MI']
+        reg.inputs.metric_weight = [1] * 2 + [1]
+        reg.inputs.radius_or_number_of_bins = [32, 32, 32]
+        reg.inputs.convergence_window_size = [5, 5, 5]
+        reg.inputs.sampling_strategy = ['Regular'] * 2 + [None]
+        reg.inputs.sampling_percentage = [0.5] * 2 + [None]
+        if reg.inputs.initial_moving_transform_com:
+            reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 1000, 1000, 1000],
+                                                [10000, 10000, 1000, 1000, 1000],
+                                                [75, 50, 50]])
+            reg.inputs.shrink_factors = [[12, 9, 5, 3, 2, 1], [5, 4, 3, 2, 1], [3, 2, 1]]
+            reg.inputs.smoothing_sigmas = [[9, 8, 4, 2, 1, 0], [4, 3, 2, 1, 0], [2, 1, 0]]
+        else:
+            reg.inputs.number_of_iterations = ([[5000, 5000, 1000, 500],
+                                                [5000, 5000, 1000, 500],
+                                                [75, 50]])
+            reg.inputs.shrink_factors = [[7, 5, 2, 1], [4, 3, 2, 1], [2, 1]]
+            reg.inputs.smoothing_sigmas = [[6, 4, 1, 0], [3, 2, 1, 0], [0.5, 0]]
+        reg.inputs.convergence_threshold = [1.e-6] * 3
+        reg.inputs.sigma_units = ['vox']*3
+        reg.inputs.transform_parameters = [(0.25,),
+                                           (0.25,),
+                                           (0.25,)]
+        reg.inputs.use_estimate_learning_rate_once = [True] * 3
+        reg.inputs.use_histogram_matching = [False, False, True]
     elif reg_type == AFFINE:
         reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
         reg.inputs.metric = ['MI', 'MI', 'MI']
@@ -365,6 +381,7 @@ def registration(moving_img, fixed, reg_type):
         return moving_img
     print("starting registration")
     start_time = datetime.datetime.now()
+    print(reg.cmdline)
     reg.run()
     print("Finished registration: ")
     print(datetime.datetime.now() - start_time)
@@ -386,7 +403,7 @@ def process_dataset(args):
         try:
             start_time = datetime.datetime.now()
             img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-            img = pre_process(img)
+            img = pre_process(img, reg_type=reg_type)
             print("\n\n\n\n -- Run time preprocess: ")
             print(datetime.datetime.now() - start_time)
 
