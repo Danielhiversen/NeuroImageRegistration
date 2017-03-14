@@ -439,7 +439,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
             try:
                 ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
                 util.LOGGER.info('Crashed SLURM_JOB_CPUS_PER_NODE ' + str(ncpus))
-                pool = Pool(30)
+                pool = Pool(20)
             except KeyError:
                 pool = Pool()
         else:
