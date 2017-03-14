@@ -6,6 +6,7 @@ Created on Wed Apr 20 15:02:02 2016
 @author: dahoiv
 """
 from __future__ import print_function
+import datetime
 import os
 import sqlite3
 
@@ -36,9 +37,11 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("GBM/")
+    util.setup("GBM_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/")
 
     moving_datasets_ids = find_images()
+    print(len(moving_datasets_ids))
+
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
                                                         image_registration.SYN,
                                                         save_to_db=True)

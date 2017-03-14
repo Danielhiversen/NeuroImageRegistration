@@ -59,7 +59,7 @@ SYN = 'syn'
 BE_METHOD = 2
 
 
-def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
+def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     # pylint: disable= too-many-statements, too-many-locals
     """ Pre process the data"""
     path = img.temp_data_path
@@ -100,7 +100,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
         img.pre_processed_filepath = resampled_file
         return img
 
-    if BE_METHOD == 0:
+    if be_method == 0:
         img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
 
         reg = ants.Registration()
@@ -113,12 +113,15 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
         reg.inputs.num_threads = 2
         reg.inputs.initial_moving_transform_com = True
 
-        reg.inputs.transforms = ['Rigid', 'Affine']
+        if reg_type == RIGID:
+            reg.inputs.transforms = ['Rigid', 'Rigid']
+        else:
+            reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
         reg.inputs.convergence_window_size = [5, 5]
-        reg.inputs.number_of_iterations = ([[10000, 10000, 10000, 10000, 10000, 5000, 5000],
+        reg.inputs.number_of_iterations = ([[15000, 12000, 10000, 10000, 10000, 5000, 5000],
                                             [10000, 10000, 5000, 5000]])
         reg.inputs.shrink_factors = [[19, 16, 12, 9, 5, 3, 1], [9, 5, 3, 1]]
         reg.inputs.smoothing_sigmas = [[10, 10, 10, 8, 4, 1, 0], [8, 4, 1, 0]]
@@ -147,7 +150,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
         mult.run()
 
         util.generate_image(img.pre_processed_filepath, reg_volume)
-    elif BE_METHOD == 1:
+    elif be_method == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
         bet = fsl.BET(command="fsl5.0-bet")
         bet.inputs.in_file = resampled_file
@@ -171,7 +174,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
 
         bet.run()
         util.generate_image(img.pre_processed_filepath, resampled_file)
-    elif BE_METHOD == 2:
+    elif be_method == 2:
         name = util.get_basename(resampled_file) + "_bet"
 
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
@@ -195,6 +198,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
         bet.inputs.out_file = path + name + '.nii.gz'
         print("starting bet registration")
         start_time = datetime.datetime.now()
+        print(bet.cmdline)
         if not os.path.exists(bet.inputs.out_file):
             bet.run()
         print("Finished bet registration 0: ")
@@ -256,6 +260,9 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None):
         mult.run()
 
         util.generate_image(img.pre_processed_filepath, reg_volume)
+    else:
+        print("\n\n INVALID BE METHOD!!!!")
+
 
     print("---BET", img.pre_processed_filepath)
     return img
@@ -396,14 +403,14 @@ def registration(moving_img, fixed, reg_type):
 
 def process_dataset(args):
     """ pre process and registrate volume"""
-    (moving_image_id, reg_type, save_to_db) = args
+    (moving_image_id, reg_type, save_to_db, be_method) = args
     print(moving_image_id)
 
     for k in range(3):
         try:
             start_time = datetime.datetime.now()
             img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-            img = pre_process(img, reg_type=reg_type)
+            img = pre_process(img, reg_type=reg_type, be_method=be_method)
             print("\n\n\n\n -- Run time preprocess: ")
             print(datetime.datetime.now() - start_time)
 
@@ -420,7 +427,8 @@ def process_dataset(args):
 
 
 def get_transforms(moving_dataset_image_ids, reg_type=None,
-                   process_dataset_func=process_dataset, save_to_db=False):
+                   process_dataset_func=process_dataset, save_to_db=False,
+                   be_method=BE_METHOD):
     """Calculate transforms """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
@@ -431,13 +439,14 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
         result = pool.map_async(process_dataset_func,
                                 zip(moving_dataset_image_ids,
                                     [reg_type]*len(moving_dataset_image_ids),
-                                    [save_to_db]*len(moving_dataset_image_ids))).get(999999999)
+                                    [save_to_db]*len(moving_dataset_image_ids),
+                                    [be_method]*len(moving_dataset_image_ids))).get(999999999)
         pool.close()
         pool.join()
     else:
         result = []
         for moving_image_id in moving_dataset_image_ids:
-            result.append(process_dataset_func((moving_image_id, reg_type, save_to_db)))
+            result.append(process_dataset_func((moving_image_id, reg_type, save_to_db, be_method)))
     return result
 
 

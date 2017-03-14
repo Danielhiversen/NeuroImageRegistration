@@ -13,7 +13,7 @@ import image_registration
 import util
 
 
-def find_images():
+def find_images(exclude=None):
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
@@ -30,6 +30,8 @@ def find_images():
 #            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
 #                cursor3.close()
 #                continue
+            if exclude and _id in exclude:
+                continue
             ids.append(_id)
             cursor3.close()
 
@@ -45,8 +47,14 @@ if __name__ == "__main__":
     os.nice(17)
     util.setup("MM_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/", "MolekylareMarkorer")
 
-    moving_datasets_ids = find_images()
-    print(moving_datasets_ids, len(moving_datasets_ids))
-    data_transforms = image_registration.get_transforms(moving_datasets_ids,
-                                                        image_registration.AFFINE,
-                                                        save_to_db=True)
+    moving_datasets_ids_affine = [7, 39, 31]
+#    moving_datasets_ids = find_images(exclude=moving_datasets_ids_affine)
+#    print(moving_datasets_ids, len(moving_datasets_ids))
+#    data_transforms = image_registration.get_transforms(moving_datasets_ids,
+#                                                        image_registration.SYN,
+#                                                        save_to_db=True)
+
+    print(moving_datasets_ids_affine, len(moving_datasets_ids_affine))
+    data_transforms = image_registration.get_transforms(moving_datasets_ids_affine,
+                                                        image_registration.RIGID,
+                                                        save_to_db=True, be_method=0)

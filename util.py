@@ -56,7 +56,7 @@ def setup_paths(data="glioma"):
     global DATA_FOLDER, DB_PATH
 
     hostname = os.uname()[1]
-    if hostname == 'dahoiv-Alienware-15':
+    if hostname == 'dddd':
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
     elif hostname == 'dahoiv-Precision-M6500':
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
@@ -68,7 +68,7 @@ def setup_paths(data="glioma"):
         raise Exception
 
     if data == 'glioma':
-        if hostname == 'dahoiv-Alienware-15':
+        if hostname == 'dddd':
             DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database4/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
