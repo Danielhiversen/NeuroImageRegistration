@@ -35,7 +35,7 @@ def find_images():
 
 
 # pylint: disable= invalid-name
-if __name__ == "__main__": # if 'unity' in os.uname()[1]:
+if __name__ == "__main__":  # if 'unity' in os.uname()[1]:
     os.nice(19)
     util.setup("GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
 
@@ -57,7 +57,7 @@ if __name__ == "__main__": # if 'unity' in os.uname()[1]:
         else:
             moving_datasets_ids = moving_datasets_ids[start_idx:]
 
-    print(moving_datasets_ids, len(moving_datasets_ids))
+    util.LOGGER.info(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
                                                         image_registration.SYN,
                                                         save_to_db=True)
