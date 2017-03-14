@@ -267,7 +267,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         util.generate_image(img.pre_processed_filepath, reg_volume)
     else:
-        util.LOGGER.error("\n\n INVALID BE METHOD!!!!")
+        util.LOGGER.error(" INVALID BE METHOD!!!!")
 
     util.LOGGER.info("---BET " + img.pre_processed_filepath)
     return img
@@ -416,15 +416,15 @@ def process_dataset(args):
             start_time = datetime.datetime.now()
             img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
             img = pre_process(img, reg_type=reg_type, be_method=be_method)
-            util.LOGGER.info("\n\n\n\n -- Run time preprocess: ")
+            util.LOGGER.info("-- Run time preprocess: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
 
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
             break
         # pylint: disable= broad-except
         except Exception as exp:
-            util.LOGGER.error('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
-    util.LOGGER.info("\n\n\n\n -- Run time: ")
+            util.LOGGER.error('Crashed during' + str(k+1) + ' of 3 ' + str(exp))
+    util.LOGGER.info(" -- Run time: ")
     util.LOGGER.info(datetime.datetime.now() - start_time)
     if save_to_db:
         save_transform_to_database([img])

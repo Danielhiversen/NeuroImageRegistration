@@ -32,7 +32,6 @@ import matplotlib.cm as cm  # noqa
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
 
-logging.basicConfig(filename='log.txt', level=logging.DEBUG)
 LOGGER = logging.getLogger("NeuroReg")
 
 TEMP_FOLDER_PATH = ""
@@ -47,6 +46,22 @@ TEMPLATE_MASKED_VOLUME = ""
 def setup(temp_path, data="glioma"):
     """setup for current computer """
     # pylint: disable= global-statement
+    LOGGER.setLevel(logging.INFO)
+
+    file_handler = logging.handlers.RotatingFileHandler('log.txt',maxBytes=5*10000000, backupCount=5)
+    file_handler.set_name('log.txt')
+    file_handler.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s -  %(levelname)s - %(message)s')
+    file_handler.setFormatter(formatter)
+    LOGGER.addHandler(file_handler)
+
+    console_handler = logging.StreamHandler()
+    console_handler.set_name('consoleHamdler')
+    console_handler.setLevel(logging.INFO)
+    ch_format = logging.Formatter('%(asctime)s - %(message)s')
+    console_handler.setFormatter(ch_format)
+    LOGGER.addHandler(console_handler)
+
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
     mkdir_p(TEMP_FOLDER_PATH)
@@ -80,7 +95,7 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/ingerid/data/daniel/database4/"
-        elif 'unity' in hostname:
+        elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/neuro_data/database/'
         else:
             LOGGER.error("Unkown data " + data)
@@ -183,13 +198,13 @@ def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
             continue
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
-            LOGGER.error("---No data for " + pid + " " + qol_param)
+            LOGGER.error("---No data for " + str(pid) + " " + str(qol_param))
             continue
         _id = _id[0]
         _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
                                      (pid, )).fetchone()
         if not _glioma_grade:
-            LOGGER.error("No glioma_grade for " + pid + " " + qol_param)
+            LOGGER.error("No glioma_grade for " + str(pid) + " " + str(qol_param))
             continue
         if _glioma_grade[0] not in glioma_grades:
             continue
@@ -197,7 +212,7 @@ def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
             _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
                                 (pid, )).fetchone()[0]
             if _qol is None:
-                LOGGER.error("No qol data for " + _id + " " + qol_param)
+                LOGGER.error("No qol data for " + str(_id) + " " + str(qol_param))
                 continue
             qol.extend([_qol])
         image_id.extend([_id])
@@ -223,13 +238,13 @@ def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
             continue
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
-            LOGGER.error("---No data for " + pid)
+            LOGGER.error("---No data for " + str(pid))
             continue
         _id = _id[0]
         _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
                                      (pid, )).fetchone()
         if not _glioma_grade:
-            LOGGER.error("No glioma_grade for " + pid)
+            LOGGER.error("No glioma_grade for " + str(pid))
             continue
         if _glioma_grade[0] not in glioma_grades:
             continue
@@ -237,7 +252,7 @@ def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
         _survival_days = conn.execute("SELECT survival_days from Patient where pid = ?",
                                       (pid, )).fetchone()[0]
         if _survival_days is None:
-            LOGGER.error("No survival_days data for " + _id)
+            LOGGER.error("No survival_days data for " + str(_id))
             continue
         survival_days.extend([_survival_days])
         image_id.extend([_id])
@@ -489,7 +504,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
 
             nr_of_jobs = nr_of_jobs - 1
             finished_jobs = finished_jobs + 1
-            LOGGER.info(finished_jobs / n_permutations)
+            LOGGER.info(str(finished_jobs / n_permutations))
         if not nr_of_jobs < processes and queue.empty():
             time.sleep(2)
 
@@ -525,7 +540,7 @@ def permutation_test(total, values, shape, alternative):
             res['p_val'][k, l, m] = p_val
         res['statistic'][k, l, m] = statistic
 
-    LOGGER.info(datetime.datetime.now() - start_time)
+    LOGGER.info(str(datetime.datetime.now() - start_time))
 
     return res
 
