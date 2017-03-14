@@ -427,7 +427,7 @@ def process_dataset(args):
     util.LOGGER.info(" -- Run time: " + str(datetime.datetime.now() - start_time))
     if save_to_db:
         save_transform_to_database([img])
-    return img
+        del img
 
 
 def get_transforms(moving_dataset_image_ids, reg_type=None,
@@ -439,7 +439,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
             try:
                 ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
                 util.LOGGER.info('Crashed SLURM_JOB_CPUS_PER_NODE ' + str(ncpus))
-                pool = Pool(20)
+                pool = Pool(30)
             except KeyError:
                 pool = Pool()
         else:
@@ -455,8 +455,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
     else:
         result = []
         for moving_image_id in moving_dataset_image_ids:
-            result.append(process_dataset_func((moving_image_id, reg_type, save_to_db, be_method)))
-    return result
+            process_dataset_func((moving_image_id, reg_type, save_to_db, be_method))
 
 
 def move_vol(moving, transform, label_img=False):
