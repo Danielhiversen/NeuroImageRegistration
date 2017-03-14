@@ -60,7 +60,7 @@ BE_METHOD = 2
 
 
 def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
-    # pylint: disable= too-many-statements, too-many-locals
+    # pylint: disable= too-many-statements, too-many-locals, too-many-branches
     """ Pre process the data"""
     path = img.temp_data_path
 
@@ -262,7 +262,6 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         util.generate_image(img.pre_processed_filepath, reg_volume)
     else:
         print("\n\n INVALID BE METHOD!!!!")
-
 
     print("---BET", img.pre_processed_filepath)
     return img
