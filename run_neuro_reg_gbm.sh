@@ -21,5 +21,5 @@
 #
 
   source /home/danieli/NeuroImageRegistration/venv2/bin/activate
-  python /home/danieli/NeuroImageRegistration/do_img_registration_GBM.py 3 1
+  python /home/danieli/NeuroImageRegistration/do_img_registration_GBM.py 3 $i
 
