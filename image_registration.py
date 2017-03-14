@@ -97,7 +97,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
                                normalize_img.affine, normalize_img.header)
     temp_img.to_filename(norm_file)
     del temp_img
-    
+
     # resample volume to 1 mm slices
     target_affine_3x3 = np.eye(3) * slice_size
     img_3d_affine = resample_img(norm_file, target_affine=target_affine_3x3)
