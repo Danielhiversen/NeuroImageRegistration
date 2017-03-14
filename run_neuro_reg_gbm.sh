@@ -5,7 +5,7 @@
 #
 ###################################################
 #
-#SBATCH -J NeuroRegGBM2  # sensible name for the job
+#SBATCH -J NeuroRegGBM3  # sensible name for the job
 #SBATCH -p normal            # partition, sinfo to see available
 #SBATCH -N 1               # allocate N nodes for the job
 #SBATCH -n 40              # n tasks total
@@ -21,5 +21,5 @@
 #
 
   source /home/danieli/NeuroImageRegistration/venv2/bin/activate
-  python /home/danieli/NeuroImageRegistration/do_img_registration_GBM.py 3 2
+  python /home/danieli/NeuroImageRegistration/do_img_registration_GBM.py 3 3
 
