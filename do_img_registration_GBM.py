@@ -35,18 +35,23 @@ def find_images():
 
 
 # pylint: disable= invalid-name
-if __name__ == "__main__":
+if __name__ == "__main__": # if 'unity' in os.uname()[1]:
     os.nice(19)
     util.setup("GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
 
     moving_datasets_ids = find_images()
 
     if len(sys.argv) > 2:
+        # from mpi4py import MPI
+        # comm = MPI.COMM_WORLD
+        # split = comm.Get_rank()
+        # num_of_splits = comm.Get_size()
+
         num_of_splits = int(sys.argv[1])
         split = int(sys.argv[2])
 
         length = int(len(moving_datasets_ids) / num_of_splits)
-        start_idx = length * (split -1 )
+        start_idx = length * (split - 1)
         if split < num_of_splits:
             moving_datasets_ids = moving_datasets_ids[start_idx:(start_idx+length)]
         else:
@@ -56,5 +61,3 @@ if __name__ == "__main__":
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
                                                         image_registration.SYN,
                                                         save_to_db=True)
-
-#    image_registration.save_transform_to_database(data_transforms)
