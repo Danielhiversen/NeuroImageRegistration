@@ -482,7 +482,7 @@ def move_vol(moving, transform, label_img=False):
 def save_transform_to_database(imgs):
     """ Save data transforms to database"""
     # pylint: disable= too-many-locals, bare-except
-    conn = sqlite3.connect(util.DB_PATH, timeout=600)
+    conn = sqlite3.connect(util.DB_PATH, timeout=900)
     conn.text_factory = str
 
     try:

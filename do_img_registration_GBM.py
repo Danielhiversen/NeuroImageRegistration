@@ -9,6 +9,7 @@ from __future__ import print_function
 import datetime
 import os
 import sqlite3
+import sys
 
 import image_registration
 import util
@@ -30,7 +31,6 @@ def find_images():
 
     cursor.close()
     conn.close()
-    print(ids, k)
     return ids
 
 
@@ -40,8 +40,19 @@ if __name__ == "__main__":
     util.setup("GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
 
     moving_datasets_ids = find_images()
-    print(len(moving_datasets_ids))
 
+    if len(sys.argv) > 2:
+        num_of_splits = int(sys.argv[1])
+        split = int(sys.argv[2])
+
+        length = int(len(moving_datasets_ids) / num_of_splits)
+        start_idx = length * (split -1 )
+        if split < num_of_splits:
+            moving_datasets_ids = moving_datasets_ids[start_idx:(start_idx+length)]
+        else:
+            moving_datasets_ids = moving_datasets_ids[start_idx:]
+
+    print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
                                                         image_registration.SYN,
                                                         save_to_db=True)
