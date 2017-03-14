@@ -58,6 +58,11 @@ SYN = 'syn'
 
 BE_METHOD = 2
 
+if 'unity' in os.uname()[1]:
+    BET_COMMAND = "/home/danieli/fsl/bin/bet"
+else:
+    BET_COMMAND = "fsl5.0-bet"
+
 
 def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     # pylint: disable= too-many-statements, too-many-locals, too-many-branches
@@ -152,7 +157,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         util.generate_image(img.pre_processed_filepath, reg_volume)
     elif be_method == 1:
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
-        bet = fsl.BET(command="fsl5.0-bet")
+        bet = fsl.BET(command=BET_COMMAND)
         bet.inputs.in_file = resampled_file
         # pylint: disable= pointless-string-statement
         """ fractional intensity threshold (0->1); default=0.5;
@@ -178,7 +183,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         name = util.get_basename(resampled_file) + "_bet"
 
         # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
-        bet = fsl.BET(command="fsl5.0-bet")
+        bet = fsl.BET(command=BET_COMMAND)
         bet.inputs.in_file = resampled_file
         # pylint: disable= pointless-string-statement
         """ fractional intensity threshold (0->1); default=0.5;
@@ -431,7 +436,11 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
     """Calculate transforms """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
-            pool = Pool()
+            try:
+                ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
+                pool = Pool(ncpus)
+            except KeyError:
+                pool = Pool()
         else:
             pool = Pool(MULTITHREAD)
         # http://stackoverflow.com/a/1408476/636384
