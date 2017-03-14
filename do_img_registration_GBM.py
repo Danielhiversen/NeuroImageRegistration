@@ -37,7 +37,7 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("GBM_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/")
+    util.setup("GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
 
     moving_datasets_ids = find_images()
     print(len(moving_datasets_ids))

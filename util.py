@@ -29,7 +29,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt  # noqa
 import matplotlib.cm as cm  # noqa
 
-os.environ['FSLOUTPUTTYPE'] = 'NIFTI'
+os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
 
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""
