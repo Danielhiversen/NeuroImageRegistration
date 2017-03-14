@@ -437,7 +437,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
             if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
-                pool = Pool(30)
+                pool = Pool(20)
             else:
                 pool = Pool()
         else:
@@ -445,9 +445,9 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
         # http://stackoverflow.com/a/1408476/636384
         pool.map_async(process_dataset_func,
                        zip(moving_dataset_image_ids,
-                       [reg_type]*len(moving_dataset_image_ids),
-                       [save_to_db]*len(moving_dataset_image_ids),
-                       [be_method]*len(moving_dataset_image_ids))).get(999999999)
+                           [reg_type]*len(moving_dataset_image_ids),
+                           [save_to_db]*len(moving_dataset_image_ids),
+                           [be_method]*len(moving_dataset_image_ids))).get(999999999)
         pool.close()
         pool.join()
     else:

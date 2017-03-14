@@ -75,8 +75,6 @@ if __name__ == "__main__":
     util.setup("LGG_POST/")
 
     post_images = find_images()
-    data_transforms = image_registration.get_transforms(post_images,
-                                                        process_dataset_func=process_dataset,
-                                                        save_to_db=True)
-
-#    image_registration.save_transform_to_database(data_transforms)
+    image_registration.get_transforms(post_images,
+                                      process_dataset_func=process_dataset,
+                                      save_to_db=True)
