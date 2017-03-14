@@ -117,7 +117,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.moving_image = util.TEMPLATE_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 2
+        reg.inputs.num_threads = 4
         reg.inputs.initial_moving_transform_com = True
 
         if reg_type == RIGID:
@@ -222,7 +222,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 2
+        reg.inputs.num_threads = 4
         reg.inputs.initial_moving_transform_com = True
 
         if reg_type == RIGID:
