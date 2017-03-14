@@ -48,7 +48,8 @@ def setup(temp_path, data="glioma"):
     # pylint: disable= global-statement
     LOGGER.setLevel(logging.INFO)
 
-    file_handler = logging.handlers.RotatingFileHandler('log.txt', maxBytes=5*10000000, backupCount=5)
+    file_handler = logging.handlers.RotatingFileHandler('log.txt', maxBytes=5*10000000,
+                                                        backupCount=5)
     file_handler.set_name('log.txt')
     file_handler.setLevel(logging.INFO)
     formatter = logging.Formatter('%(asctime)s -  %(levelname)s - %(message)s')
