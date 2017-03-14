@@ -221,7 +221,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 2
+        reg.inputs.num_threads = 4
         reg.inputs.initial_moving_transform_com = True
 
         if reg_type == RIGID:
@@ -297,7 +297,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
-    reg.inputs.num_threads = 2
+    reg.inputs.num_threads = 4
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid', 'Rigid']
         reg.inputs.metric = ['MI', 'MI', 'MI']
@@ -439,7 +439,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
         if MULTITHREAD == 'max':
             try:
                 ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
-                pool = Pool(ncpus)
+                pool = Pool(int(ncpus/2))
             except KeyError:
                 pool = Pool()
         else:
