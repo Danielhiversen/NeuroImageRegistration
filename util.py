@@ -77,7 +77,7 @@ def setup_paths(data="glioma"):
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/ingerid/data/daniel/database4/"
         elif 'unity' in hostname:
-            os.environ["PATH"] += os.pathsep + '/work/danieli/neuro_data/database/'
+            DATA_FOLDER = '/work/danieli/neuro_data/database/'
         else:
             print("Unkown data " + data)
             raise Exception
