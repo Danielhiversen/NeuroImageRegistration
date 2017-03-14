@@ -269,7 +269,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     else:
         util.LOGGER.error("\n\n INVALID BE METHOD!!!!")
 
-    util.LOGGER.info("---BET", img.pre_processed_filepath)
+    util.LOGGER.info("---BET " + img.pre_processed_filepath)
     return img
 
 

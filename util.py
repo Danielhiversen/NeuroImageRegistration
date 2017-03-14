@@ -129,7 +129,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         if db_temp[0] is None:
-            LOGGER.error("No volume data for image_id", _id)
+            LOGGER.error("No volume data for image_id " + _id)
             continue
         vol = DATA_FOLDER + db_temp[0]
         label = "img"
