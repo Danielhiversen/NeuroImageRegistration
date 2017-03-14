@@ -62,6 +62,8 @@ def setup_paths(data="glioma"):
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
+    elif 'unity' in hostname:
+        os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/'
     else:
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
@@ -74,6 +76,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/ingerid/data/daniel/database4/"
+        elif 'unity' in hostname:
+            os.environ["PATH"] += os.pathsep + '/work/danieli/neuro_data/database/'
         else:
             print("Unkown data " + data)
             raise Exception
