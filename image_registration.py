@@ -58,7 +58,8 @@ SYN = 'syn'
 
 BE_METHOD = 2
 
-if 'unity' in os.uname()[1]:
+hostname = os.uname()[1]
+if 'unity' in hostname or 'compute' in hostname:
     BET_COMMAND = "/home/danieli/fsl/bin/bet"
 else:
     BET_COMMAND = "fsl5.0-bet"

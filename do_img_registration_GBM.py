@@ -35,7 +35,7 @@ def find_images():
 
 
 # pylint: disable= invalid-name
-if __name__ == "__main__":  # if 'unity' in os.uname()[1]:
+if __name__ == "__main__":  # if 'unity' in os.uname()[1] or 'compute' in hostname:
     os.nice(19)
     util.setup("GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
 
