@@ -438,7 +438,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
             if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
-                pool = Pool(10)
+                pool = Pool(12)
             else:
                 pool = Pool()
         else:
