@@ -32,7 +32,7 @@ import matplotlib.cm as cm  # noqa
 
 os.environ['FSLOUTPUTTYPE'] = 'NIFTI_GZ'
 
-logging.basicConfig(filename='log.txt',level=logging.DEBUG)
+logging.basicConfig(filename='log.txt', level=logging.DEBUG)
 LOGGER = logging.getLogger("NeuroReg")
 
 TEMP_FOLDER_PATH = ""
