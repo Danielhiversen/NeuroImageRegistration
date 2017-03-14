@@ -436,24 +436,21 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
     """Calculate transforms """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
-            try:
-                ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
-                util.LOGGER.info('Crashed SLURM_JOB_CPUS_PER_NODE ' + str(ncpus))
+            if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
                 pool = Pool(30)
-            except KeyError:
+            else:
                 pool = Pool()
         else:
             pool = Pool(MULTITHREAD)
         # http://stackoverflow.com/a/1408476/636384
-        result = pool.map_async(process_dataset_func,
-                                zip(moving_dataset_image_ids,
-                                    [reg_type]*len(moving_dataset_image_ids),
-                                    [save_to_db]*len(moving_dataset_image_ids),
-                                    [be_method]*len(moving_dataset_image_ids))).get(999999999)
+        pool.map_async(process_dataset_func,
+                       zip(moving_dataset_image_ids,
+                       [reg_type]*len(moving_dataset_image_ids),
+                       [save_to_db]*len(moving_dataset_image_ids),
+                       [be_method]*len(moving_dataset_image_ids))).get(999999999)
         pool.close()
         pool.join()
     else:
-        result = []
         for moving_image_id in moving_dataset_image_ids:
             process_dataset_func((moving_image_id, reg_type, save_to_db, be_method))
 

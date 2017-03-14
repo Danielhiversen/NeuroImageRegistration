@@ -58,6 +58,6 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
             moving_datasets_ids = moving_datasets_ids[start_idx:]
 
     util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
-    data_transforms = image_registration.get_transforms(moving_datasets_ids,
-                                                        image_registration.SYN,
-                                                        save_to_db=True)
+    image_registration.get_transforms(moving_datasets_ids,
+                                      image_registration.SYN,
+                                      save_to_db=True)
