@@ -439,7 +439,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
         if MULTITHREAD == 'max':
             try:
                 ncpus = int(os.environ["SLURM_JOB_CPUS_PER_NODE"])
-                pool = Pool(int(ncpus/2))
+                pool = Pool(int(ncpus/1.5))
             except KeyError:
                 pool = Pool()
         else:
