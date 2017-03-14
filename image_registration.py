@@ -96,7 +96,8 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     temp_img = nib.Nifti1Image(temp_data/np.amax(temp_data)*100,
                                normalize_img.affine, normalize_img.header)
     temp_img.to_filename(norm_file)
-
+    del temp_img
+    
     # resample volume to 1 mm slices
     target_affine_3x3 = np.eye(3) * slice_size
     img_3d_affine = resample_img(norm_file, target_affine=target_affine_3x3)
@@ -465,7 +466,7 @@ def move_vol(moving, transform, label_img=False):
         resampled_file = util.TEMP_FOLDER_PATH + util.get_basename(moving) + '_resample.nii.gz'
         # pylint: disable= no-member
         img_3d_affine.to_filename(resampled_file)
-
+        del img_3d_affine
     else:
         img = img_data(-1, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
         img.set_img_filepath(moving)
