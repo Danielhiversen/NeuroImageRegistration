@@ -49,8 +49,8 @@ import numpy as np
 from img_data import img_data
 import util
 
-MULTITHREAD = 1  # 1,23,4....., "max"
-# MULTITHREAD = "max"
+# MULTITHREAD = 1  # 1,23,4....., "max"
+MULTITHREAD = "max"
 
 RIGID = 'rigid'
 AFFINE = 'affine'
@@ -141,9 +141,9 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.output_warped_image = path + name + '_beReg.nii.gz'
 
         transform = path + name + 'InverseComposite.h5'
-        print("starting be registration")
+        util.LOGGER.info("starting be registration")
         reg.run()
-        print("Finished be registration")
+        util.LOGGER.info("Finished be registration")
 
         reg_volume = util.transform_volume(resampled_file, transform)
         shutil.copy(transform, img.init_transform)
@@ -202,13 +202,13 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         bet.inputs.reduce_bias = True
         bet.inputs.mask = True
         bet.inputs.out_file = path + name + '.nii.gz'
-        print("starting bet registration")
+        util.LOGGER.info("starting bet registration")
         start_time = datetime.datetime.now()
-        print(bet.cmdline)
+        util.LOGGER.info(bet.cmdline)
         if not os.path.exists(bet.inputs.out_file):
             bet.run()
-        print("Finished bet registration 0: ")
-        print(datetime.datetime.now() - start_time)
+        util.LOGGER.info("Finished bet registration 0: ")
+        util.LOGGER.info(datetime.datetime.now() - start_time)
 
         name = name + "_be"
         img.pre_processed_filepath = path + name + '.nii.gz'
@@ -248,12 +248,12 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.output_warped_image = path + name + '_TemplateReg.nii.gz'
 
         transform = path + name + 'InverseComposite.h5'
-        print("starting be registration")
+        util.LOGGER.info("starting be registration")
         start_time = datetime.datetime.now()
         if not os.path.exists(reg.inputs.output_warped_image):
             reg.run()
-        print("Finished be registration: ")
-        print(datetime.datetime.now() - start_time)
+        util.LOGGER.info("Finished be registration: ")
+        util.LOGGER.info(datetime.datetime.now() - start_time)
 
         reg_volume = util.transform_volume(resampled_file, transform)
         shutil.copy(transform, img.init_transform)
@@ -267,9 +267,9 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         util.generate_image(img.pre_processed_filepath, reg_volume)
     else:
-        print("\n\n INVALID BE METHOD!!!!")
+        util.LOGGER.error("\n\n INVALID BE METHOD!!!!")
 
-    print("---BET", img.pre_processed_filepath)
+    util.LOGGER.info("---BET", img.pre_processed_filepath)
     return img
 
 
@@ -285,7 +285,7 @@ def registration(moving_img, fixed, reg_type):
 
     init_moving_transform = moving_img.init_transform
     if init_moving_transform is not None and os.path.exists(init_moving_transform):
-        print("Found initial transform")
+        util.LOGGER.info("Found initial transform")
         # reg.inputs.initial_moving_transform = init_moving_transform
         reg.inputs.initial_moving_transform_com = False
         mask = util.transform_volume(moving_img.label_inv_filepath,
@@ -391,12 +391,12 @@ def registration(moving_img, fixed, reg_type):
        os.path.exists(moving_img.transform):
         # generate_image(reg.inputs.output_warped_image, fixed)
         return moving_img
-    print("starting registration")
+    util.LOGGER.info("starting registration")
     start_time = datetime.datetime.now()
-    print(reg.cmdline)
+    util.LOGGER.info(reg.cmdline)
     reg.run()
-    print("Finished registration: ")
-    print(datetime.datetime.now() - start_time)
+    util.LOGGER.info("Finished registration: ")
+    util.LOGGER.info(datetime.datetime.now() - start_time)
 
     util.transform_volume(moving_img.pre_processed_filepath, transform,
                           outputpath=moving_img.processed_filepath)
@@ -409,23 +409,23 @@ def registration(moving_img, fixed, reg_type):
 def process_dataset(args):
     """ pre process and registrate volume"""
     (moving_image_id, reg_type, save_to_db, be_method) = args
-    print(moving_image_id)
+    util.LOGGER.info(moving_image_id)
 
     for k in range(3):
         try:
             start_time = datetime.datetime.now()
             img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
             img = pre_process(img, reg_type=reg_type, be_method=be_method)
-            print("\n\n\n\n -- Run time preprocess: ")
-            print(datetime.datetime.now() - start_time)
+            util.LOGGER.info("\n\n\n\n -- Run time preprocess: ")
+            util.LOGGER.info(datetime.datetime.now() - start_time)
 
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
             break
         # pylint: disable= broad-except
         except Exception as exp:
-            print('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
-    print("\n\n\n\n -- Run time: ")
-    print(datetime.datetime.now() - start_time)
+            util.LOGGER.error('Crashed during' + str(k+1) + ' of 3 \n' + str(exp))
+    util.LOGGER.info("\n\n\n\n -- Run time: ")
+    util.LOGGER.info(datetime.datetime.now() - start_time)
     if save_to_db:
         save_transform_to_database([img])
     return img
@@ -501,9 +501,9 @@ def save_transform_to_database(imgs):
         os.makedirs(folder)
 
         transform_paths = ""
-        print(img.get_transforms())
+        util.LOGGER.info(img.get_transforms())
         for _transform in img.get_transforms():
-            print(_transform)
+            util.LOGGER.info(_transform)
             dst_file = folder + util.get_basename(_transform) + '.h5.gz'
             with open(_transform, 'rb') as f_in, gzip.open(dst_file, 'wb') as f_out:
                 shutil.copyfileobj(f_in, f_out)
