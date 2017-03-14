@@ -63,7 +63,7 @@ def setup_paths(data="glioma"):
     elif hostname == 'ingerid-PC':
         os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
     elif 'unity' in hostname:
-        os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/'
+        os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/' + os.pathsep + '/home/danieli/antsbin/bin/'
     else:
         print("Unkown host name " + hostname)
         print("Add your host name path to " + sys.argv[0])
