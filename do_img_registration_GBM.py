@@ -37,7 +37,13 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
     os.nice(19)
-    util.setup("GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/")
+    HOSTNAME = os.uname()[1]
+    if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
+        path = "/work/danieli/GBM/"
+    else:
+        path = "GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/"
+
+    util.setup(path)
 
     moving_datasets_ids = find_images()
 
