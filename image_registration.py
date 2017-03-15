@@ -66,6 +66,7 @@ else:
     MULTITHREAD = "max"
     BET_COMMAND = "fsl5.0-bet"
 
+
 def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     # pylint: disable= too-many-statements, too-many-locals, too-many-branches
     """ Pre process the data"""
