@@ -88,6 +88,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
+    n4bias.inputs.num_threads = NUM_THREADS_ANTS
     n4bias.inputs.input_image = input_file
     n4bias.inputs.output_image = n4_file
     n4bias.run()
