@@ -38,6 +38,4 @@ if __name__ == "__main__":
 
     pre_images = find_images()
 
-    data_transforms = image_registration.get_transforms(pre_images, image_registration.SYN)
-
-#    image_registration.save_transform_to_database(data_transforms)
+    image_registration.get_transforms(pre_images, image_registration.SYN, save_to_db=True)

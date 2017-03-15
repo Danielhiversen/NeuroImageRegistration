@@ -36,7 +36,7 @@ def find_images():
 def process_dataset(args, num_tries=3):
     """ pre process and registrate volume"""
     # pylint: disable= unused-argument
-    moving_image_id = args[0]
+    (moving_image_id, _, save_to_db) = args
     print(moving_image_id)
 
     conn = sqlite3.connect(util.DB_PATH)
@@ -55,6 +55,7 @@ def process_dataset(args, num_tries=3):
     start_time = datetime.datetime.now()
     pre_img = img_data(pre_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     post_img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+    post_img.fixed_image = pre_image_id
 
     pre_img = image_registration.pre_process(pre_img, False)
     post_img = image_registration.pre_process(post_img, False)
@@ -64,18 +65,16 @@ def process_dataset(args, num_tries=3):
     print(datetime.datetime.now() - start_time)
 
     img.fixed_image = pre_image_id
-
+    if save_to_db:
+        image_registration.save_transform_to_database([img])
     return img
 
 
-# pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(19)
     util.setup("LGG_POST/")
 
     post_images = find_images()
-    data_transforms = image_registration.get_transforms(post_images,
-                                                        process_dataset_func=process_dataset,
-                                                        save_to_db=True)
-
-#    image_registration.save_transform_to_database(data_transforms)
+    image_registration.get_transforms(post_images,
+                                      process_dataset_func=process_dataset,
+                                      save_to_db=True)

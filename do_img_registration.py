@@ -24,45 +24,16 @@ def find_images():
         cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
                                (row[0], "pre"))
         for _id in cursor2:
-            cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id[0],))
+            _id = _id[0]
+            cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
             _img_filepath = cursor3.fetchone()[0]
             if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
                 cursor3.close()
                 continue
-            ids.append(_id[0])
+            ids.append(_id)
             cursor3.close()
 
-        cursor2.close()
-
-    cursor.close()
-    conn.close()
-    return ids
-
-
-def find_images_with_qol():
-    """ Find images for registration """
-    conn = sqlite3.connect(util.DB_PATH)
-    conn.text_factory = str
-
-    cursor = conn.execute('''SELECT pid from QualityOfLife''')
-    pids_with_qol = []
-    for row in cursor:
-        if row:
-            pids_with_qol.append(row[0])
-    cursor.close()
-
-    cursor = conn.execute('''SELECT pid from Patient''')
-    ids = []
-    for row in cursor:
-        pid = row[0]
-        if pid not in pids_with_qol:
-            continue
-        cursor2 = conn.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''',
-                               (pid, "pre"))
-
-        for _id in cursor2:
-            ids.append(_id[0])
         cursor2.close()
 
     cursor.close()
@@ -77,8 +48,6 @@ if __name__ == "__main__":
 
     moving_datasets_ids = find_images()
     print(moving_datasets_ids, len(moving_datasets_ids))
-    data_transforms = image_registration.get_transforms(moving_datasets_ids,
-                                                        image_registration.RIGID,
-                                                        save_to_db=True)
-
-    # image_registration.save_transform_to_database(data_transforms)
+    image_registration.get_transforms(moving_datasets_ids,
+                                      image_registration.SYN,
+                                      save_to_db=True)
