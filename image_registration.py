@@ -49,9 +49,6 @@ import numpy as np
 from img_data import img_data
 import util
 
-# MULTITHREAD = 1  # 1,23,4....., "max"
-MULTITHREAD = "max"
-
 RIGID = 'rigid'
 AFFINE = 'affine'
 SYN = 'syn'
@@ -60,10 +57,14 @@ BE_METHOD = 2
 
 HOSTNAME = os.uname()[1]
 if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
+    NUM_THREADS_ANTS = 6
+    MULTITHREAD = 8
     BET_COMMAND = "/home/danieli/fsl/bin/bet"
 else:
+    NUM_THREADS_ANTS = 2
+    # MULTITHREAD = 1  # 1,23,4....., "max"
+    MULTITHREAD = "max"
     BET_COMMAND = "fsl5.0-bet"
-
 
 def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     # pylint: disable= too-many-statements, too-many-locals, too-many-branches
@@ -117,7 +118,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.moving_image = util.TEMPLATE_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 3
+        reg.inputs.num_threads = NUM_THREADS_ANTS
         reg.inputs.initial_moving_transform_com = True
 
         if reg_type == RIGID:
@@ -222,7 +223,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
-        reg.inputs.num_threads = 3
+        reg.inputs.num_threads = NUM_THREADS_ANTS
         reg.inputs.initial_moving_transform_com = True
 
         if reg_type == RIGID:
@@ -298,7 +299,7 @@ def registration(moving_img, fixed, reg_type):
     reg.inputs.fixed_image = moving_img.pre_processed_filepath
     reg.inputs.fixed_image_mask = mask
     reg.inputs.moving_image = fixed
-    reg.inputs.num_threads = 3
+    reg.inputs.num_threads = NUM_THREADS_ANTS
     if reg_type == RIGID:
         reg.inputs.transforms = ['Rigid', 'Rigid', 'Rigid']
         reg.inputs.metric = ['MI', 'MI', 'MI']
