@@ -546,7 +546,7 @@ def permutation_test(total, values, shape, alternative):
     return res
 
 
-def brunner_munzel_test(x, y, alternative="two_sided"):
+def brunner_munzel_test(x, y, alternative='less'):
     """
     Computes the Brunner Munzel statistic
 
@@ -600,6 +600,30 @@ def brunner_munzel_test(x, y, alternative="two_sided"):
         prob = stats.t.cdf(abst, dfbm)
         prob = 2 * min(prob, 1 - prob)
 
+    return (prob, statistic)
+
+
+def mannwhitneyu_test(x, y, alternative='less'):
+    """
+    Computes the Mann-Whitney statistic
+
+    Parameters
+    ----------
+    x : sequence
+        Input
+    y : sequence
+        Input
+    alternative : {greater, less, two_sided }
+
+    Returns
+    -------
+    statistic : float
+        The Mann-Whitney statistics
+    pvalue : float
+        Approximate p-value assuming a t distribution.
+
+     """
+    statistic, prob = stats.mannwhitneyu(x,y, alternative=alternative)
     return (prob, statistic)
 
 
