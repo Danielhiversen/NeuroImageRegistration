@@ -623,7 +623,8 @@ def mannwhitneyu_test(x, y, alternative='less'):
         Approximate p-value assuming a t distribution.
 
      """
-    statistic, prob = stats.mannwhitneyu(x,y, alternative=alternative)
+    # pylint: disable= invalid-name
+    statistic, prob = stats.mannwhitneyu(x, y, alternative=alternative)
     return (prob, statistic)
 
 
