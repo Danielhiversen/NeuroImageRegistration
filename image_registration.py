@@ -57,7 +57,7 @@ BE_METHOD = 2
 
 HOSTNAME = os.uname()[1]
 if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
-    NUM_THREADS_ANTS = 7
+    NUM_THREADS_ANTS = 6
     MULTITHREAD = 8
     BET_COMMAND = "/home/danieli/fsl/bin/bet"
 else:
