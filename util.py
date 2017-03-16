@@ -437,7 +437,7 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
     return t_img
 
 
-def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
+def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0):
     """ Calculate average volumes """
     # pylint: disable= too-many-locals, invalid-name, too-many-branches
 
@@ -459,7 +459,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
         _id = _id + 1
     shape = img.get_data().shape
 
-    res = permutation_test(total, val, shape, 'less')
+    res = permutation_test(total, val, shape, 'less', stat_func)
     path = folder + 'vlsm_' + label + '.nii'
     path = path.replace('label', 'tumor')
     img = nib.load(label_paths[0])
@@ -474,7 +474,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     total_res = np.ones((shape[0], shape[1], shape[2]))
 
     def _help_permutation_test(index, total, values, shape, alternative):
-        permutation_res = permutation_test(total, values, shape, alternative)['statistic']
+        permutation_res = permutation_test(total, values, shape, alternative, stat_func)['statistic']
         queue.put((index, permutation_res))
 
     processes = multiprocessing.cpu_count()
@@ -488,7 +488,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
             # pylint: disable= no-member
             np.random.shuffle(values)
             process = multiprocessing.Process(target=_help_permutation_test,
-                                              args=[index, total, values, shape, None])
+                                              args=[index, total, values, shape, None, stat_func])
             process.start()
             jobs.append(process)
             index = index + 1
@@ -517,7 +517,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     generate_image(path, TEMPLATE_VOLUME)
 
 
-def permutation_test(total, values, shape, alternative):
+def permutation_test(total, values, shape, alternative, permutation_test):
     """Do permutation test."""
     # pylint: disable= too-many-locals, invalid-name
     start_time = datetime.datetime.now()
@@ -536,7 +536,7 @@ def permutation_test(total, values, shape, alternative):
         group1 = [values[index] for index in vox_ids]
         ids = range(len(values))
         group2 = [values[index] for index in ids if index not in vox_ids]
-        (p_val, statistic) = brunner_munzel_test(group1, group2, alternative)
+        (p_val, statistic) = stat_func(group1, group2, alternative)
         if alternative is not None:
             res['p_val'][k, l, m] = p_val
         res['statistic'][k, l, m] = statistic
