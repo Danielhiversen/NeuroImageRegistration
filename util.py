@@ -474,7 +474,8 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
     total_res = np.ones((shape[0], shape[1], shape[2]))
 
     def _help_permutation_test(index, total, values, shape, alternative):
-        permutation_res = permutation_test(total, values, shape, alternative, stat_func)['statistic']
+        permutation_res = permutation_test(total, values, shape,
+                                           alternative, stat_func)['statistic']
         queue.put((index, permutation_res))
 
     processes = multiprocessing.cpu_count()
@@ -517,7 +518,7 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
     generate_image(path, TEMPLATE_VOLUME)
 
 
-def permutation_test(total, values, shape, alternative, permutation_test):
+def permutation_test(total, values, shape, alternative, stat_func):
     """Do permutation test."""
     # pylint: disable= too-many-locals, invalid-name
     start_time = datetime.datetime.now()
