@@ -394,29 +394,35 @@ def manual_add_to_db():
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
-#    pid = 462
-#    image_type = 'pre'
-#    volume_labels = ['/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso-label.nrrd']
-#    volume = '/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso.nrrd'
-#    glioma_grade = 3
-#
-#    pid = 1061
-#    image_type = 'pre'
-#    volume_labels = ['/home/dahoiv/disk/data/Segmentations/Data_HansKristian_LGG/LGG_070217/1061_pre/1061_preY-label.nrrd']
-#    volume = '/home/dahoiv/disk/data/Segmentations/Data_HansKristian_LGG/LGG_070217/1061_pre/1061_preY.nrrd'
-#    glioma_grade = 2
-#
-#    pid = 16073
-#    image_type = 'pre'
-#    volume_labels = ['/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16073/68 t1_mprage_sag_p2_iso-_ERIK_label.nrrd']
-#    volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16073/68 t1_mprage_sag_p2_iso.3.12.2.1107.5.2.43.66087.nrrd'
-#    glioma_grade = 34
-#
-#    pid = 16117
-#    image_type = 'pre'
-#    volume_labels = ['/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16117/pid160122 t2_spc_da-fl_sag_p2_iso_1-alserik_label.nrrd']
-#    volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16117/pid160122 t2_spc_da-fl_sag_p2_iso_1.0.nrrd'
-#    glioma_grade = 34
+    #    pid = 462
+    #    image_type = 'pre'
+    #    volume_labels = ['/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso-label.nrrd']
+    #    volume = '/home/dahoiv/disk/data/Segmentations/AA_til_3D-atlas_271016/462/04 t2_spc_irprep_ns_sag_dark-fl_p2_iso.nrrd'
+    #    glioma_grade = 3
+    #
+    #    pid = 1061
+    #    image_type = 'pre'
+    #    volume_labels = ['/home/dahoiv/disk/data/Segmentations/Data_HansKristian_LGG/LGG_070217/1061_pre/1061_preY-label.nrrd']
+    #    volume = '/home/dahoiv/disk/data/Segmentations/Data_HansKristian_LGG/LGG_070217/1061_pre/1061_preY.nrrd'
+    #    glioma_grade = 2
+    #
+    #    pid = 16073
+    #    image_type = 'pre'
+    #    volume_labels = ['/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16073/68 t1_mprage_sag_p2_iso-_ERIK_label.nrrd']
+    #    volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16073/68 t1_mprage_sag_p2_iso.3.12.2.1107.5.2.43.66087.nrrd'
+    #    glioma_grade = 34
+    #
+    #    pid = 16117
+    #    image_type = 'pre'
+    #    volume_labels = ['/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16117/pid160122 t2_spc_da-fl_sag_p2_iso_1-alserik_label.nrrd']
+    #    volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16117/pid160122 t2_spc_da-fl_sag_p2_iso_1.0.nrrd'
+    #    glioma_grade = 34
+
+    # pid = 16087
+    # image_type = 'pre'
+    # volume_labels = ['/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16087/04 t1_mpr_ns_sag_p2_iso 1mm_iso-erikkorrigert_label.nrrd']
+    # volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16087/04 t1_mpr_ns_sag_p2_iso 1mm_iso.3.12.2.1107.5.2.19.45157.nrrd'
+    # glioma_grade = 34
 
     pid = 16071
     image_type = 'pre'
@@ -424,24 +430,6 @@ def manual_add_to_db():
     volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16071/79 t1_mpr_ns_sag_p2_iso 1mm_iso.3.12.2.1107.5.2.19.45157.nrrd'
     glioma_grade = 34
 
-    convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, glioma_grade)
-
-    cursor.close()
-    conn.commit()
-    conn.close()
-
-
-def manual_add_to_db5():
-    """Convert qol data to database """
-    conn = sqlite3.connect(util.DB_PATH)
-    cursor = conn.cursor()
-
-    pid = 16087
-    image_type = 'pre'
-    volume_labels = ['/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16087/04 t1_mpr_ns_sag_p2_iso 1mm_iso-erikkorrigert_label.nrrd']
-    volume = '/home/dahoiv/disk/data/Segmentations/siste_runde_hgg/16087/04 t1_mpr_ns_sag_p2_iso 1mm_iso.3.12.2.1107.5.2.19.45157.nrrd'
-
-    glioma_grade = 34
     convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, glioma_grade)
 
     cursor.close()
@@ -567,6 +555,6 @@ if __name__ == "__main__":
 #    karnofsky_to_db()
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True, case_ids=[1424])
 
-    manual_add_to_db()
+    qol_to_db("siste_runde")
 
     vacuum_db()

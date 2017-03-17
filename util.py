@@ -56,12 +56,12 @@ def setup(temp_path, data="glioma"):
     file_handler.setFormatter(formatter)
     LOGGER.addHandler(file_handler)
 
-    console_handler = logging.StreamHandler()
-    console_handler.set_name('consoleHamdler')
-    console_handler.setLevel(logging.INFO)
-    ch_format = logging.Formatter('%(asctime)s - %(message)s')
-    console_handler.setFormatter(ch_format)
-    LOGGER.addHandler(console_handler)
+    # console_handler = logging.StreamHandler()
+    # console_handler.set_name('consoleHamdler')
+    # console_handler.setLevel(logging.INFO)
+    # ch_format = logging.Formatter('%(asctime)s - %(message)s')
+    # console_handler.setFormatter(ch_format)
+    # LOGGER.addHandler(console_handler)
 
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
@@ -91,7 +91,7 @@ def setup_paths(data="glioma"):
 
     if data == 'glioma':
         if hostname == 'dddd':
-            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database4/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/unity/database/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
@@ -222,6 +222,28 @@ def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
 
     return (image_id, qol)
 
+
+def get_qol(image_ids, qol_param):
+    """ Get image id and qol """
+    conn = sqlite3.connect(DB_PATH, timeout=120)
+    conn.text_factory = str
+    qol = []
+    for image_id in image_ids:
+        _pid = conn.execute('''SELECT pid from Images where id = ?''', (image_id, )).fetchone()
+        if not _pid:
+            LOGGER.error("---No data for " + str(_pid) + " " + str(qol_param))
+            continue
+        pid = _pid[0]
+        if qol_param:
+            _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
+                                (pid, )).fetchone()
+            if _qol is None or _qol[0] is None:
+                LOGGER.error("No qol data for " + str(pid) + " " + str(qol_param))
+                continue
+            qol.extend([_qol[0]])
+    conn.close()
+
+    return qol
 
 def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     """ Get image id and qol """
@@ -447,7 +469,6 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
     total = {}
     _id = 0
     for file_name in label_paths:
-        LOGGER.info(file_name)
         img = nib.load(file_name)
         label_idx = np.where(img.get_data() == 1)
         for (k, l, m) in zip(label_idx[0], label_idx[1], label_idx[2]):
@@ -478,7 +499,7 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
                                            alternative, stat_func)['statistic']
         queue.put((index, permutation_res))
 
-    processes = multiprocessing.cpu_count()
+    processes = 1 #multiprocessing.cpu_count()
     nr_of_jobs = 0
     finished_jobs = 0
     index = 0
@@ -534,6 +555,9 @@ def permutation_test(total, values, shape, alternative, stat_func):
         k = int(_temp[0])
         l = int(_temp[1])
         m = int(_temp[2])
+        for index in vox_ids:
+            print(index)
+            print(values[index])
         group1 = [values[index] for index in vox_ids]
         ids = range(len(values))
         group2 = [values[index] for index in ids if index not in vox_ids]
