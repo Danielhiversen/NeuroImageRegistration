@@ -56,12 +56,12 @@ def setup(temp_path, data="glioma"):
     file_handler.setFormatter(formatter)
     LOGGER.addHandler(file_handler)
 
-    console_handler = logging.StreamHandler()
-    console_handler.set_name('consoleHamdler')
-    console_handler.setLevel(logging.INFO)
-    ch_format = logging.Formatter('%(asctime)s - %(message)s')
-    console_handler.setFormatter(ch_format)
-    LOGGER.addHandler(console_handler)
+    # console_handler = logging.StreamHandler()
+    # console_handler.set_name('consoleHamdler')
+    # console_handler.setLevel(logging.INFO)
+    # ch_format = logging.Formatter('%(asctime)s - %(message)s')
+    # console_handler.setFormatter(ch_format)
+    # LOGGER.addHandler(console_handler)
 
     global TEMP_FOLDER_PATH
     TEMP_FOLDER_PATH = temp_path
@@ -91,7 +91,7 @@ def setup_paths(data="glioma"):
 
     if data == 'glioma':
         if hostname == 'dddd':
-            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database4/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/unity/database/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
@@ -221,6 +221,32 @@ def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
     conn.close()
 
     return (image_id, qol)
+
+
+def get_qol(image_ids, qol_param):
+    """ Get image id and qol """
+    conn = sqlite3.connect(DB_PATH, timeout=120)
+    conn.text_factory = str
+    qol = []
+    image_ids_with_qol = []
+    for image_id in image_ids:
+        _pid = conn.execute('''SELECT pid from Images where id = ?''', (image_id, )).fetchone()
+        if not _pid:
+            LOGGER.error("---No data for " + str(_pid) + " " + str(qol_param))
+            continue
+        pid = _pid[0]
+        if qol_param:
+            _qol = conn.execute("SELECT " + qol_param + " from QualityOfLife where pid = ?",
+                                (pid, )).fetchone()
+            if _qol is None or _qol[0] is None:
+                LOGGER.error("No qol data for " + str(pid) + " " + str(qol_param))
+                continue
+            qol.extend([_qol[0]])
+            image_ids_with_qol.extend([image_id])
+
+    conn.close()
+
+    return (image_ids_with_qol, qol)
 
 
 def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
@@ -437,7 +463,7 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
     return t_img
 
 
-def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
+def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0):
     """ Calculate average volumes """
     # pylint: disable= too-many-locals, invalid-name, too-many-branches
 
@@ -447,7 +473,6 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     total = {}
     _id = 0
     for file_name in label_paths:
-        LOGGER.info(file_name)
         img = nib.load(file_name)
         label_idx = np.where(img.get_data() == 1)
         for (k, l, m) in zip(label_idx[0], label_idx[1], label_idx[2]):
@@ -459,7 +484,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
         _id = _id + 1
     shape = img.get_data().shape
 
-    res = permutation_test(total, val, shape, 'less')
+    res = permutation_test(total, val, shape, 'less', stat_func)
     path = folder + 'vlsm_' + label + '.nii'
     path = path.replace('label', 'tumor')
     img = nib.load(label_paths[0])
@@ -473,8 +498,9 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     jobs = []
     total_res = np.ones((shape[0], shape[1], shape[2]))
 
-    def _help_permutation_test(index, total, values, shape, alternative):
-        permutation_res = permutation_test(total, values, shape, alternative)['statistic']
+    def _help_permutation_test(index, total, values, shape, alternative, stat_func):
+        permutation_res = permutation_test(total, values, shape,
+                                           alternative, stat_func)['statistic']
         queue.put((index, permutation_res))
 
     processes = multiprocessing.cpu_count()
@@ -488,7 +514,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
             # pylint: disable= no-member
             np.random.shuffle(values)
             process = multiprocessing.Process(target=_help_permutation_test,
-                                              args=[index, total, values, shape, None])
+                                              args=[index, total, values, shape, None, stat_func])
             process.start()
             jobs.append(process)
             index = index + 1
@@ -517,7 +543,7 @@ def vlsm(label_paths, label, val=None, folder=None, n_permutations=0):
     generate_image(path, TEMPLATE_VOLUME)
 
 
-def permutation_test(total, values, shape, alternative):
+def permutation_test(total, values, shape, alternative, stat_func):
     """Do permutation test."""
     # pylint: disable= too-many-locals, invalid-name
     start_time = datetime.datetime.now()
@@ -536,7 +562,7 @@ def permutation_test(total, values, shape, alternative):
         group1 = [values[index] for index in vox_ids]
         ids = range(len(values))
         group2 = [values[index] for index in ids if index not in vox_ids]
-        (p_val, statistic) = brunner_munzel_test(group1, group2, alternative)
+        (p_val, statistic) = stat_func(group1, group2, alternative)
         if alternative is not None:
             res['p_val'][k, l, m] = p_val
         res['statistic'][k, l, m] = statistic
@@ -546,7 +572,7 @@ def permutation_test(total, values, shape, alternative):
     return res
 
 
-def brunner_munzel_test(x, y, alternative="two_sided"):
+def brunner_munzel_test(x, y, alternative='less'):
     """
     Computes the Brunner Munzel statistic
 
@@ -600,6 +626,33 @@ def brunner_munzel_test(x, y, alternative="two_sided"):
         prob = stats.t.cdf(abst, dfbm)
         prob = 2 * min(prob, 1 - prob)
 
+    return (prob, statistic)
+
+
+def mannwhitneyu_test(x, y, alternative='less'):
+    """
+    Computes the Mann-Whitney statistic
+
+    Parameters
+    ----------
+    x : sequence
+        Input
+    y : sequence
+        Input
+    alternative : {greater, less, two_sided }
+
+    Returns
+    -------
+    statistic : float
+        The Mann-Whitney statistics
+    pvalue : float
+        Approximate p-value assuming a t distribution.
+
+     """
+    # pylint: disable= invalid-name
+    if alternative is None:
+        alternative = 'less'
+    statistic, prob = stats.mannwhitneyu(x, y, alternative=alternative)
     return (prob, statistic)
 
 

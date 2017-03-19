@@ -12,6 +12,7 @@ import sqlite3
 
 
 def process(folder):
+    """ Post process data """
     print(folder)
     util.setup(folder, 'MolekylareMarkorer')
     conn = sqlite3.connect(util.DB_PATH, timeout=120)

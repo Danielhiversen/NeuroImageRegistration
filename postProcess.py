@@ -12,6 +12,7 @@ exclude_pid = [1307, 1461]
 
 
 def process(folder, glioma_grades):
+    """ Post process data """
     print(folder)
     util.setup(folder)
     params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky']
@@ -45,10 +46,12 @@ def process(folder, glioma_grades):
 
 
 def process_vlsm(folder, glioma_grades):
+    """ Post process vlsm data """
     print(folder)
     util.setup(folder)
-    params = ['Index_value']
-    for qol_param in params:
+    params = ['Index_value', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky']
+    stat_func = [util.brunner_munzel_test, [util.mannwhitneyu_test]*6]
+    for (qol_param, stat_func_i) in zip(params, stat_func):
         (image_ids, qol) = util.get_image_id_and_qol(qol_param, exclude_pid)
         print(image_ids)
         result = util.post_calculations(image_ids)
@@ -56,7 +59,7 @@ def process_vlsm(folder, glioma_grades):
             print(label)
             if label == 'img':
                 continue
-            util.vlsm(result[label], label + '_' + qol_param, qol, folder, n_permutations=5000)
+            util.vlsm(result[label], label + '_' + qol_param, stat_func_i, qol, folder, n_permutations=100)
 
 
 if __name__ == "__main__":
