@@ -68,11 +68,10 @@ if __name__ == "__main__":
     folder = "RES/"
     process(folder)
     start_time = datetime.datetime.now()
-    if len(sys.argv) > 2:
+    if len(sys.argv) > 1:
         n_permutations = int(sys.argv[1])
     else:
         n_permutations = 8
-
     process_vlsm(folder, n_permutations)
     print("Total runtime")
     print(datetime.datetime.now() - start_time)
