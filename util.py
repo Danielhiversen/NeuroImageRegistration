@@ -228,6 +228,7 @@ def get_qol(image_ids, qol_param):
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
     qol = []
+    image_ids_with_qol = []
     for image_id in image_ids:
         _pid = conn.execute('''SELECT pid from Images where id = ?''', (image_id, )).fetchone()
         if not _pid:
@@ -241,9 +242,11 @@ def get_qol(image_ids, qol_param):
                 LOGGER.error("No qol data for " + str(pid) + " " + str(qol_param))
                 continue
             qol.extend([_qol[0]])
+            image_ids_with_qol.extend([image_id])
+
     conn.close()
 
-    return qol
+    return (image_ids_with_qol, qol)
 
 def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     """ Get image id and qol """
@@ -494,12 +497,12 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
     jobs = []
     total_res = np.ones((shape[0], shape[1], shape[2]))
 
-    def _help_permutation_test(index, total, values, shape, alternative):
+    def _help_permutation_test(index, total, values, shape, alternative, stat_func):
         permutation_res = permutation_test(total, values, shape,
                                            alternative, stat_func)['statistic']
         queue.put((index, permutation_res))
 
-    processes = 1 #multiprocessing.cpu_count()
+    processes = multiprocessing.cpu_count()
     nr_of_jobs = 0
     finished_jobs = 0
     index = 0
@@ -555,9 +558,6 @@ def permutation_test(total, values, shape, alternative, stat_func):
         k = int(_temp[0])
         l = int(_temp[1])
         m = int(_temp[2])
-        for index in vox_ids:
-            print(index)
-            print(values[index])
         group1 = [values[index] for index in vox_ids]
         ids = range(len(values))
         group2 = [values[index] for index in ids if index not in vox_ids]
@@ -649,6 +649,8 @@ def mannwhitneyu_test(x, y, alternative='less'):
 
      """
     # pylint: disable= invalid-name
+    if alternative is None:
+        alternative = 'less'
     statistic, prob = stats.mannwhitneyu(x, y, alternative=alternative)
     return (prob, statistic)
 
