@@ -11,6 +11,7 @@ import sys
 import util
 from do_img_registration_GBM import find_images
 
+
 def process(folder):
     """ Post process data """
     print(folder)

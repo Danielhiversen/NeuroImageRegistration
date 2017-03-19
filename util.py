@@ -248,6 +248,7 @@ def get_qol(image_ids, qol_param):
 
     return (image_ids_with_qol, qol)
 
+
 def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
