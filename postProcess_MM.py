@@ -22,6 +22,8 @@ def process(folder):
     tag_data_1 = []
     tag_data_2 = []
     tag_data_3 = []
+    x = []
+    y = []
     for pid in cursor:
         pid = pid[0]
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
@@ -33,7 +35,7 @@ def process(folder):
         _mm = conn.execute("SELECT Subgroup from MolekylareMarkorer where pid = ?",
                            (pid, )).fetchone()[0]
         if _mm is None:
-            print("No mm data for ", _id)
+            print("No mm data for ", pid)
             continue
 
         _desc = conn.execute("SELECT comments from MolekylareMarkorer where pid = ?",
@@ -61,9 +63,10 @@ def process(folder):
             tag_data_2.append(val)
         elif _mm == 3:
             tag_data_3.append(val)
+        x.append(com)
+        y.append(_mm)
 
-    tag_data = {"tag_data_1": tag_data_1, "tag_data_2": tag_data_2, "tag_data_3": tag_data_3}
-    pickle.dump(tag_data, open("tag_data.pickle", "wb"))
+    pickle.dump((x,y), open(folder + "tag_data.pickle", "wb"))
 
     cursor.close()
     conn.close()
