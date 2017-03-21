@@ -16,7 +16,7 @@ def process(folder):
     """ Post process data """
     print(folder)
     util.setup(folder)
-    params = ['Index_value', 'Global_index', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky']
+    params = ['Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value']
     image_ids = find_images()
     result = util.post_calculations(image_ids)
     print(len(result['all']))

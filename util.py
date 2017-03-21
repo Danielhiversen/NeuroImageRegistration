@@ -653,7 +653,7 @@ def mannwhitneyu_test(x, y, alternative='less'):
     if alternative is None:
         alternative = 'less'
     statistic, prob = stats.mannwhitneyu(x, y, alternative=alternative)
-    return (prob, statistic)
+    return (prob, -1 * statistic)
 
 
 def generate_image(path, path2, out_path=None):
