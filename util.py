@@ -465,7 +465,7 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
     return t_img
 
 
-def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0):
+def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0, alternative='less'):
     """ Calculate average volumes """
     # pylint: disable= too-many-locals, invalid-name, too-many-branches
 
@@ -486,7 +486,7 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
         _id = _id + 1
     shape = img.get_data().shape
 
-    res = permutation_test(total, val, shape, 'less', stat_func)
+    res = permutation_test(total, val, shape, alternative, stat_func)
     path = folder + 'p-val_' + label + '.nii'
     path = path.replace('label', 'tumor')
     img = nib.load(label_paths[0])
@@ -526,7 +526,10 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
             jobs[_index].join()
 
             temp = np.zeros((shape[0], shape[1], shape[2]))
-            idx = permutation_res > res['statistic']
+            if alternative == 'less':
+                idx = permutation_res > res['statistic']
+            else:
+                idx = permutation_res < res['statistic']
             temp[idx] = 1.0 / (n_permutations + 1)
             total_res[(idx & (total_res == 1))] = 0
             total_res += temp
@@ -623,7 +626,6 @@ def brunner_munzel_test(x, y, alternative='less'):
     elif (alternative == "less") | (alternative == "l"):
         prob = 1 - stats.t.cdf(statistic, dfbm)
     else:
-        alternative = "two_sided"
         abst = np.abs(statistic)
         prob = stats.t.cdf(abst, dfbm)
         prob = 2 * min(prob, 1 - prob)
@@ -653,9 +655,11 @@ def mannwhitneyu_test(x, y, alternative='less'):
      """
     # pylint: disable= invalid-name
     if alternative is None:
-        alternative = 'less'
-    statistic, prob = stats.mannwhitneyu(y, x, alternative=alternative)
-    return (prob, -1 * statistic)
+        statistic, prob = stats.mannwhitneyu(x, y, alternative='less')
+        prob = -1
+    else:
+        statistic, prob = stats.mannwhitneyu(x, y, alternative=alternative)
+    return (prob, statistic)
 
 
 def generate_image(path, path2, out_path=None):
