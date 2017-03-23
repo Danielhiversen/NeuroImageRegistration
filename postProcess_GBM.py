@@ -27,10 +27,7 @@ def process(folder):
         (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
         if not qol_param == "karnofsky":
             qol = [_temp * 100 for _temp in qol]
-        if qol_param == "Index_value":
-            default_value = 0
-        else:
-            default_value = -100
+        default_value = -100
         print(qol_param)
         print(image_ids_with_qol)
         print(len(qol))
@@ -71,7 +68,7 @@ if __name__ == "__main__":
     if len(sys.argv) > 1:
         n_permutations = int(sys.argv[1])
     else:
-        n_permutations = 8
+        n_permutations = 40
     process_vlsm(folder, n_permutations)
     print("Total runtime")
     print(datetime.datetime.now() - start_time)

@@ -91,7 +91,7 @@ def setup_paths(data="glioma"):
 
     if data == 'glioma':
         if hostname == 'dddd':
-            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/unity/database/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/Segmentations/database/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
@@ -424,7 +424,9 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
-    path = path.replace('label', 'tumor')
+    path = path.replace('label', 'tumor_seg')
+    path = path.replace('all', 'tumor_seg')
+    path = path.replace('img', 'tumor_volum')
 
     (_sum, _total) = sum_calculation(images, label, val, save=save_sum, default_value=default_value)
     _total[_total == 0] = np.inf
@@ -485,7 +487,7 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
     shape = img.get_data().shape
 
     res = permutation_test(total, val, shape, 'less', stat_func)
-    path = folder + 'vlsm_' + label + '.nii'
+    path = folder + 'p-val_' + label + '.nii'
     path = path.replace('label', 'tumor')
     img = nib.load(label_paths[0])
     result_img = nib.Nifti1Image(res['p_val'], img.affine)
@@ -535,7 +537,7 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0)
         if not nr_of_jobs < processes and queue.empty():
             time.sleep(2)
 
-    path = folder + 'vlsm_permutations_' + label + '.nii'
+    path = folder + 'p-val_permutations_' + label + '.nii'
     path = path.replace('label', 'tumor')
     img = nib.load(label_paths[0])
     result_img = nib.Nifti1Image(total_res, img.affine)
@@ -652,7 +654,7 @@ def mannwhitneyu_test(x, y, alternative='less'):
     # pylint: disable= invalid-name
     if alternative is None:
         alternative = 'less'
-    statistic, prob = stats.mannwhitneyu(x, y, alternative=alternative)
+    statistic, prob = stats.mannwhitneyu(y, x, alternative=alternative)
     return (prob, -1 * statistic)
 
 
