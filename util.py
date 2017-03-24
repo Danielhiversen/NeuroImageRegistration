@@ -15,10 +15,10 @@ import logging
 import os
 from os.path import basename
 from os.path import splitext
-import psutil
 import sqlite3
 import time
 import multiprocessing
+import psutil
 from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
