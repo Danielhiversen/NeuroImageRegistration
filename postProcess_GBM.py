@@ -62,7 +62,7 @@ def process_vlsm(folder, n_permutations):
 
 
 if __name__ == "__main__":
-    folder = "RES_GBM_" + "{%M%H_:%m_%d_%Y}".format(datetime.datetime.now()) + "/"
+    folder = "RES_GBM_" + "{:%H%M_%m_%d_%Y}".format(datetime.datetime.now()) + "/"
     process(folder)
     start_time = datetime.datetime.now()
     if len(sys.argv) > 1:
