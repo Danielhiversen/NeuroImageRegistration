@@ -62,8 +62,6 @@ def process_vlsm(folder, n_permutations):
 
 
 if __name__ == "__main__":
-    import datetime
-
     folder = "RES_GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/"
     process(folder)
     start_time = datetime.datetime.now()

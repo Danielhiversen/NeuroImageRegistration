@@ -465,7 +465,8 @@ def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None)
     return t_img
 
 
-def vlsm(label_paths, label, stat_func, val=None, folder=None, n_permutations=0, alternative='less'):
+def vlsm(label_paths, label, stat_func, val=None, folder=None,
+         n_permutations=0, alternative='less'):
     """ Calculate average volumes """
     # pylint: disable= too-many-locals, invalid-name, too-many-branches
 
