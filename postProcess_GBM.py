@@ -6,6 +6,7 @@ Created on Tue May 24 10:41:50 2016
 """
 
 # import os
+import datetime
 import sys
 
 import util
@@ -49,7 +50,6 @@ def process_vlsm(folder, n_permutations):
     alternative = ['less', 'less', 'greater', 'greater', 'greater', 'greater', 'greater']
     stat_func = [util.brunner_munzel_test, util.mannwhitneyu_test, util.mannwhitneyu_test, util.mannwhitneyu_test,
                  util.mannwhitneyu_test, util.mannwhitneyu_test, util.mannwhitneyu_test]
-    print(stat_func)
     for (qol_param, stat_func_i, alternative_i) in zip(params, stat_func, alternative):
         (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
         result = util.post_calculations(image_ids_with_qol)
@@ -64,13 +64,13 @@ def process_vlsm(folder, n_permutations):
 if __name__ == "__main__":
     import datetime
 
-    folder = "RES2/"
-    #process(folder)
+    folder = "RES_GBM_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/"
+    # process(folder)
     start_time = datetime.datetime.now()
     if len(sys.argv) > 1:
         n_permutations = int(sys.argv[1])
     else:
-        n_permutations = 40
+        n_permutations = 20
     process_vlsm(folder, n_permutations)
     print("Total runtime")
     print(datetime.datetime.now() - start_time)

@@ -426,7 +426,7 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     path = folder + 'avg_' + label + '.nii'
     path = path.replace('label', 'tumor_seg')
     path = path.replace('all', 'tumor_seg')
-    path = path.replace('img', 'tumor_volum')
+    path = path.replace('img', 'volum')
 
     (_sum, _total) = sum_calculation(images, label, val, save=save_sum, default_value=default_value)
     _total[_total == 0] = np.inf
@@ -659,7 +659,7 @@ def mannwhitneyu_test(x, y, alternative='less'):
         prob = -1
     else:
         statistic, prob = stats.mannwhitneyu(x, y, alternative=alternative)
-    return (prob, statistic)
+    return (prob, -1 * statistic)
 
 
 def generate_image(path, path2, out_path=None):
