@@ -37,5 +37,4 @@ if __name__ == "__main__":
     util.setup("LGG_PRE/")
 
     pre_images = find_images()
-
     image_registration.get_transforms(pre_images, image_registration.SYN, save_to_db=True)

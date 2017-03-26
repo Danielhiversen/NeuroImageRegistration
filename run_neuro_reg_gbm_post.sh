@@ -5,7 +5,7 @@
 #
 ###################################################
 #
-#SBATCH -J NeuroRegGBM1  # sensible name for the job
+#SBATCH -J NeuroRegGBMpost  # sensible name for the job
 #SBATCH -p normal            # partition, sinfo to see available
 #SBATCH -N 1               # allocate N nodes for the job
 #SBATCH -n 40              # n tasks total
