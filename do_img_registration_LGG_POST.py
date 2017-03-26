@@ -52,7 +52,6 @@ def process_dataset(args, num_tries=3):
     cursor.close()
     conn.close()
 
-    import datetime
     start_time = datetime.datetime.now()
     pre_img = img_data(pre_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
     post_img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
