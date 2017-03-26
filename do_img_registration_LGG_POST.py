@@ -67,12 +67,18 @@ def process_dataset(args, num_tries=3):
     img.fixed_image = pre_image_id
     if save_to_db:
         image_registration.save_transform_to_database([img])
-    return img
 
 
 if __name__ == "__main__":
     os.nice(19)
-    util.setup("LGG_POST/")
+    os.nice(17)
+    HOSTNAME = os.uname()[1]
+    if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
+        path = "/work/danieli/LGG_POST/"
+    else:
+        path = "LGG_POST_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/"
+
+    util.setup(path)
 
     post_images = find_images()
     image_registration.get_transforms(post_images,
