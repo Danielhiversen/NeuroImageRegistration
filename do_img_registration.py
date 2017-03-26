@@ -49,6 +49,8 @@ if __name__ == "__main__":
     else:
         path = "tumor_reg_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/"
 
+    util.setup(path)
+
     moving_datasets_ids = find_images()
     print(moving_datasets_ids, len(moving_datasets_ids))
     image_registration.get_transforms(moving_datasets_ids,
