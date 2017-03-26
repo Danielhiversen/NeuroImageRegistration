@@ -513,7 +513,8 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None,
     index = 0
     values = list(val)
     while finished_jobs < n_permutations:
-        if nr_of_jobs < processes and index < n_permutations and psutil.virtual_memory().percent < 90:
+        if nr_of_jobs < processes and index < n_permutations\
+                and psutil.virtual_memory().percent < 90:
             nr_of_jobs = nr_of_jobs + 1
             # pylint: disable= no-member
             np.random.shuffle(values)
