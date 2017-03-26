@@ -25,11 +25,11 @@ def find_images():
                                (row[0], "pre"))
         for _id in cursor2:
             _id = _id[0]
-            cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
+            cursor3 = conn.execute('''SELECT registration_date from Images where id = ? ''', (_id,))
 
-            _img_filepath = cursor3.fetchone()[0]
+            registration_date = cursor3.fetchone()[0]
             cursor3.close()
-            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
+            if registration_date:
                 continue
             ids.append(_id)
 
