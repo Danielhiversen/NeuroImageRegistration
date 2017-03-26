@@ -22,4 +22,4 @@
 
   source /home/danieli/NeuroImageRegistration/venv2/bin/activate
   python /home/danieli/NeuroImageRegistration/do_img_registration.py
-
+  python /home/danieli/NeuroImageRegistration/do_img_registration_LGG_POST.py

@@ -6,6 +6,7 @@ Created on Wed Apr 20 15:02:02 2016
 @author: dahoiv
 """
 from __future__ import print_function
+import datetime
 import os
 import sqlite3
 
