@@ -28,11 +28,10 @@ def find_images():
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
             _img_filepath = cursor3.fetchone()[0]
+            cursor3.close()
             if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
-                cursor3.close()
                 continue
             ids.append(_id)
-            cursor3.close()
 
         cursor2.close()
 
@@ -44,7 +43,11 @@ def find_images():
 # pylint: disable= invalid-name
 if __name__ == "__main__":
     os.nice(17)
-    util.setup("GBM_LGG_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/")
+    HOSTNAME = os.uname()[1]
+    if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
+        path = "/work/danieli/tumor_reg/"
+    else:
+        path = "tumor_reg_" + "{:%m_%d_%Y}".format(datetime.datetime.now()) + "/"
 
     moving_datasets_ids = find_images()
     print(moving_datasets_ids, len(moving_datasets_ids))
