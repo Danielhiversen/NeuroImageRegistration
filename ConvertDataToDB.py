@@ -194,6 +194,58 @@ def qol_to_db(data_type):
     conn.close()
 
 
+def qol_change_to_db():
+    # pylint: disable= too-many-branches
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    try:
+        conn.execute("alter table QualityOfLife add column 'Delta_qol' 'REAL'")
+        conn.execute("alter table QualityOfLife add column 'Delta_kps' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/Segmentations/Endring_QoL_KPS.xlsx')['Ark1']
+
+    k = 0
+    i = 0
+    j = 0
+    for row in data:
+        k = k + 1
+        if k < 1:
+            continue
+
+        pid = row[0]
+        if pid is None:
+            continue
+        try:
+            float(row[0])
+        except ValueError:
+            continue
+
+        if len(row) < 2:
+            continue
+        d_qol = row[1]
+        if d_qol is not None:
+            i += 1
+            cursor.execute('''UPDATE QualityOfLife SET Delta_qol = ? WHERE pid = ?''', (d_qol, pid))
+
+        if len(row) < 3:
+            continue
+        d_kps = row[2]
+        if d_kps is not None:
+            j += 1
+            cursor.execute('''UPDATE QualityOfLife SET Delta_kps = ? WHERE pid = ?''', (d_kps, pid))
+
+        conn.commit()
+
+    print(k, i , j)
+    conn.commit()
+    cursor.close()
+    conn.close()
+
+
 def karnofsky_to_db():
     """Convert qol data to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -555,6 +607,7 @@ if __name__ == "__main__":
 #    karnofsky_to_db()
 #    convert_data(MAIN_FOLDER + "siste_runde_hgg/", 34, update=True, case_ids=[1424])
 
-    qol_to_db("siste_runde")
+#    qol_to_db("siste_runde")
 
+    qol_change_to_db()
     vacuum_db()
