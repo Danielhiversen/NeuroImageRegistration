@@ -437,7 +437,6 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
         average = _sum / len(images)
     average[average == 0] = default_value
 
-
     if save:
         img = nib.load(images[0])
         result_img = nib.Nifti1Image(average, img.affine)
