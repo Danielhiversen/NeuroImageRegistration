@@ -240,7 +240,7 @@ def qol_change_to_db():
 
         conn.commit()
 
-    print(k, i , j)
+    print(k, i, j)
     conn.commit()
     cursor.close()
     conn.close()

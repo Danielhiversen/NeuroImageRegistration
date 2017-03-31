@@ -425,8 +425,8 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
-    path = path.replace('label', 'tumor_seg')
-    path = path.replace('all', 'tumor_seg')
+    path = path.replace('label', 'tumor')
+    path = path.replace('all', 'tumor')
     path = path.replace('img', 'volum')
 
     (_sum, _total) = sum_calculation(images, label, val, save=save_sum, default_value=default_value)
@@ -435,6 +435,8 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
         average = _sum / _total
     else:
         average = _sum / len(images)
+    average[average == 0] = default_value
+
 
     if save:
         img = nib.load(images[0])

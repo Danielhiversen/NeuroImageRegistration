@@ -17,7 +17,7 @@ def process(folder):
     """ Post process data """
     print(folder)
     util.setup(folder)
-    params = ['Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value']
+    params = ['Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value', 'Delta_qol', 'Delta_kps']
     image_ids = find_images()
     result = util.post_calculations(image_ids)
     print(len(result['all']))
@@ -26,7 +26,7 @@ def process(folder):
 
     for qol_param in params:
         (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
-        if not qol_param == "karnofsky":
+        if not qol_param == "karnofsky" and not qol_param == "Delta_kps":
             qol = [_temp * 100 for _temp in qol]
         default_value = -100
         print(qol_param)
