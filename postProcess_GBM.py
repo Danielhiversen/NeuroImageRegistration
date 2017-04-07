@@ -17,16 +17,22 @@ def process(folder):
     """ Post process data """
     print(folder)
     util.setup(folder)
-    params = ['Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value', 'Delta_qol', 'Delta_kps']
+    params = ['Delta_qol2', 'Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value', 'Delta_qol', 'Delta_kps']
     image_ids = find_images()
     result = util.post_calculations(image_ids)
     print(len(result['all']))
-    util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img', None, True, folder)
+    #util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
+    #util.avg_calculation(result['img'], 'img', None, True, folder)
 
     for qol_param in params:
-        (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
-        if not qol_param == "karnofsky" and not qol_param == "Delta_kps":
+        if qol_param == "Delta_qol2":
+            (image_ids_with_qol, qol) = util.get_qol(image_ids, "Delta_qol")
+            print(qol)
+            qol = [-1 if _temp <= -0.15 else 0 if _temp < 0.15 else 1 for _temp in qol]
+            print(qol)
+        else:
+            (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
+        if qol_param not in ["karnofsky", "Delta_kps"]:
             qol = [_temp * 100 for _temp in qol]
         default_value = -100
         print(qol_param)
@@ -69,6 +75,6 @@ if __name__ == "__main__":
         n_permutations = int(sys.argv[1])
     else:
         n_permutations = 20
-    process_vlsm(folder, n_permutations)
+    # process_vlsm(folder, n_permutations)
     print("Total runtime")
     print(datetime.datetime.now() - start_time)
