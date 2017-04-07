@@ -21,8 +21,8 @@ def process(folder):
     image_ids = find_images()
     result = util.post_calculations(image_ids)
     print(len(result['all']))
-    #util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
-    #util.avg_calculation(result['img'], 'img', None, True, folder)
+    util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'img', None, True, folder)
 
     for qol_param in params:
         if qol_param == "Delta_qol2":
