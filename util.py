@@ -717,7 +717,8 @@ def compress_vol(vol):
 
 def decompress_file(gzip_path):
     """Decompress file """
-    if gzip_path[:-3] != '.gz':
+    gzip_path = gzip_path.strip()
+    if gzip_path[-3:] != '.gz':
         return gzip_path
 
     in_file = gzip.open(gzip_path, 'rb')
