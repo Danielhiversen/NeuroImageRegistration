@@ -222,7 +222,7 @@ def qol_change_to_db():
         except (ValueError, TypeError):
             continue
         print(pid, color)
-        d_qol = sheet["{}{}".format("C", row)].value
+        d_qol = sheet["{}{}".format("B", row)].value
         d_mobility = sheet["{}{}".format("C", row)].value
         d_selfcare = sheet["{}{}".format("D", row)].value
         d_activity = sheet["{}{}".format("E", row)].value
