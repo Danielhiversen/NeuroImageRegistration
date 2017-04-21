@@ -28,6 +28,7 @@ class img_data(object):
         self.fixed_image = -1
 
         self._img_filepath = None
+        self._reg_img_filepath = None
         self._label_filepath = None
         self._label__inv_filepath = None
 
@@ -49,8 +50,25 @@ class img_data(object):
 
         return self._img_filepath
 
+    @property
+    def reg_img_filepath(self):
+        if self._reg_img_filepath is not None:
+            return self._reg_img_filepath
+        conn = sqlite3.connect(self.db_path)
+        conn.text_factory = str
+        cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (self.image_id,))
+        path = cursor.fetchone()
+        if path is None:
+            print("Could not find data for " + str(self.image_id))
+            self._reg_img_filepath = ""
+        else:
+            self._reg_img_filepath = self.data_path + path[0]
+        cursor.close()
+        conn.close()
+
+        return self.reg_img_filepath
+
     def load_db_transforms(self):
-        print(self.db_path, self.image_id)
         conn = sqlite3.connect(self.db_path)
         conn.text_factory = str
         cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (self.image_id,))
