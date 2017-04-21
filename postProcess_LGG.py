@@ -38,16 +38,18 @@ def find_images(diag):
 
 def post_calculations(moving_dataset_image_ids, result=None):
     """ Transform images and calculate avg"""
-    conn = sqlite3.connect(util.DB_PATH, timeout=120)
-    conn.text_factory = str
     if result is None:
         result = {}
 
     for _id in moving_dataset_image_ids:
+        print(_id)
         img = img_data(_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
         img.load_db_transforms()
 
-        reg_vol = util.transform_volume(img.img_filepath, img.get_transforms())
+        img_pre =img_data(img.fixed_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+        img_pre.load_db_transforms()
+
+        reg_vol = util.transform_volume(img.reg_img_filepath, img_pre.get_transforms())
         vol = util.TEMP_FOLDER_PATH + util.get_basename(basename(reg_vol)) + '_BE.nii.gz'
 
         mult = ants.MultiplyImages()
@@ -64,7 +66,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
             result[label] = [vol]
 
         for (segmentation, label) in util.find_reg_label_images(_id):
-            segmentation = util.transform_volume(segmentation, img.get_transforms())
+            segmentation = util.transform_volume(segmentation, img_pre.get_transforms())
             if label in result:
                 result[label].append(segmentation)
             else:
@@ -76,17 +78,18 @@ def process(folder):
     """ Post process data """
     print(folder)
     util.setup(folder)
-    image_ids = find_images("pre")
-    result = util.post_calculations(image_ids)
-    print(len(result['all']))
-    util.avg_calculation(result['all'], 'all_pre', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img_pre', None, True, folder)
 
     image_ids = find_images("post")
     result = post_calculations(image_ids)
     print(len(result['all']))
     util.avg_calculation(result['all'], 'all_post', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img_post', None, True, folder)
+
+    image_ids = find_images("pre")
+    result = util.post_calculations(image_ids)
+    print(len(result['all']))
+    util.avg_calculation(result['all'], 'all_pre', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'img_pre', None, True, folder)
 
 
 if __name__ == "__main__":
