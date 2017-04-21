@@ -48,7 +48,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
         img.load_db_transforms()
 
         reg_vol = util.transform_volume(img.img_filepath, img.get_transforms())
-        vol = util.TEMP_FOLDER_PATH + util.get_basename(basename(img.img_filepath)) + '_BE.nii.gz'
+        vol = util.TEMP_FOLDER_PATH + util.get_basename(basename(reg_vol)) + '_BE.nii.gz'
 
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
