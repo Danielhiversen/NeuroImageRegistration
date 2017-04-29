@@ -37,14 +37,14 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
         num_of_splits = int(sys.argv[1])
         split = int(sys.argv[2])
 
-        length = int(len(moving_datasets_ids) / num_of_splits)
+        length = int(len(image_ids) / num_of_splits)
         start_idx = length * (split - 1)
         if split < num_of_splits:
-            moving_datasets_ids = moving_datasets_ids[start_idx:(start_idx+length)]
+            image_ids = image_ids[start_idx:(start_idx+length)]
         else:
-            moving_datasets_ids = moving_datasets_ids[start_idx:]
+            image_ids = image_ids[start_idx:]
 
-    util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
-    image_registration.get_transforms(moving_datasets_ids,
+    util.LOGGER.info(str(image_ids) + " " + str(len(image_ids)))
+    image_registration.get_transforms(image_ids,
                                       image_registration.RIGID,
                                       save_to_db=True)

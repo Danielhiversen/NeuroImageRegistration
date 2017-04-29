@@ -11,7 +11,7 @@
 #SBATCH -n 40              # n tasks total
 #SBATCH --mem=62000        # Memory per node in MegaBytes
 #SBATCH --exclusive        # no other jobs on the nodes while job is running
-#SBATCH -t 8-00:00         # upper time limit [D-HH:MM] for the job
+#SBATCH -t 2-00:00         # upper time limit [D-HH:MM] for the job
 #SBATCH --output=logs/output_%j.file
 #SBATCH --error=logs/error_%j.file
 #SBATCH --mail-type=ALL         # Type of email notification- BEGIN,END,FAIL,ALL
@@ -21,5 +21,5 @@
 #
 
   source /home/danieli/NeuroImageRegistration/venv2/bin/activate
-  python /home/danieli/NeuroImageRegistration/do_img_registration_GBM_survival_time.py
+  python /home/danieli/NeuroImageRegistration/do_img_registration_GBM_survival_time.py 3 1
 
