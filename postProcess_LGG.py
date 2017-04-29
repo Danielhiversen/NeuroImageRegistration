@@ -42,7 +42,6 @@ def post_calculations(moving_dataset_image_ids, result=None):
         result = {}
 
     for _id in moving_dataset_image_ids:
-        print(_id)
         img = img_data(_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
         img.load_db_transforms()
 

@@ -456,11 +456,11 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
             process_dataset_func((moving_image_id, reg_type, save_to_db, be_method))
 
 
-def move_vol(moving, transform, label_img=False):
+def move_vol(moving, transform, label_img=False, slice_size=1):
     """ Move data with transform """
     if label_img:
         # resample volume to 1 mm slices
-        target_affine_3x3 = np.eye(3) * 1
+        target_affine_3x3 = np.eye(3) * slice_size
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
         resampled_file = util.TEMP_FOLDER_PATH + util.get_basename(moving) + '_resample.nii.gz'
