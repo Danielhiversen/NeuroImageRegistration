@@ -93,22 +93,24 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
                    (pid, 'MR', image_type))
     img_id = cursor.lastrowid
 
-    _, file_extension = os.path.splitext(volume)
-    volume_temp = "volume" + file_extension
-    shutil.copy(volume, volume_temp)
-
     volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
-    print("--->", volume_out)
-    os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out +
-              " --conversionMode NrrdToFSL --allowLossyConversion")
+
+    if volume[-7:] == '.nii.gz':
+        shutil.copy(volume, volume_out)
+    else:
+        _, file_extension = os.path.splitext(volume)
+        volume_temp = "volume" + file_extension
+        shutil.copy(volume, volume_temp)
+
+        print("--->", volume_out)
+        os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out +
+                  " --conversionMode NrrdToFSL --allowLossyConversion")
+        os.remove(volume_temp)
+
     volume_out_db = volume_out.replace(util.DATA_FOLDER, "")
     cursor.execute('''UPDATE Images SET filepath = ?, filepath_reg = ? WHERE id = ?''', (volume_out_db, None, img_id))
-    os.remove(volume_temp)
 
     for volume_label in volume_labels:
-        _, file_extension = os.path.splitext(volume_label)
-        volume_label_temp = "volume_label" + file_extension
-        shutil.copy(volume_label, volume_label_temp)
 
         cursor.execute('''INSERT INTO Labels(image_id, description) VALUES(?,?)''',
                        (img_id, 'all'))
@@ -116,12 +118,21 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
 
         volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type\
             + "_label_all.nii.gz"
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label_temp + " -o " +
-                  volume_label_out + " --conversionMode NrrdToFSL --allowLossyConversion")
+
+        if volume[-7:] == '.nii.gz':
+            shutil.copy(volume_label, volume_label_out)
+        else:
+            _, file_extension = os.path.splitext(volume_label)
+            volume_label_temp = "volume_label" + file_extension
+            shutil.copy(volume_label, volume_label_temp)
+
+            os.system(DWICONVERT_PATH + " --inputVolume " + volume_label_temp + " -o " +
+                      volume_label_out + " --conversionMode NrrdToFSL --allowLossyConversion")
+            os.remove(volume_label_temp)
+
         volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
         cursor.execute('''UPDATE Labels SET filepath = ?, filepath_reg = ? WHERE id = ?''',
                        (volume_label_out_db, None, label_id))
-        os.remove(volume_label_temp)
 
 
 def convert_lgg_data(path):
@@ -231,6 +242,113 @@ def convert_lgg_data_tromso(path):
     conn.close()
 
 
+def convert_lgg_data_tromso_reseksjon(path):
+    """convert_lgg_data"""
+    convert_table = get_convert_table()
+
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+    for volume in glob.glob(path + "*.nii"):
+        if "label" in volume:
+            continue
+        case_id = re.findall(r'\d+\b', volume)
+        if len(case_id) != 1:
+            print("ERROR", volume, case_id)
+            return
+        case_id = int(case_id[0])
+        print(volume)
+        if not os.path.exists(volume):
+            print("ERROR, volume missing", volume, case_id)
+            return
+
+        image_type = 'pre'
+
+        volume_label = path + 'T' + str(case_id) + '-label.nii'
+        if not os.path.exists(volume_label):
+            volume_label = path + 'T' + str(case_id) + '_label.nii'
+            if not os.path.exists(volume_label):
+                print("ERROR, no label", volume_label, case_id)
+                return
+        subgroup = convert_table.get(case_id, None)
+        print(volume, image_type, case_id, subgroup)
+        convert_and_save_dataset(case_id, cursor, image_type, [volume_label], volume, 2, subgroup, "", True)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
+def get_convert_table():
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/MolekylareMarkorer/patientlist_norway.xlsx')['Ark1']
+    convert_table = {}
+    k = 0
+    for row in data:
+        k = k + 1
+        if not row:
+            continue
+        pid = row[0]
+        try:
+            pid = int(pid)
+        except ValueError:
+            continue
+        subgroup = row[3]
+        try:
+            subgroup = int(subgroup)
+        except ValueError:
+            continue
+        convert_table[pid] = subgroup
+    return convert_table
+
+
+def add_from_gbm_db(path):
+    """convert_lgg_data"""
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    opids = [515, 527, 579, 600, 727, 728, 826, 840, 847, 857, 916, 934, 976, 980, 1030, 1070, 1084, 1124, 1176, 1195, 1197, 1211, 1166, 966, 1254, 1258, 1261, 1269, 1271, 1278, 1352, 1461, 1585, 1553, 1505, 1483, 1481, 666, 1454, 1432, 1219, 1297, 1307, 265, 408, 611, 678, 800, 805, 1146, 1189]  # noqa: E501
+
+    convert_table = get_convert_table()
+
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/MolekylareMarkorer/pas_til_kart_oversikt.xlsx')['Ark1']
+    convert_table_opid_to_pid = {}
+    k = 0
+    for row in data:
+        k = k + 1
+        if not row or len(row) < 13:
+            continue
+        opid = row[11]
+        try:
+            opid = int(opid)
+        except ValueError:
+            continue
+        pid = row[12]
+        try:
+            pid = int(pid)
+        except ValueError:
+            continue
+        convert_table_opid_to_pid[opid] = pid
+    for opid in opids:
+        volume = ""
+        for _volume in glob.glob(path + str(opid) + "/volumes_labels/*.nii.gz"):
+            if "_label_" not in _volume and "_pre" in _volume:
+                volume = _volume
+                break
+        image_type = 'pre'
+        volume_label = ""
+        for _volume_label in glob.glob(path + str(opid) + "/volumes_labels/*.nii.gz"):
+            if "_label_" in _volume_label and "_pre" in _volume_label:
+                volume_label = _volume_label
+                break
+        pid = convert_table_opid_to_pid[opid]
+        subgroup = convert_table.get(pid, None)
+        print(pid, opid, subgroup, volume, volume_label)
+        convert_and_save_dataset(pid, cursor, image_type, [volume_label], volume, 2, subgroup, "", True)
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
 def vacuum_db():
     """ Clean up database"""
     conn = sqlite3.connect(util.DB_PATH)
@@ -247,6 +365,10 @@ if __name__ == "__main__":
 #        pass
 #    util.mkdir_p(util.DATA_FOLDER)
 #    create_db(util.DB_PATH)
-    convert_lgg_data_tromso(MAIN_FOLDER)
+#     convert_lgg_data_tromso(MAIN_FOLDER)
+
+    # convert_lgg_data_tromso_reseksjon("/home/dahoiv/disk/data/MolekylareMarkorer/JAMA_Tromso_reseksjon/")
+
+    add_from_gbm_db("/home/dahoiv/disk/data/Segmentations/database/")
 
     vacuum_db()
