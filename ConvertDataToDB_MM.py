@@ -269,7 +269,7 @@ def convert_lgg_data_tromso_reseksjon(path):
             if not os.path.exists(volume_label):
                 print("ERROR, no label", volume_label, case_id)
                 return
-        subgroup = convert_table.get(case_id, None)
+        subgroup = convert_table.get(case_id)
         print(volume, image_type, case_id, subgroup)
         convert_and_save_dataset(case_id, cursor, image_type, [volume_label], volume, 2, subgroup, "", True)
         conn.commit()
