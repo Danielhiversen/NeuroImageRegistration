@@ -44,14 +44,19 @@ def find_images(exclude=None):
 
 # pylint: disable= invalid-name
 if __name__ == "__main__":
-    os.nice(17)
-    util.setup("MM_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/", "MolekylareMarkorer")
+    HOSTNAME = os.uname()[1]
+    if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
+        path = "/work/danieli/MM/"
+    else:
+        os.nice(17)
+        path = "MM_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/"
 
-    moving_datasets_ids_affine = [7, 39, 31]
-    moving_datasets_ids = find_images(exclude=moving_datasets_ids_affine)
+    util.setup(path, "MolekylareMarkorer")
+
+    moving_datasets_ids = find_images()
     print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
-                                                        image_registration.SYN,
+                                                        image_registration.AFFINE,
                                                         save_to_db=True)
 
     # print(moving_datasets_ids_affine, len(moving_datasets_ids_affine))

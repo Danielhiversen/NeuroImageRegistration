@@ -110,6 +110,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/ingerid/data/daniel/database_MM/"
+        elif 'unity' in hostname or 'compute' in hostname:
+            DATA_FOLDER = '/work/danieli/database_MM/'
         else:
             LOGGER.error("Unkown host name " + hostname)
             LOGGER.error("Add your host name path to " + sys.argv[0])
