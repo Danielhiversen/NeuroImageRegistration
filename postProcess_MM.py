@@ -33,7 +33,7 @@ def process(folder):
         _mm = conn.execute("SELECT Subgroup from MolekylareMarkorer where pid = ?",
                            (pid, )).fetchone()[0]
         if _mm is None:
-            print("No mm data for ", _id)
+            print("No mm data for ", pid)
             continue
 
         _desc = conn.execute("SELECT comments from MolekylareMarkorer where pid = ?",
@@ -44,7 +44,7 @@ def process(folder):
         _filepath = conn.execute("SELECT filepath_reg from Labels where image_id = ?",
                                  (_id, )).fetchone()[0]
         if _filepath is None:
-            print("No filepath for ", _id)
+            print("No filepath for ", pid)
             continue
 
         com = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
@@ -54,7 +54,7 @@ def process(folder):
         val['desc'] = str(_desc)
 
         image_ids.extend([_id])
-        print(_mm)
+        print(pid, _mm)
         if _mm == 1:
             tag_data_1.append(val)
         elif _mm == 2:
@@ -62,14 +62,16 @@ def process(folder):
         elif _mm == 3:
             tag_data_3.append(val)
 
+    print(len(image_ids))
+
     tag_data = {"tag_data_1": tag_data_1, "tag_data_2": tag_data_2, "tag_data_3": tag_data_3}
     pickle.dump(tag_data, open("tag_data.pickle", "wb"))
 
     cursor.close()
     conn.close()
-    util.write_fcsv(folder + "mm_1.fcsv", tag_data_1, '1,0,0')
-    util.write_fcsv(folder + "mm_2.fcsv", tag_data_2, '0,1,0')
-    util.write_fcsv(folder + "mm_3.fcsv", tag_data_3, '0,0,1')
+    util.write_fcsv("mm_1", folder, tag_data_1, '1 0 0', 13)
+    util.write_fcsv("mm_2", folder, tag_data_2, '0 1 0', 5)
+    util.write_fcsv("mm_3", folder, tag_data_3, '0 0 1', 6)
     result = util.post_calculations(image_ids)
     util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img', None, True, folder)
