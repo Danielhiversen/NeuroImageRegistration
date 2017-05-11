@@ -105,7 +105,7 @@ def setup_paths(data="glioma"):
             raise Exception
     elif data == 'MolekylareMarkorer':
         if hostname == 'dddd':
-            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM2/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
@@ -777,19 +777,28 @@ def get_center_of_mass(filepath):
     return res
 
 
-def write_fcsv(filepath_out, tag_data, color):
+def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
     """Write fcsv file, https://www.slicer.org/wiki/Modules:Fiducials-Documentation-3.6"""
-    fscv_data = '# Markups fiducial file version = 4.4' + os.linesep
-    fscv_data += '# visibility = 1' + os.linesep
-    fscv_data += '# color = ' + color + os.linesep
-    fscv_data += '# selectedColor = ' + color + os.linesep
-    fscv_data += '# locked = 1'
-    fscv_data += '# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID'
-    fscv_data += os.linesep
+    fscv_data = '# Markups fiducial file version = 4.7' + os.linesep
+    fscv_data += '# CoordinateSystem = 0' + os.linesep
+    fscv_data += '# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID' + os.linesep
 
     for val in tag_data:
-        fscv_data += val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,0,"
+        fscv_data += val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,1,"
         fscv_data += val['Name'] + "," + val.get("desc", "") + "," + os.linesep
-    fcsv_file = open(filepath_out, 'w')
+    fcsv_file = open(folder_out + name_out + ".fcsv", 'w')
     fcsv_file.write(fscv_data)
     fcsv_file.close()
+
+    mrml_text = '<MRML  version="Slicer4.4.0" userTags="">' + os.linesep + \
+                ' <MarkupsDisplay id="vtkMRMLMarkupsDisplayNode1" name="MarkupsDisplay" color="' + color + '" selectedColor="'\
+                + color + '" textScale="2" glyphScale="3" glyphType="' + str(glyph_type) + '"/>' + os.linesep + \
+                ' <MarkupsFiducial id="vtkMRMLMarkupsFiducialNode1" name="' + name_out\
+                + '" references="display:vtkMRMLMarkupsDisplayNode1;storage:vtkMRMLMarkupsFiducialStorageNode1;" />' + os.linesep +\
+                ' <MarkupsFiducialStorage id="vtkMRMLMarkupsFiducialStorageNode1" name="MarkupsFiducialStorage" fileName="'\
+                + name_out + u'.fcsv" coordinateSystem="0" />' + os.linesep + \
+                '</MRML>' + os.linesep
+
+    mrml_file = open(folder_out + name_out + ".mrml", 'w')
+    mrml_file.write(mrml_text)
+    mrml_file.close()
