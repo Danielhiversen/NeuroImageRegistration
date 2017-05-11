@@ -27,18 +27,34 @@ def find_images(exclude=None):
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
             _img_filepath = cursor3.fetchone()[0]
+            cursor3.close()
             if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
-                cursor3.close()
                 continue
             if exclude and _id in exclude:
                 continue
             ids.append(_id)
-            cursor3.close()
 
         cursor2.close()
 
     cursor.close()
     conn.close()
+    return ids
+
+
+def find_images_from_pid(pids, exclude=None):
+    """ Find images for registration """
+    conn = sqlite3.connect(util.DB_PATH)
+    conn.text_factory = str
+
+    ids = []
+    for pid in pids:
+        cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (pid, ))
+        for _id in cursor2:
+            _id = _id[0]
+            if exclude and _id in exclude:
+                continue
+            ids.append(_id)
+        cursor2.close()
     return ids
 
 
@@ -53,10 +69,10 @@ if __name__ == "__main__":
 
     util.setup(path, "MolekylareMarkorer")
 
-    moving_datasets_ids = find_images()
+    moving_datasets_ids = find_images_from_pid([105, 125, 142, 157, 172, 179])
     print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
-                                                        image_registration.AFFINE,
+                                                        image_registration.RIGID,
                                                         save_to_db=True)
 
     # print(moving_datasets_ids_affine, len(moving_datasets_ids_affine))
