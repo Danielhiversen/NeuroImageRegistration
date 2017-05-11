@@ -273,7 +273,6 @@ def convert_lgg_data_tromso_reseksjon(path):
         print(volume, image_type, case_id, subgroup)
         convert_and_save_dataset(case_id, cursor, image_type, [volume_label], volume, 2, subgroup, "", True)
         conn.commit()
-
     cursor.close()
     conn.close()
 
@@ -349,6 +348,28 @@ def add_from_gbm_db(path):
     conn.close()
 
 
+def update_mm_grade():
+    """Convert qol data to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+    convert_table = get_convert_table()
+
+    for pid in convert_table.keys():
+        try:
+            pid = int(pid)
+        except ValueError:
+            continue
+        if convert_table[pid] not in [1, 2, 3]:
+            continue
+        print(pid, convert_table[pid])
+        cursor.execute('''UPDATE MolekylareMarkorer SET Subgroup = ? WHERE pid = ?''',
+                       (convert_table[pid], pid))
+
+    cursor.close()
+    conn.commit()
+    conn.close()
+
+
 def vacuum_db():
     """ Clean up database"""
     conn = sqlite3.connect(util.DB_PATH)
@@ -369,6 +390,7 @@ if __name__ == "__main__":
 
     # convert_lgg_data_tromso_reseksjon("/home/dahoiv/disk/data/MolekylareMarkorer/JAMA_Tromso_reseksjon/")
 
-    add_from_gbm_db("/home/dahoiv/disk/data/Segmentations/database/")
+    # add_from_gbm_db("/home/dahoiv/disk/data/Segmentations/database/")
 
+    update_mm_grade()
     vacuum_db()
