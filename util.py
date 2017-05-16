@@ -73,7 +73,7 @@ def setup(temp_path, data="glioma"):
 
 def setup_paths(data="glioma"):
     """setup for current computer """
-    # pylint: disable= global-statement, line-too-long, too-many-branches
+    # pylint: disable= global-statement, line-too-long, too-many-branches, too-many-statements
     global DATA_FOLDER, DB_PATH
 
     hostname = os.uname()[1]
