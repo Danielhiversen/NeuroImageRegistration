@@ -792,17 +792,17 @@ def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
     fcsv_file.close()
 
     mrml_text = '<MRML  version="Slicer4.4.0" userTags="">' + os.linesep + \
-                ' <MarkupsDisplay id="vtkMRMLMarkupsDisplayNode1" name="MarkupsDisplay" color="' +\
-                color + '" selectedColor="' + color +?
-                '" textScale="2" glyphScale="3" glyphType="' +\
-                str(glyph_type) + '"/>' + os.linesep + \
-                ' <MarkupsFiducial id="vtkMRMLMarkupsFiducialNode1" name="' + name_out\
-                + '" references="display:vtkMRMLMarkupsDisplayNode1;storage:"+\
-                "vtkMRMLMarkupsFiducialStorageNode1;" />' + os.linesep +\
-                ' <MarkupsFiducialStorage id="vtkMRMLMarkupsFiducialStorageNode1" "+\
-                "name="MarkupsFiducialStorage" fileName="'\
-                + name_out + u'.fcsv" coordinateSystem="0" />' + os.linesep + \
-                '</MRML>' + os.linesep
+                ' <MarkupsDisplay id="vtkMRMLMarkupsDisplayNode1" name="MarkupsDisplay" color="'\
+                + color + '" selectedColor="' + color\
+                + '" textScale="2" glyphScale="3" glyphType="'\
+                + str(glyph_type) + '"/>' + os.linesep\
+                + ' <MarkupsFiducial id="vtkMRMLMarkupsFiducialNode1" name="' + name_out\
+                + '" references="display:vtkMRMLMarkupsDisplayNode1;storage:"'\
+                + '"vtkMRMLMarkupsFiducialStorageNode1;" />' + os.linesep +\
+                + ' <MarkupsFiducialStorage id="vtkMRMLMarkupsFiducialStorageNode1" "'\
+                + '"name="MarkupsFiducialStorage" fileName="'\
+                + name_out + u'.fcsv" coordinateSystem="0" />' + os.linesep\
+                + '</MRML>' + os.linesep
 
     mrml_file = open(folder_out + name_out + ".mrml", 'w')
     mrml_file.write(mrml_text)
