@@ -798,7 +798,7 @@ def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
                 + str(glyph_type) + '"/>' + os.linesep\
                 + ' <MarkupsFiducial id="vtkMRMLMarkupsFiducialNode1" name="' + name_out\
                 + '" references="display:vtkMRMLMarkupsDisplayNode1;storage:"'\
-                + '"vtkMRMLMarkupsFiducialStorageNode1;" />' + os.linesep +\
+                + '"vtkMRMLMarkupsFiducialStorageNode1;" />' + os.linesep\
                 + ' <MarkupsFiducialStorage id="vtkMRMLMarkupsFiducialStorageNode1" "'\
                 + '"name="MarkupsFiducialStorage" fileName="'\
                 + name_out + u'.fcsv" coordinateSystem="0" />' + os.linesep\
