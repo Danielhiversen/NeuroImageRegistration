@@ -310,16 +310,16 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
 
         file_type_nrrd = True
         volume_label = glob.glob(data_path + '/*label.nrrd')
-        if len(volume_label) == 0:
+        if not volume_label:
             volume_label = glob.glob(data_path + '/*label_1.nrrd')
-        if len(volume_label) == 0:
+        if not volume_label:
             volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
         if len(volume_label) > 1:
             log = log + "\n Warning!! More than one file with label found "
             for volume_label_i in volume_label:
                 log = log + volume_label_i
             continue
-        if len(volume_label) == 0:
+        if not volume_label:
             file_type_nrrd = False
             volume = data_path + "k" + pid + "-T1_" + "preop" + ".nii"
             if not os.path.exists(volume):
@@ -337,11 +337,11 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
             if not os.path.exists(volume):
                 volume = glob.glob(data_path + '*.nrrd')
                 volume.remove(volume_label)
-                if len(volume) == 0:
+                if not volume:
                     volume = glob.glob(data_path + '*.nii')
                 if len(volume) > 1:
                     log = log + "\n Warning!! More than one file with volume found " + volume
-                if len(volume) == 0:
+                if not volume:
                     log = log + "\n Warning!! No volume found " + data_path
                 volume = volume[0]
 

@@ -8,7 +8,6 @@ Created on Wed Apr 20 15:02:02 2016
 from __future__ import print_function
 import datetime
 import os
-import sqlite3
 import sys
 
 import image_registration
@@ -26,7 +25,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 
     util.setup(path)
 
-    (image_ids, survival_days) = util.get_image_id_and_survival_days(exclude_pid = [186], glioma_grades=[4])
+    (image_ids, survival_days) = util.get_image_id_and_survival_days(exclude_pid=[186], glioma_grades=[4])
 
     if len(sys.argv) > 2:
         # from mpi4py import MPI
