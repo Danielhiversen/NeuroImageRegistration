@@ -29,4 +29,6 @@ install:
   - "pip install -r requirements.txt"
 script:
   - flake8 
-  - pylint image_registration.py util.py ConvertDataToDB.py do_img_registration.py do_img_registration_GBM.py do_img_registration_LGG_POST.py do_img_registration_LGG_PRE.py
+  - if [[ "$TRAVIS_PYTHON_VERSION" == "2.7" ]]; then
+      pylint image_registration.py util.py ConvertDataToDB.py do_img_registration.py do_img_registration_GBM.py do_img_registration_LGG_POST.py do_img_registration_LGG_PRE.py
+    fi
