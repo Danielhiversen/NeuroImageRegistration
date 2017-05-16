@@ -105,13 +105,22 @@ def setup_paths(data="glioma"):
             raise Exception
     elif data == 'MolekylareMarkorer':
         if hostname == 'dddd':
-            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM2/"
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/ingerid/data/daniel/database_MM/"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/database_MM/'
+        else:
+            LOGGER.error("Unkown host name " + hostname)
+            LOGGER.error("Add your host name path to " + sys.argv[0])
+            raise Exception
+    elif data == 'meningiomer':
+        if hostname == 'dddd':
+            DATA_FOLDER = "/home/dahoiv/disk/data/meningiomer/database_meningiomer/"
+        elif 'unity' in hostname or 'compute' in hostname:
+            DATA_FOLDER = '/work/danieli/database_meningiomer/'
         else:
             LOGGER.error("Unkown host name " + hostname)
             LOGGER.error("Add your host name path to " + sys.argv[0])
