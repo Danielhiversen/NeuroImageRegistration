@@ -16,6 +16,7 @@ pyexcel==0.2.0
 pyexcel-io==0.1.0
 pyexcel-xls==0.1.0
 pyexcel-xlsx==0.1.0
+pylint==1.7.1
 pyparsing==2.1.1
 python-dateutil==2.5.2
 pytz==2016.3
