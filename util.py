@@ -230,6 +230,7 @@ def get_qol(image_ids, qol_param):
     conn.text_factory = str
     qol = []
     image_ids_with_qol = []
+    pids = []
     for image_id in image_ids:
         _pid = conn.execute('''SELECT pid from Images where id = ?''', (image_id, )).fetchone()
         if not _pid:
@@ -243,9 +244,13 @@ def get_qol(image_ids, qol_param):
                 LOGGER.error("No qol data for " + str(pid) + " " + str(qol_param))
                 continue
             qol.extend([_qol[0]])
+            pids.append(pid)
             image_ids_with_qol.extend([image_id])
 
     conn.close()
+    print(qol_param)
+    print(pids)
+    print(len(pids))
 
     return (image_ids_with_qol, qol)
 

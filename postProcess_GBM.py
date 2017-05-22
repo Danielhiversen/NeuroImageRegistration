@@ -14,6 +14,28 @@ import util
 import do_img_registration_GBM
 
 
+def find_images():
+    """ Find images for registration """
+    conn = sqlite3.connect(util.DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from Patient where study_id = ?''', ("qol_grade3,4", ))
+    ids = []
+    for row in cursor:
+        cursor3 = conn.execute('''SELECT Resection from QualityOfLife where pid = ?''', (row[0], ))
+        resection = cursor3.fetchone()[0]
+        cursor3.close()
+        if resection in [0, None]:
+            continue
+        cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
+        for _id in cursor2:
+            ids.append(_id[0])
+        cursor2.close()
+
+    cursor.close()
+    conn.close()
+    return ids
+
+
 def process(folder):
     """ Post process data """
     print(folder)
@@ -28,16 +50,13 @@ def process(folder):
     for qol_param in params:
         if qol_param == "Delta_qol2":
             (image_ids_with_qol, qol) = util.get_qol(image_ids, "Delta_qol")
-            print(qol)
             qol = [-1 if _temp <= -0.15 else 0 if _temp < 0.15 else 1 for _temp in qol]
-            print(qol)
         else:
             (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
         if qol_param not in ["karnofsky", "Delta_kps"]:
             qol = [_temp * 100 for _temp in qol]
         default_value = -100
         print(qol_param)
-        print(image_ids_with_qol)
         print(len(qol))
         result = util.post_calculations(image_ids_with_qol)
         for label in result:
@@ -68,28 +87,6 @@ def process_vlsm(folder, n_permutations):
                       n_permutations=n_permutations, alternative=alternative_i)
 
 
-def find_images():
-    """ Find images for registration """
-    conn = sqlite3.connect(util.DB_PATH)
-    conn.text_factory = str
-    cursor = conn.execute('''SELECT pid from Patient where study_id = ?''', ("qol_grade3,4", ))
-    ids = []
-    for row in cursor:
-        cursor3 = conn.execute('''SELECT Resection from QualityOfLife where pid = ?''', (row[0], ))
-        resection = cursor3.fetchone()[0]
-        cursor3.close()
-        if resection in [0, None]:
-            continue
-        cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
-        for _id in cursor2:
-            ids.append(_id[0])
-        cursor2.close()
-
-    cursor.close()
-    conn.close()
-    return ids
-
-
 def process2(folder):
     """ Post process data """
     print(folder)
@@ -104,16 +101,12 @@ def process2(folder):
     for qol_param in params:
         if qol_param == "Delta_qol2":
             (image_ids_with_qol, qol) = util.get_qol(image_ids, "Delta_qol")
-            print(qol)
             qol = [-1 if _temp <= -0.15 else 0 if _temp < 0.15 else 1 for _temp in qol]
-            print(qol)
         else:
             (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
         qol = [_temp * 100 for _temp in qol]
         default_value = -200
-        print(qol_param)
-        print(image_ids_with_qol)
-        print(len(qol))
+        print(qol_param, len(qol))
         result = util.post_calculations(image_ids_with_qol)
         for label in result:
             if label == 'img':
@@ -125,6 +118,7 @@ def process2(folder):
 
 if __name__ == "__main__":
     folder = "RES_GBM_" + "{:%H%M_%m_%d_%Y}".format(datetime.datetime.now()) + "/"
+    # process(folder)
     process2(folder)
 
     # start_time = datetime.datetime.now()
