@@ -221,7 +221,7 @@ def get_image_id_and_qol(qol_param, exclude_pid=None, glioma_grades=None):
     cursor.close()
     conn.close()
 
-    return (image_id, qol)
+    return image_id, qol
 
 
 def get_qol(image_ids, qol_param):
@@ -249,10 +249,10 @@ def get_qol(image_ids, qol_param):
 
     conn.close()
     print(qol_param)
-    print(pids)
+    #print(pids)
     print(len(pids))
 
-    return (image_ids_with_qol, qol)
+    return image_ids_with_qol, qol
 
 
 def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
@@ -292,7 +292,7 @@ def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     cursor.close()
     conn.close()
 
-    return (image_id, survival_days)
+    return image_id, survival_days
 
 
 def find_seg_images(moving_image_id):
@@ -355,7 +355,7 @@ def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=N
 
 
 # pylint: disable= too-many-arguments
-def sum_calculation(images, label, val=None, save=False, folder=None, default_value=0):
+def sum_calculation(images, label, val=None, save=False, folder=None, default_value=None):
     """ Calculate sum volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
@@ -375,18 +375,87 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
             _sum = np.zeros(img.get_data().shape)
             _total = np.zeros(img.get_data().shape)
         temp = np.array(img.get_data())
-        _sum = _sum + temp*val_i
+        _sum += temp*val_i
         temp[temp != 0] = 1.0
-        _total = _total + temp
-    _sum[_sum == 0] = default_value
+        _total += temp
+    if default_value is not None:
+        _sum[_sum == 0] = default_value
 
     if save:
         result_img = nib.Nifti1Image(_sum, img.affine)
         result_img.to_filename(path_n)
         generate_image(path_n, TEMPLATE_VOLUME)
 
-    return (_sum, _total)
+    return _sum, _total
 
+# pylint: disable= too-many-arguments
+def avg_calculation(images, label, val=None, save=False, folder=None,
+                    save_sum=False, default_value=0):
+    """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'avg_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+    path = path.replace('all', 'tumor')
+    path = path.replace('img', 'volum')
+
+    (_sum, _total) = sum_calculation(images, label, val, save=save_sum)
+    _total[_total == 0] = np.inf
+    if val:
+        average = _sum / _total
+    else:
+        average = _sum / len(images)
+    average[_total == np.inf] = default_value
+
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(average, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+    return average
+
+
+def avg_calculation2(images, label, val=None, save=False, folder=None, save_sum=False, default_value=0):
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'avg2_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+    path = path.replace('all', 'tumor')
+    path = path.replace('img', 'volum')
+
+    if not val:
+        val = [1]*len(images)
+
+    _sum = None
+    _total = None
+    for (file_name, val_i) in zip(images, val):
+        if val_i is None:
+            continue
+        img = nib.load(file_name)
+        if _sum is None:
+            _sum = np.zeros(img.get_data().shape)
+            _total = np.zeros(img.get_data().shape)
+        temp = np.array(img.get_data())
+        _sum += temp*val_i
+        temp[temp != 0] = 1.0
+        _total += temp
+
+    average = _sum / _total
+    average[_total == 0] = default_value
+
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(average, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+    if save_sum:
+        path_n = folder + 'total2_' + label + '.nii'
+        path_n = path_n.replace('label', 'tumor')
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(_sum, img.affine)
+        result_img.to_filename(path_n)
+        generate_image(path, TEMPLATE_VOLUME)
+    return average
 
 def std_calculation(images, label, val=None, save=False, folder=None):
     """ Calculate std volume """
@@ -410,10 +479,10 @@ def std_calculation(images, label, val=None, save=False, folder=None):
             _std = np.zeros(img.get_data().shape)
             _total = np.zeros(img.get_data().shape)
         temp = np.array(img.get_data())
-        _std = _std + (temp*val_i - avg_img)**2
+        _std += (temp*val_i - avg_img)**2
         temp[temp != 0] = 1.0
-        _total = _total + temp
-    _std = _std / _total
+        _total += + temp
+    _std /= _total
 
     if save:
         result_img = nib.Nifti1Image(_std, img.affine)
@@ -423,31 +492,7 @@ def std_calculation(images, label, val=None, save=False, folder=None):
     return _std
 
 
-# pylint: disable= too-many-arguments
-def avg_calculation(images, label, val=None, save=False, folder=None,
-                    save_sum=False, default_value=0):
-    """ Calculate average volumes """
-    if not folder:
-        folder = TEMP_FOLDER_PATH
-    path = folder + 'avg_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-    path = path.replace('all', 'tumor')
-    path = path.replace('img', 'volum')
 
-    (_sum, _total) = sum_calculation(images, label, val, save=save_sum, default_value=default_value)
-    _total[_total == 0] = np.inf
-    if val:
-        average = _sum / _total
-    else:
-        average = _sum / len(images)
-    average[average == 0] = default_value
-
-    if save:
-        img = nib.load(images[0])
-        result_img = nib.Nifti1Image(average, img.affine)
-        result_img.to_filename(path)
-        generate_image(path, TEMPLATE_VOLUME)
-    return average
 
 
 def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None):

@@ -97,6 +97,7 @@ def process2(folder):
     print(len(result['all']))
     util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img', None, True, folder)
+    print("\n\n\n\n\n")
 
     for qol_param in params:
         if qol_param == "Delta_qol2":
