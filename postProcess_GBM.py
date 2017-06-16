@@ -114,6 +114,7 @@ def process2(folder):
                 continue
             print(label)
             util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
+            util.median_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
             # util.std_calculation(result[label], label + '_' + qol_param, qol, True, folder)
 
 

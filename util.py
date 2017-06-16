@@ -457,6 +457,48 @@ def avg_calculation2(images, label, val=None, save=False, folder=None, save_sum=
         generate_image(path, TEMPLATE_VOLUME)
     return average
 
+
+def median_calculation(images, label, val=None, save=False, folder=None, default_value=0):
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'median_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+    path = path.replace('all', 'tumor')
+    path = path.replace('img', 'volum')
+
+    if not val:
+        val = [1]*len(images)
+
+    total = {}
+    shape = None
+    for (file_name, val_i) in zip(images, val):
+        img = nib.load(file_name)
+        if shape is None:
+            shape = img.get_data().shape
+        label_idx = np.where(img.get_data() == 1)
+        for (k, l, m) in zip(label_idx[0], label_idx[1], label_idx[2]):
+            key = str(k) + "_" + str(l) + "_" + str(m)
+            if key in total:
+                total[key].append(val_i)
+            else:
+                total[key] = [val_i]
+
+    median = np.zeros(shape) + default_value
+
+    for key, val_i in total.iteritems():
+        _temp = key.split("_")
+        k = int(_temp[0])
+        l = int(_temp[1])
+        m = int(_temp[2])
+        median[k, l, m] = np.median(val_i)
+
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(median, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+
+
 def std_calculation(images, label, val=None, save=False, folder=None):
     """ Calculate std volume """
     if not folder:
@@ -490,9 +532,6 @@ def std_calculation(images, label, val=None, save=False, folder=None):
         generate_image(path, TEMPLATE_VOLUME)
 
     return _std
-
-
-
 
 
 def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None):
@@ -536,7 +575,7 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None,
                 total[key].append(_id)
             else:
                 total[key] = [_id]
-        _id = _id + 1
+        _id += 1
     shape = img.get_data().shape
 
     res = permutation_test(total, val, shape, alternative, stat_func)
@@ -566,14 +605,14 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None,
     while finished_jobs < n_permutations:
         if nr_of_jobs < processes and index < n_permutations\
                 and psutil.virtual_memory().percent < 90:
-            nr_of_jobs = nr_of_jobs + 1
+            nr_of_jobs += 1
             # pylint: disable= no-member
             np.random.shuffle(values)
             process = multiprocessing.Process(target=_help_permutation_test,
                                               args=[index, total, values, shape, None, stat_func])
             process.start()
             jobs.append(process)
-            index = index + 1
+            index += 1
 
         if not queue.empty():
             (_index, permutation_res) = queue.get()
@@ -588,8 +627,8 @@ def vlsm(label_paths, label, stat_func, val=None, folder=None,
             total_res[(idx & (total_res == 1))] = 0
             total_res += temp
 
-            nr_of_jobs = nr_of_jobs - 1
-            finished_jobs = finished_jobs + 1
+            nr_of_jobs -= 1
+            finished_jobs += 1
             LOGGER.info(str(finished_jobs / n_permutations))
         if not nr_of_jobs < processes and queue.empty():
             time.sleep(2)
