@@ -22,6 +22,8 @@ def find_images():
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
+        if row[0] == 709:
+            continue
         cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
         for _id in cursor2:
             _id = _id[0]

@@ -69,7 +69,7 @@ if __name__ == "__main__":
 
     util.setup(path, "MolekylareMarkorer")
 
-    moving_datasets_ids = find_images_from_pid([105, 125, 142, 157, 172, 179])
+    moving_datasets_ids = find_images_from_pid([172])
     print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
                                                         image_registration.RIGID,
