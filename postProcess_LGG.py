@@ -65,7 +65,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
             result[label] = [vol]
 
         for (segmentation, label) in util.find_reg_label_images(_id):
-            segmentation = util.transform_volume(segmentation, img_pre.get_transforms())
+            segmentation = util.transform_volume(segmentation, img_pre.get_transforms(), label_img=True)
             if label in result:
                 result[label].append(segmentation)
             else:
@@ -79,16 +79,18 @@ def process(folder):
     util.setup(folder)
 
     image_ids = find_images("post")
-    result = post_calculations(image_ids)
-    print(len(result['all']))
-    util.avg_calculation(result['all'], 'all_post', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img_post', None, True, folder)
+    result_post = post_calculations(image_ids)
+    print(len(result_post['all']))
+    util.avg_calculation(result_post['all'], 'all_post', None, True, folder, save_sum=True)
+    util.avg_calculation(result_post['img'], 'img_post', None, True, folder)
 
     image_ids = find_images("pre")
-    result = util.post_calculations(image_ids)
-    print(len(result['all']))
-    util.avg_calculation(result['all'], 'all_pre', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img_pre', None, True, folder)
+    result_pre = util.post_calculations(image_ids)
+    print(len(result_pre['all']))
+    util.avg_calculation(result_pre['all'], 'all_pre', None, True, folder, save_sum=True)
+    util.avg_calculation(result_pre['img'], 'img_pre', None, True, folder)
+
+    util.calc_resection_prob(result_pre['all'], result_post['all'], 'resection_prob', True, folder, -1)
 
 
 if __name__ == "__main__":
