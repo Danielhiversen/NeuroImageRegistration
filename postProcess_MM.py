@@ -6,9 +6,21 @@ Created on Tue May 24 10:41:50 2016
 """
 
 # import os
+import collections
 import pickle
 import util
 import sqlite3
+import nibabel as nib
+
+
+def format_dict(d):
+    d = collections.OrderedDict(sorted(d.iteritems()))
+    s = ['lobe                   Type1   Type2   Type3 \n']
+    for k, v in d.items():
+        v = str(v[0]) + "      " + str(v[1]) + "      " + str(v[2])
+        tab = 25 - len(k)
+        s.append('%s%s %s\n' % (k, ' '*tab,  v))
+    return ''.join(s)
 
 
 def process(folder):
@@ -22,6 +34,12 @@ def process(folder):
     tag_data_1 = []
     tag_data_2 = []
     tag_data_3 = []
+
+    img = nib.load("/home/dahoiv/disk/data/MolekylareMarkorer/lobes_brain.nii")
+    lobes_brain = img.get_data()
+    label_defs = util.get_label_defs()
+    res_lobes_brain = {}
+
     for pid in cursor:
         pid = pid[0]
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
@@ -47,11 +65,20 @@ def process(folder):
             print("No filepath for ", pid)
             continue
 
-        com = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
+        com, com_idx = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
         val = {}
         val['Name'] = str(pid) + "_" + str(_mm)
         val['PositionGlobal'] = str(com[0]) + "," + str(com[1]) + "," + str(com[2])
         val['desc'] = str(_desc)
+
+        lobe = label_defs[lobes_brain[com_idx[0], com_idx[1], com_idx[2]]]
+        res_lobes_brain[lobe] = res_lobes_brain.get(lobe, [0, 0, 0])
+        if _mm == 1:
+            res_lobes_brain[lobe][0] += 1
+        elif _mm == 2:
+            res_lobes_brain[lobe][1] += 1
+        elif _mm == 3:
+            res_lobes_brain[lobe][2] += 1
 
         image_ids.extend([_id])
         print(pid, _mm)
@@ -61,6 +88,11 @@ def process(folder):
             tag_data_2.append(val)
         elif _mm == 3:
             tag_data_3.append(val)
+
+    print(format_dict(res_lobes_brain))
+    lobes_brain_file = open(folder + "lobes_brain.txt", 'w')
+    lobes_brain_file.write(format_dict(res_lobes_brain))
+    lobes_brain_file.close()
 
     print(len(image_ids))
 

@@ -458,6 +458,35 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     return average
 
 
+# pylint: disable= too-many-arguments
+def calc_resection_prob(images_pre, images_post, label, save=False, folder=None, default_value=0):
+    """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'resection_prob_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+    path = path.replace('all', 'tumor')
+    path = path.replace('img', 'volume')
+
+    val = None
+    save_sum = False
+
+    (_, _total_pre) = sum_calculation(images_pre, label, val, save=False)
+    (_, _total_post) = sum_calculation(images_post, label, val, save=False)
+    indx = _total_pre == 0
+    _total_pre[indx] = np.inf
+    res = 1 - _total_post / _total_pre
+    res[indx] = default_value
+
+    if save:
+        img = nib.load(images_pre[0])
+        result_img = nib.Nifti1Image(res, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+    return res
+
+
+
 def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None):
     """ Calculate t-test volume """
     if not folder:
@@ -778,12 +807,14 @@ def get_center_of_mass(filepath):
     """Get center_of_mass of filepath"""
     img = nib.load(filepath)
     com = ndimage.measurements.center_of_mass(img.get_data())
+    com_idx = [int(_com) for _com in com]
+
     qform = img.header.get_qform()
     spacing = img.header.get_zooms()
     res = [c*s for (c, s) in zip(com, spacing)]
     trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
-    res = [r+t for (r, t) in zip(res, trans)]
-    return res
+    com = [r+t for (r, t) in zip(res, trans)]
+    return com, com_idx
 
 
 def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
@@ -817,3 +848,60 @@ def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
     mrml_file = open(folder_out + name_out + ".mrml", 'w')
     mrml_file.write(mrml_text)
     mrml_file.close()
+
+
+def get_label_defs():
+    label_defs = {}
+    label_defs[30] = "frontal left wm"
+    label_defs[210] = "frontal left gm"
+    label_defs[17] = "frontal right wm"
+    label_defs[211] = "frontal right gm"
+
+    label_defs[83] = "temporal left wm"
+    label_defs[218] = "temporal left gm"
+    label_defs[59] = "temporal right wm"
+    label_defs[219] = "temporal right gm"
+
+    label_defs[57] = "parietal left wm"
+    label_defs[6] = "parietal left gm"
+    label_defs[105] = "parietal right wm"
+    label_defs[2] = "parietal right gm"
+
+    label_defs[73] = "occipital left wm"
+    label_defs[8] = "occipital left gm"
+    label_defs[45] = "occipital right wm"
+    label_defs[4] = "occipital right gm"
+
+    label_defs[67] = "cerebellum left"
+    label_defs[76] = "cerebellum right"
+    label_defs[20] = "brainstem"
+
+    label_defs[3] = "lateral ventricle left"
+    label_defs[9] = "lateral ventricle right"
+    label_defs[232] = "3rd ventricle"
+    label_defs[233] = "4th ventricle"
+    label_defs[235] = "extracerebral CSF"
+
+    label_defs[39] = "caudate left"
+    label_defs[53] = "caudate right"
+
+    label_defs[14] = "putamen left"
+    label_defs[16] = "putamen right"
+
+    label_defs[102] = "thalamus left"
+    label_defs[203] = "thalamus right"
+
+    label_defs[33] = "subthalamic nucleus left"
+    label_defs[23] = "subthalamic nucleus right"
+
+    label_defs[12] = "globus pallidus left"
+    label_defs[11] = "globus pallidus right"
+
+    label_defs[29] = "fornix left"
+    label_defs[254] = "fornix right"
+
+    label_defs[255] = "???_1"  # 113, 1061
+    label_defs[0] = "???_2"  # 140, 1017, 172, 105, 1032, 1025, 179
+    label_defs[28] = "skull"
+
+    return label_defs
