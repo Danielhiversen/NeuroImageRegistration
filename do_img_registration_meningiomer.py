@@ -15,24 +15,21 @@ import image_registration
 import util
 
 
-def find_images():
+def find_images(pids = []):
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from Patient''')
     ids = []
     for row in cursor:
-        if row[0] == 709:
+        if pids and row[0] not in pids:
             continue
         cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
         for _id in cursor2:
             _id = _id[0]
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
-            _img_filepath = cursor3.fetchone()[0]
             cursor3.close()
-            if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
-                continue
             ids.append(_id)
 
     cursor.close()
@@ -64,7 +61,13 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
         else:
             moving_datasets_ids = moving_datasets_ids[start_idx:]
 
-    util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
+    #util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
+    # image_registration.get_transforms(moving_datasets_ids,
+    #                                   image_registration.SYN,
+    #                                   save_to_db=True)
+
+    moving_datasets_ids = find_images([1052, 1061, 1167, 1, 31, 35, 192, 201, 388, 397, 463, 508, 530, 563, 709, 866, 927, 941, 981, 1020])
+    print(moving_datasets_ids)
     image_registration.get_transforms(moving_datasets_ids,
-                                      image_registration.SYN,
+                                      image_registration.RIGID,
                                       save_to_db=True)

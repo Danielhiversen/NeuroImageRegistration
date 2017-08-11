@@ -159,7 +159,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         if db_temp[0] is None:
-            LOGGER.error("No volume data for image_id " + _id)
+            LOGGER.error("No volume data for image_id " + str(_id))
             continue
         vol = DATA_FOLDER + db_temp[0]
         label = "img"
@@ -300,7 +300,7 @@ def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     cursor.close()
     conn.close()
 
-    return (image_id, survival_days)
+    return image_id, survival_days
 
 
 def find_seg_images(moving_image_id):
@@ -469,8 +469,6 @@ def calc_resection_prob(images_pre, images_post, label, save=False, folder=None,
     path = path.replace('img', 'volume')
 
     val = None
-    save_sum = False
-
     (_, _total_pre) = sum_calculation(images_pre, label, val, save=False)
     (_, _total_post) = sum_calculation(images_post, label, val, save=False)
     indx = _total_pre == 0
@@ -484,7 +482,6 @@ def calc_resection_prob(images_pre, images_post, label, save=False, folder=None,
         result_img.to_filename(path)
         generate_image(path, TEMPLATE_VOLUME)
     return res
-
 
 
 def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None):
@@ -880,7 +877,7 @@ def get_label_defs():
     label_defs[9] = "lateral ventricle right"
     label_defs[232] = "3rd ventricle"
     label_defs[233] = "4th ventricle"
-    label_defs[235] = "extracerebral CSF"
+    label_defs[255] = "extracerebral CSF"
 
     label_defs[39] = "caudate left"
     label_defs[53] = "caudate right"
@@ -900,8 +897,7 @@ def get_label_defs():
     label_defs[29] = "fornix left"
     label_defs[254] = "fornix right"
 
-    label_defs[255] = "???_1"  # 113, 1061
-    label_defs[0] = "???_2"  # 140, 1017, 172, 105, 1032, 1025, 179
+    label_defs[0] = "???_0"  # 140, 1017, 172, 105, 1032, 1025, 179
     label_defs[28] = "skull"
 
     return label_defs
