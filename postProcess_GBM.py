@@ -1,4 +1,4 @@
-/# -*- coding: utf-8 -*-
+# -*- coding: utf-8 -*-
 """
 Created on Tue May 24 10:41:50 2016
 
@@ -46,7 +46,7 @@ def process(folder):
     print(len(result['all']))
     util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img', None, True, folder)
-
+    return
     for qol_param in params:
         if qol_param == "Delta_qol2":
             (image_ids_with_qol, qol) = util.get_qol(image_ids, "Delta_qol")
@@ -96,9 +96,10 @@ def process2(folder):
     image_ids = find_images()
     result = util.post_calculations(image_ids)
     print(len(result['all']))
-    util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img', None, True, folder)
+    util.avg_calculation(result['all'], 'all_N=112', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'img_N=112', None, True, folder)
     print("\n\n\n\n\n")
+    return
 
     for qol_param in params:
         if qol_param == "Delta_qol2":
@@ -129,6 +130,7 @@ def process3(folder):
     print(len(result['all']))
     util.avg_calculation(result['all'], 'all_N=112', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img_N=112', None, True, folder)
+    return
 
     for qol_param in params:
         if qol_param == "Delta_qol2":
