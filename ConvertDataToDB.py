@@ -597,6 +597,44 @@ def add_study_lgg():
     conn.close()
 
 
+def add_tumor_volume():
+    """add tumor volume to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    data = pyexcel_xlsx.get_data('/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/Volum_kart.xlsx')['Ark1']
+    try:
+        conn.execute("alter table Images add column 'tumor_volume' 'REAL'")
+    except sqlite3.OperationalError:
+        pass
+
+    k = 0
+    for row in data:
+        k = k + 1
+        if not row:
+            continue
+        if k < 2:
+            continue
+        pid = row[0]
+        cursor.execute('''SELECT id from Images where pid = ? AND diag_pre_post="pre"''', (pid,))
+        id = cursor.fetchone()
+        if id is None:
+            continue
+        id = id[0]
+        try:
+            tumor_volume = row[1]
+        except IndexError:
+            continue
+
+        print(pid, id, tumor_volume)
+
+        cursor.execute('''UPDATE Images SET tumor_volume = ? WHERE id = ?''',
+                       (tumor_volume, id))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
 
 
 if __name__ == "__main__":
@@ -645,6 +683,6 @@ if __name__ == "__main__":
 
 #    add_study_lgg()
 
-    qol_change_to_db()
+    add_tumor_volume()
 
     vacuum_db()

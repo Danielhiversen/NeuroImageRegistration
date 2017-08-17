@@ -153,11 +153,35 @@ def process3(folder):
             # util.std_calculation(result[label], label + '_' + qol_param, qol, True, folder)
 
 
+def process4(folder):
+    """ Post process data """
+    print(folder)
+    util.setup(folder)
+    params = ['tumor_volume']
+    image_ids = do_img_registration_GBM.find_images()
+    result = util.post_calculations(image_ids)
+    print(len(result['all']))
+
+    for qol_param in params:
+        (image_ids_with_qol, qol) = util.get_tumor_volume(image_ids)
+        default_value = 0
+        print(qol_param)
+        print(len(qol))
+        result = util.post_calculations(image_ids_with_qol)
+        for label in result:
+            if label == 'img':
+                continue
+            print(label)
+            util.median_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
+
+
 if __name__ == "__main__":
     folder = "RES_GBM_" + "{:%H%M_%m_%d_%Y}".format(datetime.datetime.now()) + "/"
-    process3(folder)
-    process(folder)
-    process2(folder)
+    process4(folder)
+    #
+    # process3(folder)
+    # process(folder)
+    # process2(folder)
 
     # start_time = datetime.datetime.now()
     # if len(sys.argv) > 1:

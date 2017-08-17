@@ -255,6 +255,28 @@ def get_qol(image_ids, qol_param):
     return image_ids_with_qol, qol
 
 
+def get_tumor_volume(image_ids):
+    """ Get image id and tumor volume """
+    conn = sqlite3.connect(DB_PATH, timeout=120)
+    conn.text_factory = str
+    volumes = []
+    image_ids_with_volume = []
+    pids = []
+    for image_id in image_ids:
+        _volume = conn.execute("SELECT tumor_volume from Images where id = ?",
+                            (image_id, )).fetchone()
+        if _volume is None or _volume[0] is None:
+            LOGGER.error("No qol data for " + str(image_id))
+            continue
+        volumes.extend([_volume[0]])
+        image_ids_with_volume.extend([image_id])
+
+    conn.close()
+    print(len(pids))
+
+    return image_ids_with_volume, volumes
+
+
 def get_image_id_and_survival_days(exclude_pid=None, glioma_grades=None):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
