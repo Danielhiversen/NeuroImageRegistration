@@ -35,12 +35,42 @@ def find_images():
     conn.close()
     return ids
 
+def find_images_163():
+    """ Find images for registration """
+    conn = sqlite3.connect(util.DB_PATH)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from Patient where study_id = ?''', ("qol_grade3,4", ))
+    ids = []
+    k = 0
+    for row in cursor:
+        k += 1
+        cursor3 = conn.execute('''SELECT Index_value from QualityOfLife where pid = ?''', (row[0], ))
+        indx_val = cursor3.fetchone()[0]
+        cursor3.close()
+        if indx_val in [None]:
+            continue
+
+        cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
+        for _id in cursor2:
+            ids.append(_id[0])
+        cursor2.close()
+
+    cursor.close()
+    conn.close()
+    return ids
 
 def process(folder):
     """ Post process data """
     print(folder)
     util.setup(folder)
     params = ['Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value']
+    image_ids = find_images_163()
+    result = util.post_calculations(image_ids)
+    print(len(result['all']))
+    util.avg_calculation(result['all'], 'all_N=163', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'img_N=163', None, True, folder)
+    return
+
     image_ids = do_img_registration_GBM.find_images()
     result = util.post_calculations(image_ids)
     print(len(result['all']))
@@ -48,11 +78,7 @@ def process(folder):
     util.avg_calculation(result['img'], 'img', None, True, folder)
     return
     for qol_param in params:
-        if qol_param == "Delta_qol2":
-            (image_ids_with_qol, qol) = util.get_qol(image_ids, "Delta_qol")
-            qol = [-1 if _temp <= -0.15 else 0 if _temp < 0.15 else 1 for _temp in qol]
-        else:
-            (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
+        (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
         if qol_param not in ["karnofsky", "Delta_kps"]:
             qol = [_temp * 100 for _temp in qol]
         default_value = -100
@@ -99,7 +125,6 @@ def process2(folder):
     util.avg_calculation(result['all'], 'all_N=112', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'img_N=112', None, True, folder)
     print("\n\n\n\n\n")
-    return
 
     for qol_param in params:
         if qol_param == "Delta_qol2":
@@ -108,7 +133,7 @@ def process2(folder):
         else:
             (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
         qol = [_temp * 100 for _temp in qol]
-        default_value = -200
+        default_value = -300
         print(qol_param, len(qol))
         result = util.post_calculations(image_ids_with_qol)
         for label in result:
@@ -177,10 +202,10 @@ def process4(folder):
 
 if __name__ == "__main__":
     folder = "RES_GBM_" + "{:%H%M_%m_%d_%Y}".format(datetime.datetime.now()) + "/"
-    process4(folder)
+    # process4(folder)
     #
     # process3(folder)
-    # process(folder)
+    process(folder)
     # process2(folder)
 
     # start_time = datetime.datetime.now()
