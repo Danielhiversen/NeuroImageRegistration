@@ -67,7 +67,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
     #                                   save_to_db=True)
 
     moving_datasets_ids = find_images([1052, 1167, 1, 31, 35, 192, 201, 388, 397, 463, 508, 530, 563, 709, 866, 927, 941, 981, 1020])
-    #excluded: 1061
+    #excluded: 1061, 709
     print(moving_datasets_ids)
     image_registration.get_transforms(moving_datasets_ids,
                                       image_registration.AFFINE,
