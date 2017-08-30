@@ -193,7 +193,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         # pylint: disable= pointless-string-statement
         """ fractional intensity threshold (0->1); default=0.5;
         smaller values give larger brain outline estimates"""
-        bet.inputs.frac = 0.1
+        bet.inputs.frac = 0.2
         """ vertical gradient in fractional intensity threshold (-1->1);
         default=0; positive values give larger brain outline at bottom,
         smaller at top """
@@ -231,7 +231,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         if reg_type == RIGID:
             reg.inputs.transforms = ['Rigid', 'Rigid']
         else:
-            reg.inputs.transforms = ['Rigid', 'Affine']
+            reg.inputs.transforms = ['Rigid', 'CompositeAffine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
