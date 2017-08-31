@@ -456,7 +456,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
             process_dataset_func((moving_image_id, reg_type, save_to_db, be_method))
 
 
-def move_vol(moving, transform, label_img=False, slice_size=1):
+def move_vol(moving, transform, label_img=False, slice_size=1, ref_img=None):
     """ Move data with transform """
     if label_img:
         # resample volume to 1 mm slices
@@ -472,7 +472,7 @@ def move_vol(moving, transform, label_img=False, slice_size=1):
         img.set_img_filepath(moving)
         resampled_file = pre_process(img, False).pre_processed_filepath
 
-    result = util.transform_volume(moving, transform, label_img)
+    result = util.transform_volume(moving, transform, label_img, ref_img)
     util.generate_image(result, util.TEMPLATE_VOLUME)
     return result
 
