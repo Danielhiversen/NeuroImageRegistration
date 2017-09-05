@@ -472,7 +472,7 @@ def move_vol(moving, transform, label_img=False, slice_size=1, ref_img=None):
         img.set_img_filepath(moving)
         resampled_file = pre_process(img, False).pre_processed_filepath
 
-    result = util.transform_volume(moving, transform, label_img, ref_img)
+    result = util.transform_volume(moving, transform, label_img, ref)
     util.generate_image(result, util.TEMPLATE_VOLUME)
     return result
 
