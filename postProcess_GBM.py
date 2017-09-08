@@ -35,6 +35,7 @@ def find_images():
     conn.close()
     return ids
 
+
 def find_images_163():
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
@@ -59,40 +60,6 @@ def find_images_163():
     conn.close()
     return ids
 
-def process(folder):
-    """ Post process data """
-    print(folder)
-    util.setup(folder)
-    params = ['Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value']
-    image_ids = find_images_163()
-    result = util.post_calculations(image_ids)
-    print(len(result['all']))
-    util.avg_calculation(result['all'], 'all_N=163', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img_N=163', None, True, folder)
-    return
-
-    image_ids = do_img_registration_GBM.find_images()
-    result = util.post_calculations(image_ids)
-    print(len(result['all']))
-    util.avg_calculation(result['all'], 'all', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img', None, True, folder)
-    return
-    for qol_param in params:
-        (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
-        if qol_param not in ["karnofsky", "Delta_kps"]:
-            qol = [_temp * 100 for _temp in qol]
-        default_value = -100
-        print(qol_param)
-        print(len(qol))
-        result = util.post_calculations(image_ids_with_qol)
-        for label in result:
-            if label == 'img':
-                continue
-            print(label)
-            util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
-            util.median_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
-            # util.std_calculation(result[label], label + '_' + qol_param, qol, True, folder)
-
 
 def process_vlsm(folder, n_permutations):
     """ Post process vlsm data """
@@ -114,8 +81,41 @@ def process_vlsm(folder, n_permutations):
                       n_permutations=n_permutations, alternative=alternative_i)
 
 
+def process(folder):
+    """ Post process data distribution and baseline"""
+    print(folder)
+    util.setup(folder)
+    params = ['Mobility', 'Selfcare', 'Activity', 'Pain', 'Anxiety', 'karnofsky', 'Index_value']
+    image_ids = find_images_163()
+    result = util.post_calculations(image_ids)
+    print(len(result['all']))
+    util.avg_calculation(result['all'], 'all_N=163', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'img_N=163', None, True, folder)
+
+    image_ids = do_img_registration_GBM.find_images()
+    result = util.post_calculations(image_ids)
+    print(len(result['all']))
+    util.avg_calculation(result['all'], 'all_N=170', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'img_N=170', None, True, folder)
+    for qol_param in params:
+        (image_ids_with_qol, qol) = util.get_qol(image_ids, qol_param)
+        if qol_param not in ["karnofsky", "Delta_kps"]:
+            qol = [_temp * 100 for _temp in qol]
+        default_value = -100
+        print(qol_param)
+        print(len(qol))
+        result = util.post_calculations(image_ids_with_qol)
+        for label in result:
+            if label == 'img':
+                continue
+            print(label)
+            # util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
+            util.median_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
+            # util.std_calculation(result[label], label + '_' + qol_param, qol, True, folder)
+
+
 def process2(folder):
-    """ Post process data """
+    """ Post process data Delta"""
     print(folder)
     util.setup(folder)
     params = ['Delta_qol', 'Delta_qol2', 'Delta_mobility', 'Delta_selfcare', 'Delta_activity', 'Delta_pain', 'Delta_anixety', 'Delta_kps']
@@ -140,7 +140,7 @@ def process2(folder):
             if label == 'img':
                 continue
             print(label)
-            util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
+            # util.avg_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
             util.median_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
             # util.std_calculation(result[label], label + '_' + qol_param, qol, True, folder)
 
@@ -153,9 +153,8 @@ def process3(folder):
     image_ids = find_images()
     result = util.post_calculations(image_ids)
     print(len(result['all']))
-    util.avg_calculation(result['all'], 'all_N=112', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img_N=112', None, True, folder)
-    return
+    # util.avg_calculation(result['all'], 'all_N=112', None, True, folder, save_sum=True)
+    # util.avg_calculation(result['img'], 'img_N=112', None, True, folder)
 
     for qol_param in params:
         if qol_param == "Delta_qol2":
@@ -179,34 +178,26 @@ def process3(folder):
 
 
 def process4(folder):
-    """ Post process data """
+    """ Post process data tumor volume"""
     print(folder)
     util.setup(folder)
-    params = ['tumor_volume']
-    image_ids = do_img_registration_GBM.find_images()
-    result = util.post_calculations(image_ids)
-    print(len(result['all']))
+    default_value = 0
+    label = 'all'
 
-    for qol_param in params:
+    for image_ids in [do_img_registration_GBM.find_images(), find_images(), find_images_163()]:
+        result = util.post_calculations(image_ids)
         (image_ids_with_qol, qol) = util.get_tumor_volume(image_ids)
-        default_value = 0
-        print(qol_param)
-        print(len(qol))
-        result = util.post_calculations(image_ids_with_qol)
-        for label in result:
-            if label == 'img':
-                continue
-            print(label)
-            util.median_calculation(result[label], label + '_' + qol_param, qol, True, folder, default_value=default_value)
+        num = len(result['all'])
+        print(num)
+        util.median_calculation(result[label], 'tumor_volume_N=' + str(num), qol, True, folder, default_value=default_value)
 
 
 if __name__ == "__main__":
     folder = "RES_GBM_" + "{:%H%M_%m_%d_%Y}".format(datetime.datetime.now()) + "/"
-    # process4(folder)
-    #
-    # process3(folder)
     process(folder)
-    # process2(folder)
+    process2(folder)
+    # process3(folder)
+    process4(folder)
 
     # start_time = datetime.datetime.now()
     # if len(sys.argv) > 1:
