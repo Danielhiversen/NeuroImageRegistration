@@ -579,7 +579,7 @@ def add_study_lgg():
     k = 0
     for row in range(3, 223):
         cell_name = "{}{}".format("A", row)
-        color = sheet[cell_name].fill.start_color.index
+        # color = sheet[cell_name].fill.start_color.index
         value = sheet[cell_name].value
         try:
             pid = int(value)
@@ -634,7 +634,6 @@ def add_tumor_volume():
 
     cursor.close()
     conn.close()
-
 
 
 if __name__ == "__main__":
