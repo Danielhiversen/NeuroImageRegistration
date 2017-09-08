@@ -438,7 +438,7 @@ def process_dataset(args):
         save_transform_to_database([img])
         del img
 
-
+# pylint: disable= too-many-arguments
 def get_transforms(moving_dataset_image_ids, reg_type=None,
                    process_dataset_func=process_dataset, save_to_db=False,
                    be_method=BE_METHOD, reg_type_be=BE_METHOD):

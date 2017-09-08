@@ -848,6 +848,7 @@ def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
 
 
 def get_label_defs():
+    """Get brain area defs"""
     label_defs = {}
     label_defs[30] = "frontal left wm"
     label_defs[210] = "frontal left gm"
