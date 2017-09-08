@@ -54,6 +54,7 @@ AFFINE = 'affine'
 SYN = 'syn'
 COMPOSITEAFFINE = 'compositeaffine'
 
+BET_FRAC = 0.2
 BE_METHOD = 2
 
 HOSTNAME = os.uname()[1]
@@ -196,7 +197,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         # pylint: disable= pointless-string-statement
         """ fractional intensity threshold (0->1); default=0.5;
         smaller values give larger brain outline estimates"""
-        bet.inputs.frac = 0.2
+        bet.inputs.frac = BET_FRAC
         """ vertical gradient in fractional intensity threshold (-1->1);
         default=0; positive values give larger brain outline at bottom,
         smaller at top """
