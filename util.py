@@ -249,7 +249,6 @@ def get_qol(image_ids, qol_param):
 
     conn.close()
     print(qol_param)
-    #print(pids)
     print(len(pids))
 
     return image_ids_with_qol, qol
@@ -264,7 +263,7 @@ def get_tumor_volume(image_ids):
     pids = []
     for image_id in image_ids:
         _volume = conn.execute("SELECT tumor_volume from Images where id = ?",
-                            (image_id, )).fetchone()
+                               (image_id, )).fetchone()
         if _volume is None or _volume[0] is None:
             LOGGER.error("No qol data for " + str(image_id))
             continue
@@ -409,6 +408,7 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
         generate_image(path_n, TEMPLATE_VOLUME)
 
     return _sum, _total
+
 
 # pylint: disable= too-many-arguments
 def avg_calculation(images, label, val=None, save=False, folder=None,
