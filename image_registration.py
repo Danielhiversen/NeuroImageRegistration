@@ -52,6 +52,7 @@ import util
 RIGID = 'rigid'
 AFFINE = 'affine'
 SYN = 'syn'
+COMPOSITEAFFINE = 'compositeaffine'
 
 BE_METHOD = 2
 
@@ -125,6 +126,8 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         if reg_type == RIGID:
             reg.inputs.transforms = ['Rigid', 'Rigid']
+        elif reg_type == COMPOSITEAFFINE:
+            reg.inputs.transforms = ['Rigid', 'CompositeAffine']
         else:
             reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
@@ -230,8 +233,10 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         if reg_type == RIGID:
             reg.inputs.transforms = ['Rigid', 'Rigid']
-        else:
+        elif reg_type == COMPOSITEAFFINE:
             reg.inputs.transforms = ['Rigid', 'CompositeAffine']
+        else:
+            reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
         reg.inputs.metric_weight = [1, 1]
@@ -412,14 +417,14 @@ def registration(moving_img, fixed, reg_type):
 
 def process_dataset(args):
     """ pre process and registrate volume"""
-    (moving_image_id, reg_type, save_to_db, be_method) = args
+    (moving_image_id, reg_type, save_to_db, be_method, reg_type_be) = args
     util.LOGGER.info(moving_image_id)
 
     for k in range(3):
         try:
             start_time = datetime.datetime.now()
             img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-            img = pre_process(img, reg_type=reg_type, be_method=be_method)
+            img = pre_process(img, reg_type=reg_type_be, be_method=be_method)
             util.LOGGER.info("-- Run time preprocess: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
 
@@ -436,7 +441,7 @@ def process_dataset(args):
 
 def get_transforms(moving_dataset_image_ids, reg_type=None,
                    process_dataset_func=process_dataset, save_to_db=False,
-                   be_method=BE_METHOD):
+                   be_method=BE_METHOD, reg_type_be=BE_METHOD):
     """Calculate transforms """
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
@@ -448,7 +453,8 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
                        zip(moving_dataset_image_ids,
                            [reg_type]*len(moving_dataset_image_ids),
                            [save_to_db]*len(moving_dataset_image_ids),
-                           [be_method]*len(moving_dataset_image_ids))).get(999999999)
+                           [be_method]*len(moving_dataset_image_ids),
+                           [reg_type_be]*len(moving_dataset_image_ids))).get(999999999)
         pool.close()
         pool.join()
     else:
@@ -472,7 +478,7 @@ def move_vol(moving, transform, label_img=False, slice_size=1, ref_img=None):
         img.set_img_filepath(moving)
         resampled_file = pre_process(img, False).pre_processed_filepath
 
-    result = util.transform_volume(moving, transform, label_img, ref)
+    result = util.transform_volume(moving, transform, label_img, ref_img)
     util.generate_image(result, util.TEMPLATE_VOLUME)
     return result
 

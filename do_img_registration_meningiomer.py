@@ -15,7 +15,7 @@ import image_registration
 import util
 
 
-def find_images(pids = []):
+def find_images(pids = [], exclude=[]):
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str
@@ -23,6 +23,8 @@ def find_images(pids = []):
     ids = []
     for row in cursor:
         if pids and row[0] not in pids:
+            continue
+        if row[0] in exclude:
             continue
         cursor2 = conn.execute('''SELECT id from Images where pid = ?''', (row[0], ))
         for _id in cursor2:
@@ -48,7 +50,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 
     util.setup(path, "meningiomer")
 
-    moving_datasets_ids = find_images()
+    moving_datasets_ids = find_images(exclude=[1061, 709])
 
     if len(sys.argv) > 2:
         num_of_splits = int(sys.argv[1])
@@ -61,14 +63,16 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
         else:
             moving_datasets_ids = moving_datasets_ids[start_idx:]
 
-    #util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
-    # image_registration.get_transforms(moving_datasets_ids,
-    #                                   image_registration.SYN,
-    #                                   save_to_db=True)
-
-    moving_datasets_ids = find_images([1052, 1167, 1, 31, 35, 192, 201, 388, 397, 463, 508, 530, 563, 709, 866, 927, 941, 981, 1020])
-    #excluded: 1061, 709
-    print(moving_datasets_ids)
+    util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
     image_registration.get_transforms(moving_datasets_ids,
                                       image_registration.AFFINE,
+                                      reg_type_be=image_registration.COMPOSITEAFFINE,
                                       save_to_db=True)
+
+    # moving_datasets_ids = find_images([1052, 1167, 1, 31, 35, 192, 201, 388, 397, 463, 508, 530, 563, 709, 866, 927, 941, 981, 1020])
+    # #excluded: 1061, 709
+    # print(moving_datasets_ids)
+    # image_registration.get_transforms(moving_datasets_ids,
+    #                                   image_registration.AFFINE,
+    #                                   reg_type_be=image_registration.COMPOSITEAFFINE,
+    #                                   save_to_db=True)
