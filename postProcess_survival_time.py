@@ -5,13 +5,7 @@ Created on Tue May 24 10:41:50 2016
 @author: dahoiv
 """
 
-# import os
-from os.path import basename
-import nipype.interfaces.ants as ants
 import datetime
-import sqlite3
-
-from img_data import img_data
 import util
 
 
@@ -32,6 +26,7 @@ def process(folder):
             if label == 'img':
                 continue
             util.avg_calculation(result[label], 'survival_time_grade_' + str(grade), survival_days, True, folder, default_value=-1)
+
 
 if __name__ == "__main__":
     folder = "RES_survival_time_" + "{:%d%m%Y_%H%M}".format(datetime.datetime.now()) + "/"

@@ -15,7 +15,7 @@ import image_registration
 import util
 
 
-def find_images(pids = [], exclude=[]):
+def find_images(pids=[], exclude=[]):
     """ Find images for registration """
     conn = sqlite3.connect(util.DB_PATH)
     conn.text_factory = str

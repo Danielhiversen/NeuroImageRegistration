@@ -81,7 +81,6 @@ def process(folder):
     image_ids = find_images("post")
     if True:
         import nibabel as nib
-        import numpy as np
         conn = sqlite3.connect(util.DB_PATH)
         conn.text_factory = str
         cursor = conn.execute(
@@ -131,8 +130,6 @@ def process(folder):
     print(len(result_pre['all']))
     util.avg_calculation(result_pre['all'], 'all_pre', None, True, folder, save_sum=True)
     util.avg_calculation(result_pre['img'], 'img_pre', None, True, folder)
-
-
     util.calc_resection_prob(result_pre['all'], result_post['all'], 'resection_prob', True, folder, -1)
 
 

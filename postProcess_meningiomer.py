@@ -5,13 +5,7 @@ Created on Tue May 24 10:41:50 2016
 @author: dahoiv
 """
 
-# import os
-from os.path import basename
-import nipype.interfaces.ants as ants
 import datetime
-import sqlite3
-
-from img_data import img_data
 import util
 from do_img_registration_meningiomer import find_images
 
