@@ -363,7 +363,8 @@ def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=N
 
 
 # pylint: disable= too-many-arguments
-def sum_calculation(images, label, val=None, save=False, folder=None, default_value=0, save_pngs=False):
+def sum_calculation(images, label, val=None, save=False, folder=None, default_value=0,
+                    save_pngs=False):
     """ Calculate sum volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
