@@ -335,8 +335,11 @@ def registration(moving_img, fixed, reg_type):
                                            (0.25,)]
         reg.inputs.use_estimate_learning_rate_once = [True] * 3
         reg.inputs.use_histogram_matching = [False, False, True]
-    elif reg_type == AFFINE:
-        reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
+    elif reg_type == AFFINE or reg_type == COMPOSITEAFFINE:
+        if reg_type == AFFINE:
+            reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
+        else:
+            reg.inputs.transforms = ['Rigid', 'CompositeAffine', 'CompositeAffine']
         reg.inputs.metric = ['MI', 'MI', 'MI']
         reg.inputs.metric_weight = [1] * 2 + [1]
         reg.inputs.radius_or_number_of_bins = [32, 32, 32]

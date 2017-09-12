@@ -363,7 +363,7 @@ def transform_volume(vol, transform, label_img=False, outputpath=None, ref_img=N
 
 
 # pylint: disable= too-many-arguments
-def sum_calculation(images, label, val=None, save=False, folder=None, default_value=0):
+def sum_calculation(images, label, val=None, save=False, folder=None, default_value=0, save_pngs=False):
     """ Calculate sum volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
@@ -379,6 +379,8 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
         if val_i is None:
             continue
         img = nib.load(file_name)
+        if save_pngs:
+            generate_image(file_name, TEMPLATE_VOLUME)
         if _sum is None:
             _sum = np.zeros(img.get_data().shape)
             _total = np.zeros(img.get_data().shape)
@@ -433,7 +435,7 @@ def std_calculation(images, label, val=None, save=False, folder=None):
 
 # pylint: disable= too-many-arguments
 def avg_calculation(images, label, val=None, save=False, folder=None,
-                    save_sum=False, default_value=0):
+                    save_sum=False, default_value=0, save_pngs=False):
     """ Calculate average volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
@@ -442,7 +444,8 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     path = path.replace('all', 'tumor')
     path = path.replace('img', 'volum')
 
-    (_sum, _total) = sum_calculation(images, label, val, save=save_sum, default_value=default_value)
+    (_sum, _total) = sum_calculation(images, label, val, save=save_sum,
+                                     default_value=default_value, save_pngs=save_pngs)
     _total[_total == 0] = np.inf
     if val:
         average = _sum / _total
