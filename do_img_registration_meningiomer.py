@@ -50,7 +50,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 
     util.setup(path, "meningiomer")
 
-    moving_datasets_ids = find_images(exclude=[1061, 709])
+    moving_datasets_ids = find_images(exclude=[])
 
     if len(sys.argv) > 2:
         num_of_splits = int(sys.argv[1])
