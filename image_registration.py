@@ -63,7 +63,7 @@ if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
     MULTITHREAD = 8
     BET_COMMAND = "/home/danieli/fsl/bin/bet"
 else:
-    NUM_THREADS_ANTS = 2
+    NUM_THREADS_ANTS = 4
     # MULTITHREAD = 1  # 1,23,4....., "max"
     MULTITHREAD = "max"
     BET_COMMAND = "fsl5.0-bet"
@@ -80,13 +80,6 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     resampled_file = path + util.get_basename(norm_file) + '_resample.nii.gz'
     name = util.get_basename(resampled_file) + "_be"
     img.pre_processed_filepath = path + name + '.nii.gz'
-
-    if os.path.exists(img.pre_processed_filepath) and\
-       (os.path.exists(path + name + 'Composite.h5') or BE_METHOD == 1):
-        if BE_METHOD == 0:
-            img.init_transform = path + name + 'Composite.h5'
-        util.generate_image(img.pre_processed_filepath, util.TEMPLATE_VOLUME)
-        return img
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
@@ -218,7 +211,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         util.LOGGER.info("Finished bet registration 0: ")
         util.LOGGER.info(datetime.datetime.now() - start_time)
 
-        name = name + "_be"
+        name += "_be"
         img.pre_processed_filepath = path + name + '.nii.gz'
         img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
 
@@ -446,8 +439,10 @@ def process_dataset(args):
 # pylint: disable= too-many-arguments
 def get_transforms(moving_dataset_image_ids, reg_type=None,
                    process_dataset_func=process_dataset, save_to_db=False,
-                   be_method=BE_METHOD, reg_type_be=BE_METHOD):
+                   be_method=BE_METHOD, reg_type_be=None):
     """Calculate transforms """
+    if not reg_type_be:
+        reg_type_be = reg_type
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
             pool = Pool()
