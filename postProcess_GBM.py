@@ -238,8 +238,10 @@ def process_labels(folder):
 
         sheet.cell(row=k, column=1).value = pid
         sheet.cell(row=k, column=2).value = lobe
-        sheet.cell(row=k, column=3).value = label_defs_r_l.get(
-            lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
+        sheet.cell(row=k, column=3).value = 'left' if com_idx[0] < 99 else 'right'
+        rl = label_defs_r_l.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
+        if rl != 'unknown' and rl != sheet.cell(row=k, column=3).value:
+            print("\n\n\n", pid)
         # sheet.cell(row=k, column=3).value = str(com[0]) + " " + str(com[1]) + " " + str(com[2])
         # sheet.cell(row=k, column=4).value = str(com_idx[0]) + " " + str(com_idx[1]) + " " + str(com_idx[2])
         k += 1
