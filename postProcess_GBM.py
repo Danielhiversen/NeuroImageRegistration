@@ -204,7 +204,8 @@ def process_labels(folder):
 
     img = nib.load("/home/dahoiv/disk/data/MolekylareMarkorer/lobes_brain.nii")
     lobes_brain = img.get_data()
-    label_defs = util.get_5label_defs()
+    label_defs = util.get_bigger_label_defs()
+    label_defs_r_l = util.get_right_left_label_defs()
     res_lobes_brain = {}
 
     book = Workbook()
@@ -212,6 +213,7 @@ def process_labels(folder):
 
     sheet.cell(row=1, column=1).value = 'PID'
     sheet.cell(row=1, column=2).value = 'Lobe'
+    sheet.cell(row=1, column=3).value = 'Right/Left'
     # sheet.cell(row=1, column=3).value = 'Center of mass'
     k = 2
     for pid in cursor:
@@ -236,6 +238,8 @@ def process_labels(folder):
 
         sheet.cell(row=k, column=1).value = pid
         sheet.cell(row=k, column=2).value = lobe
+        sheet.cell(row=k, column=3).value = label_defs_r_l.get(
+            lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
         # sheet.cell(row=k, column=3).value = str(com[0]) + " " + str(com[1]) + " " + str(com[2])
         # sheet.cell(row=k, column=4).value = str(com_idx[0]) + " " + str(com_idx[1]) + " " + str(com_idx[2])
         k += 1

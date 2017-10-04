@@ -957,9 +957,9 @@ def get_bigger_label_defs():
     label_defs[254] = "deep central"
 
     label_defs[0] = "deep central"
-    
+
     label_defs[28] = "skull"
-    
+
     return label_defs
 
 
@@ -1014,8 +1014,8 @@ def get_right_left_label_defs():
     label_defs[29] = "left"
     label_defs[254] = "right"
 
-    label_defs[0] = "unkown"
-    
+    label_defs[0] = "unknown"
+
     label_defs[28] = "skull"
-    
+
     return label_defs
