@@ -902,7 +902,8 @@ def write_fcsv(filepath_out, tag_data, color):
     fcsv_file.write(fscv_data)
     fcsv_file.close()
 
-def get_5label_defs():
+
+def get_bigger_label_defs():
     """Get brain area defs"""
     label_defs = dict()
     label_defs[30] = "frontal left"
@@ -917,4 +918,104 @@ def get_5label_defs():
     label_defs[105] = "parietal right"
     label_defs[2] = "parietal right"
 
+    label_defs[83] = "temporal left"
+    label_defs[218] = "temporal left"
+    label_defs[59] = "temporal right"
+    label_defs[219] = "temporal right"
+
+    label_defs[73] = "occipital left"
+    label_defs[8] = "occipital left"
+    label_defs[45] = "occipital right"
+    label_defs[4] = "occipital right"
+
+    label_defs[67] = "cerebellum left"
+    label_defs[76] = "cerebellum right"
+    label_defs[20] = "brainstem"
+
+    label_defs[3] = "deep central"
+    label_defs[9] = "deep central"
+    label_defs[232] = "deep central"
+    label_defs[233] = "deep central"
+    label_defs[255] = "deep central"
+
+    label_defs[39] = "deep central"
+    label_defs[53] = "deep central"
+
+    label_defs[14] = "deep central"
+    label_defs[16] = "deep central"
+
+    label_defs[102] = "deep central"
+    label_defs[203] = "deep central"
+
+    label_defs[33] = "deep central"
+    label_defs[23] = "deep central"
+
+    label_defs[12] = "deep central"
+    label_defs[11] = "deep central"
+
+    label_defs[29] = "deep central"
+    label_defs[254] = "deep central"
+
+    label_defs[0] = "deep central"
+    
+    label_defs[28] = "skull"
+    
+    return label_defs
+
+
+def get_right_left_label_defs():
+    """Get brain area defs"""
+    label_defs = dict()
+    label_defs[30] = "left"
+    label_defs[210] = "left"
+    label_defs[17] = "right"
+    label_defs[211] = "right"
+
+    label_defs[83] = "left"
+    label_defs[218] = "left"
+    label_defs[59] = "right"
+    label_defs[219] = "right"
+
+    label_defs[57] = "left"
+    label_defs[6] = "left"
+    label_defs[105] = "right"
+    label_defs[2] = "right"
+
+    label_defs[73] = "left"
+    label_defs[8] = "left"
+    label_defs[45] = "right"
+    label_defs[4] = "right"
+
+    label_defs[67] = "left"
+    label_defs[76] = "right"
+    label_defs[20] = "unknown"
+
+    label_defs[3] = "left"
+    label_defs[9] = "right"
+    label_defs[232] = "unknown"
+    label_defs[233] = "unknown"
+    label_defs[255] = "unknown"
+
+    label_defs[39] = "left"
+    label_defs[53] = "right"
+
+    label_defs[14] = "left"
+    label_defs[16] = "right"
+
+    label_defs[102] = "left"
+    label_defs[203] = "right"
+
+    label_defs[33] = "left"
+    label_defs[23] = "right"
+
+    label_defs[12] = "left"
+    label_defs[11] = "right"
+
+    label_defs[29] = "left"
+    label_defs[254] = "right"
+
+    label_defs[0] = "unkown"
+    
+    label_defs[28] = "skull"
+    
     return label_defs
