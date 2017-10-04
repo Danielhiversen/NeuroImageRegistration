@@ -875,12 +875,14 @@ def get_center_of_mass(filepath):
     """Get center_of_mass of filepath"""
     img = nib.load(filepath)
     com = ndimage.measurements.center_of_mass(img.get_data())
+    com_idx = [int(_com) for _com in com]
+
     qform = img.header.get_qform()
     spacing = img.header.get_zooms()
     res = [c*s for (c, s) in zip(com, spacing)]
     trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
-    res = [r+t for (r, t) in zip(res, trans)]
-    return res
+    com = [r+t for (r, t) in zip(res, trans)]
+    return com, com_idx
 
 
 def write_fcsv(filepath_out, tag_data, color):
@@ -899,3 +901,20 @@ def write_fcsv(filepath_out, tag_data, color):
     fcsv_file = open(filepath_out, 'w')
     fcsv_file.write(fscv_data)
     fcsv_file.close()
+
+def get_5label_defs():
+    """Get brain area defs"""
+    label_defs = dict()
+    label_defs[30] = "frontal left"
+    label_defs[210] = "frontal left"
+
+    label_defs[17] = "frontal right"
+    label_defs[211] = "frontal right"
+
+    label_defs[57] = "parietal left"
+    label_defs[6] = "parietal left"
+
+    label_defs[105] = "parietal right"
+    label_defs[2] = "parietal right"
+
+    return label_defs

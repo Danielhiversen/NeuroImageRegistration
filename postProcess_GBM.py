@@ -6,8 +6,10 @@ Created on Tue May 24 10:41:50 2016
 """
 
 # import os
+from openpyxl import Workbook
 import datetime
 # import sys
+import nibabel as nib
 import sqlite3
 
 import util
@@ -192,12 +194,64 @@ def process4(folder):
         util.median_calculation(result[label], 'tumor_volume_N=' + str(num), qol, True, folder, default_value=default_value)
 
 
+def process_labels(folder):
+    """ Post process data tumor volume"""
+    print(folder)
+    util.setup(folder)
+    conn = sqlite3.connect(util.DB_PATH, timeout=120)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from Patient where study_id = ?''', ("qol_grade3,4", ))
+
+    img = nib.load("/home/dahoiv/disk/data/MolekylareMarkorer/lobes_brain.nii")
+    lobes_brain = img.get_data()
+    label_defs = util.get_5label_defs()
+    res_lobes_brain = {}
+
+    book = Workbook()
+    sheet = book.active
+
+    sheet.cell(row=1, column=1).value = 'PID'
+    sheet.cell(row=1, column=2).value = 'Lobe'
+    # sheet.cell(row=1, column=3).value = 'Center of mass'
+    k = 2
+    for pid in cursor:
+        pid = pid[0]
+
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
+        if not _id:
+            print("---No data for ", pid)
+            continue
+        _id = _id[0]
+
+        _filepath = conn.execute("SELECT filepath_reg from Labels where image_id = ?",
+                                 (_id, )).fetchone()[0]
+        if _filepath is None:
+            print("No filepath for ", pid)
+            continue
+
+        com, com_idx = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
+
+        lobe = label_defs.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
+        res_lobes_brain[pid] = lobe
+
+        sheet.cell(row=k, column=1).value = pid
+        sheet.cell(row=k, column=2).value = lobe
+        # sheet.cell(row=k, column=3).value = str(com[0]) + " " + str(com[1]) + " " + str(com[2])
+        # sheet.cell(row=k, column=4).value = str(com_idx[0]) + " " + str(com_idx[1]) + " " + str(com_idx[2])
+        k += 1
+
+    book.save("brain_lobes.xlsx")
+
+    print(res_lobes_brain, len(res_lobes_brain))
+
+
 if __name__ == "__main__":
     folder = "RES_GBM_" + "{:%H%M_%m_%d_%Y}".format(datetime.datetime.now()) + "/"
-    process(folder)
-    process2(folder)
-    # process3(folder)
-    process4(folder)
+    # process(folder)
+    # process2(folder)
+    # # process3(folder)
+    # process4(folder)
+    process_labels(folder)
 
     # start_time = datetime.datetime.now()
     # if len(sys.argv) > 1:
