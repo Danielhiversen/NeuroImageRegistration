@@ -252,6 +252,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         transform = path + name + 'InverseComposite.h5'
         util.LOGGER.info("starting be registration")
+        util.LOGGER.info(reg.cmdline)
         start_time = datetime.datetime.now()
         if not os.path.exists(reg.inputs.output_warped_image):
             reg.run()
