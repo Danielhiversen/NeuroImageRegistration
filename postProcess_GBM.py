@@ -5,16 +5,21 @@ Created on Tue May 24 10:41:50 2016
 @author: dahoiv
 """
 
-# import os
+import os
+import nipype.interfaces.slicer as slicer
+import nipype.interfaces.ants as ants
 from openpyxl import Workbook
 import datetime
 # import sys
+import numpy as np
 import nibabel as nib
 import sqlite3
 
 import util
 import do_img_registration_GBM
 
+
+BRAINSResample_PATH = '/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/BRAINSResample'
 
 def find_images():
     """ Find images for registration """
@@ -251,13 +256,103 @@ def process_labels(folder):
     print(res_lobes_brain, len(res_lobes_brain))
 
 
+def process_tracts(folder):
+    """ Post process data tumor volume"""
+    util.setup(folder)
+    print(folder)
+    thres = 0.75
+    atlas_paths = ["/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Arcuate/Arcuate_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Arcuate/Arcuate_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Anterior_Commissure/Anterior_Commissure.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cerebellar/Cortico_Ponto_Cerebellum_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cerebellar/Cortico_Ponto_Cerebellum_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cerebellar/Inferior_Cerebellar_Pedunculus_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cerebellar/Inferior_Cerebellar_Pedunculus_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cerebellar/Superior_Cerebelar_Pedunculus_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cerebellar/Superior_Cerebelar_Pedunculus_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cingulum/Cingulum_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Cingulum/Cingulum_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Corpus_Callosum/Corpus_Callosum.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Fornix/Fornix.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Inferior_Network/Inferior_Longitudinal_Fasciculus_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Inferior_Network/Inferior_Longitudinal_Fasciculus_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Inferior_Network/Inferior_Occipito_Frontal_Fasciculus_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Inferior_Network/Inferior_Occipito_Frontal_Fasciculus_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Inferior_Network/Uncinate_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Inferior_Network/Uncinate_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Optic_Radiations/Optic_Radiations_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Optic_Radiations/Optic_Radiations_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Perisylvian/Anterior_Segment_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Perisylvian/Anterior_Segment_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Perisylvian/Long_Segment_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Perisylvian/Long_Segment_Right.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Perisylvian/Posterior_Segment_Left.nii",
+                   "/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/WM_tracts/Perisylvian/Posterior_Segment_Right.nii",
+                   "/home/dahoiv/disk/Dropbox/Jobb/gbm/FINAL_RES_GBM_0919_09_06_2017/WM_tracts/Projections/Internal_Capsule.nii"
+                   ]
+
+    for atlas_path in atlas_paths:
+        tract = util.get_basename(atlas_path)
+        resample = slicer.registration.brainsresample.BRAINSResample(command=BRAINSResample_PATH,
+                                                                     inputVolume=atlas_path,
+                                                                     outputVolume=os.path.abspath(folder + tract + '.nii.gz'),
+                                                                     referenceVolume=os.path.abspath(util.TEMPLATE_VOLUME))
+        print(resample.cmdline)
+        resample.run()
+
+    conn = sqlite3.connect(util.DB_PATH, timeout=120)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from Patient where study_id = ?''', ("qol_grade3,4", ))
+
+    book = Workbook()
+    sheet = book.active
+
+    sheet.cell(row=1, column=1).value = 'PID'
+
+    k = 2
+    for pid in cursor:
+        pid = pid[0]
+
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
+        if not _id:
+            print("---No data for ", pid)
+            continue
+        _id = _id[0]
+
+        _filepath = conn.execute("SELECT filepath_reg from Labels where image_id = ?",
+                                 (_id, )).fetchone()[0]
+        if _filepath is None:
+            print("No filepath for ", pid)
+            continue
+
+        tumor_data = nib.load(util.DATA_FOLDER + _filepath).get_data()
+
+        sheet.cell(row=k, column=1).value = pid
+        l = 1
+        for atlas_path in atlas_paths:
+            tract = util.get_basename(atlas_path)
+            if 'Internal_Capsule' not in tract:
+                continue
+            l += 1
+            sheet.cell(row=1, column=l).value = tract
+            atlas_data = nib.load(folder + tract + '.nii.gz').get_data()
+            union_data = atlas_data * tumor_data
+
+            sheet.cell(row=k, column=l).value = '1' if np.max(union_data) >= thres else '0'
+        k += 1
+
+    book.save("brain_tracts_Internal_Capsule.xlsx")
+
+
+
 if __name__ == "__main__":
     folder = "RES_GBM_" + "{:%H%M_%m_%d_%Y}".format(datetime.datetime.now()) + "/"
     # process(folder)
     # process2(folder)
     # # process3(folder)
     # process4(folder)
-    process_labels(folder)
+    # process_labels(folder)
+    process_tracts(folder)
 
     # start_time = datetime.datetime.now()
     # if len(sys.argv) > 1:
