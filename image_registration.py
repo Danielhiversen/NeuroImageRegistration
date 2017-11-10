@@ -211,15 +211,13 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
             util.LOGGER.info("Finished bet registration 0: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
             name += "_be"
-            img.pre_processed_filepath = path + name + '.nii.gz'
-            img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
             moving_image = util.TEMPLATE_MASKED_VOLUME
         else:
-            img.pre_processed_filepath = util.get_basename(resampled_file) + "_bet"
             name = util.get_basename(resampled_file) + "_be"
-            img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
             moving_image = util.TEMPLATE_VOLUME
 
+        img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
+        img.pre_processed_filepath = path + name + '.nii.gz'
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
