@@ -182,44 +182,49 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         bet.run()
         util.generate_image(img.pre_processed_filepath, resampled_file)
     elif be_method == 2:
-        name = util.get_basename(resampled_file) + "_bet"
-
-        # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
-        bet = fsl.BET(command=BET_COMMAND)
-        bet.inputs.in_file = resampled_file
-        # pylint: disable= pointless-string-statement
-        """ fractional intensity threshold (0->1); default=0.5;
-        smaller values give larger brain outline estimates"""
-        bet.inputs.frac = BET_FRAC
-        """ vertical gradient in fractional intensity threshold (-1->1);
-        default=0; positive values give larger brain outline at bottom,
-        smaller at top """
-        bet.inputs.vertical_gradient = 0
-        """  This attempts to reduce image bias, and residual neck voxels.
-        This can be useful when running SIENA or SIENAX, for example.
-        Various stages involving FAST segmentation-based bias field removal
-        and standard-space masking are combined to produce a result which
-        can often give better results than just running bet2."""
-        bet.inputs.reduce_bias = True
-        bet.inputs.mask = True
-        bet.inputs.out_file = path + name + '.nii.gz'
-        util.LOGGER.info("starting bet registration")
-        start_time = datetime.datetime.now()
-        util.LOGGER.info(bet.cmdline)
-        if not os.path.exists(bet.inputs.out_file):
-            bet.run()
-        util.LOGGER.info("Finished bet registration 0: ")
-        util.LOGGER.info(datetime.datetime.now() - start_time)
-
-        name += "_be"
-        img.pre_processed_filepath = path + name + '.nii.gz'
-        img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
+        if BET_FRAC > 0:
+            name = util.get_basename(resampled_file) + "_bet"
+            # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
+            bet = fsl.BET(command=BET_COMMAND)
+            bet.inputs.in_file = resampled_file
+            # pylint: disable= pointless-string-statement
+            """ fractional intensity threshold (0->1); default=0.5;
+            smaller values give larger brain outline estimates"""
+            bet.inputs.frac = BET_FRAC
+            """ vertical gradient in fractional intensity threshold (-1->1);
+            default=0; positive values give larger brain outline at bottom,
+            smaller at top """
+            bet.inputs.vertical_gradient = 0
+            """  This attempts to reduce image bias, and residual neck voxels.
+            This can be useful when running SIENA or SIENAX, for example.
+            Various stages involving FAST segmentation-based bias field removal
+            and standard-space masking are combined to produce a result which
+            can often give better results than just running bet2."""
+            bet.inputs.reduce_bias = True
+            bet.inputs.mask = True
+            bet.inputs.out_file = path + name + '.nii.gz'
+            util.LOGGER.info("starting bet registration")
+            start_time = datetime.datetime.now()
+            util.LOGGER.info(bet.cmdline)
+            if not os.path.exists(bet.inputs.out_file):
+                bet.run()
+            util.LOGGER.info("Finished bet registration 0: ")
+            util.LOGGER.info(datetime.datetime.now() - start_time)
+            name += "_be"
+            img.pre_processed_filepath = path + name + '.nii.gz'
+            img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
+            moving_image = util.TEMPLATE_MASKED_VOLUME
+        else:
+            img.pre_processed_filepath = util.get_basename(resampled_file) + "_bet"
+            name = util.get_basename(resampled_file) + "_be"
+            img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
+            moving_image = util.TEMPLATE_VOLUME
 
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = bet.inputs.out_file
-        reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
+        reg.inputs.moving_image = moving_image
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
         reg.inputs.num_threads = NUM_THREADS_ANTS
@@ -229,7 +234,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
             reg.inputs.transforms = ['Rigid', 'Rigid']
         elif reg_type == COMPOSITEAFFINE:
             reg.inputs.transforms = ['Rigid', 'CompositeAffine']
-        else:
+        elif reg_type == AFFINE:
             reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]

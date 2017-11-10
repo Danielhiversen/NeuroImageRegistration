@@ -386,9 +386,10 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
             _sum = np.zeros(img.get_data().shape)
             _total = np.zeros(img.get_data().shape)
         temp = np.array(img.get_data())
-        _sum = _sum + temp*val_i
+        temp[temp == 2**14] = 1.0
+        _sum += temp*val_i
         temp[temp != 0] = 1.0
-        _total = _total + temp
+        _total += temp
     _sum[_sum == 0] = default_value
 
     if save:
@@ -396,7 +397,7 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
         result_img.to_filename(path_n)
         generate_image(path_n, TEMPLATE_VOLUME)
 
-    return (_sum, _total)
+    return _sum, _total
 
 
 def std_calculation(images, label, val=None, save=False, folder=None):
@@ -452,6 +453,8 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
         average = _sum / _total
     else:
         average = _sum / len(images)
+    print("average", np.average(_sum[:]))
+
     average[average == 0] = default_value
 
     if save:

@@ -20,6 +20,9 @@
 #
 #
 
-  source /home/danieli/NeuroImageRegistration/venv2/bin/activate
-  python /home/danieli/NeuroImageRegistration/do_img_registration_meningiomer.py
 
+module purge
+module load anaconda3
+python reg.py 
+
+module purge

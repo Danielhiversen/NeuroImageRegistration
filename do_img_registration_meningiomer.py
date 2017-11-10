@@ -64,7 +64,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
             moving_datasets_ids = moving_datasets_ids[start_idx:]
 
     util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
-    image_registration.BET_FRAC = 0.3
+    image_registration.BET_FRAC = -1
     image_registration.get_transforms(moving_datasets_ids,
                                       reg_type=image_registration.COMPOSITEAFFINE,
                                       reg_type_be=image_registration.COMPOSITEAFFINE,
@@ -85,5 +85,5 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 
 # 1, 35, 105, 192, 201, 463, 508, 530, 563, 709, 866, 1020, 1061,  image_registration.BET_FRAC = 0.1
 
-# 1, 35, 463, 508, 530, 709, 866, 1020, 1061,  image_registration.BET_FRAC = 0.3
+# 1, 35,      192, 201, 463, 508, 530, 709, 866, 1020, 1061,  image_registration.BET_FRAC = 0.3
 
