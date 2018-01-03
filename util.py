@@ -27,7 +27,7 @@ from scipy import ndimage
 from scipy import stats
 import matplotlib
 matplotlib.use('Agg')
-# pylint: disable= wrong-import-position
+# pylint: disable= wrong-import-position, too-many-lines
 import matplotlib.pyplot as plt  # noqa
 import matplotlib.cm as cm  # noqa
 
@@ -73,7 +73,7 @@ def setup(temp_path, data="glioma"):
 
 def setup_paths(data="glioma"):
     """setup for current computer """
-    # pylint: disable= global-statement, line-too-long, too-many-branches
+    # pylint: disable= global-statement, line-too-long, too-many-branches, too-many-statements
     global DATA_FOLDER, DB_PATH
 
     hostname = os.uname()[1]
@@ -100,17 +100,30 @@ def setup_paths(data="glioma"):
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/neuro_data/database/'
         else:
-            LOGGER.error("Unkown data " + data)
+            LOGGER.error("Unkown host name " + hostname)
+            LOGGER.error("Add your host name path to " + sys.argv[0])
             raise Exception
     elif data == 'MolekylareMarkorer':
-        if hostname == 'dahoiv-Alienware-15':
-            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM3/"
+        if hostname == 'dddd':
+            DATA_FOLDER = "/home/dahoiv/disk/data/MolekylareMarkorer/database_MM/"
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/ingerid/data/daniel/database_MM/"
+        elif 'unity' in hostname or 'compute' in hostname:
+            DATA_FOLDER = '/work/danieli/database_MM/'
         else:
-            LOGGER.error("Unkown data " + data)
+            LOGGER.error("Unkown host name " + hostname)
+            LOGGER.error("Add your host name path to " + sys.argv[0])
+            raise Exception
+    elif data == 'meningiomer':
+        if hostname == 'dddd':
+            DATA_FOLDER = "/home/dahoiv/disk/data/meningiomer/database_meningiomer/"
+        elif 'unity' in hostname or 'compute' in hostname:
+            DATA_FOLDER = '/work/danieli/database_meningiomer/'
+        else:
+            LOGGER.error("Unkown host name " + hostname)
+            LOGGER.error("Add your host name path to " + sys.argv[0])
             raise Exception
     else:
         LOGGER.error("Unkown data type " + data)
@@ -146,7 +159,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
         db_temp = cursor.fetchone()
         if db_temp[0] is None:
-            LOGGER.error("No volume data for image_id " + _id)
+            LOGGER.error("No volume data for image_id " + str(_id))
             continue
         vol = DATA_FOLDER + db_temp[0]
         label = "img"
@@ -437,50 +450,9 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     return average
 
 
-def avg_calculation2(images, label, val=None, save=False, folder=None, save_sum=False, default_value=0):
-    if not folder:
-        folder = TEMP_FOLDER_PATH
-    path = folder + 'avg2_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-    path = path.replace('all', 'tumor')
-    path = path.replace('img', 'volum')
-
-    if not val:
-        val = [1]*len(images)
-
-    _sum = None
-    _total = None
-    for (file_name, val_i) in zip(images, val):
-        if val_i is None:
-            continue
-        img = nib.load(file_name)
-        if _sum is None:
-            _sum = np.zeros(img.get_data().shape)
-            _total = np.zeros(img.get_data().shape)
-        temp = np.array(img.get_data())
-        _sum += temp*val_i
-        temp[temp != 0] = 1.0
-        _total += temp
-
-    average = _sum / _total
-    average[_total == 0] = default_value
-
-    if save:
-        img = nib.load(images[0])
-        result_img = nib.Nifti1Image(average, img.affine)
-        result_img.to_filename(path)
-        generate_image(path, TEMPLATE_VOLUME)
-    if save_sum:
-        path_n = folder + 'total2_' + label + '.nii'
-        path_n = path_n.replace('label', 'tumor')
-        img = nib.load(images[0])
-        result_img = nib.Nifti1Image(_sum, img.affine)
-        result_img.to_filename(path_n)
-        generate_image(path, TEMPLATE_VOLUME)
-    return average
-
-
 def median_calculation(images, label, val=None, save=False, folder=None, default_value=0):
+    """ Calculate median volumes """
+    # pylint: disable= too-many-locals, invalid-name
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'median_' + label + '.nii'
@@ -507,12 +479,18 @@ def median_calculation(images, label, val=None, save=False, folder=None, default
 
     median = np.zeros(shape) + default_value
 
-    for key, val_i in total.iteritems():
+    for key, val_i in total.items():
         _temp = key.split("_")
         k = int(_temp[0])
-        l = int(_temp[1])
-        m = int(_temp[2])
-        median[k, l, m] = np.median(val_i)
+        m = int(_temp[1])
+        n = int(_temp[2])
+        median[k, m, n] = np.median(val_i)
+
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(median, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
 
     if save:
         img = nib.load(images[0])
@@ -545,7 +523,7 @@ def std_calculation(images, label, val=None, save=False, folder=None):
         temp = np.array(img.get_data())
         _std += (temp*val_i - avg_img)**2
         temp[temp != 0] = 1.0
-        _total += + temp
+        _total += temp
     _std /= _total
 
     if save:
@@ -554,6 +532,32 @@ def std_calculation(images, label, val=None, save=False, folder=None):
         generate_image(path, TEMPLATE_VOLUME)
 
     return _std
+
+
+# pylint: disable= too-many-arguments
+def calc_resection_prob(images_pre, images_post, label, save=False, folder=None, default_value=0):
+    """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'resection_prob_' + label + '.nii'
+    path = path.replace('label', 'tumor')
+    path = path.replace('all', 'tumor')
+    path = path.replace('img', 'volume')
+
+    val = None
+    (_, _total_pre) = sum_calculation(images_pre, label, val, save=False)
+    (_, _total_post) = sum_calculation(images_post, label, val, save=False)
+    indx = _total_pre == 0
+    _total_pre[indx] = np.inf
+    res = 1 - _total_post / _total_pre
+    res[indx] = default_value
+
+    if save:
+        img = nib.load(images_pre[0])
+        result_img = nib.Nifti1Image(res, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+    return res
 
 
 def calculate_t_test(images, mu_h0, label='Index_value', save=True, folder=None):
@@ -672,20 +676,20 @@ def permutation_test(total, values, shape, alternative, stat_func):
         res['p_val'] = np.zeros(shape) + 1
     res['statistic'] = np.zeros(shape)
 
-    for key, vox_ids in total.iteritems():
+    for key, vox_ids in total.items():
         if len(vox_ids) < 2:
             continue
         _temp = key.split("_")
         k = int(_temp[0])
-        l = int(_temp[1])
-        m = int(_temp[2])
+        m = int(_temp[1])
+        n = int(_temp[2])
         group1 = [values[index] for index in vox_ids]
         ids = range(len(values))
         group2 = [values[index] for index in ids if index not in vox_ids]
         (p_val, statistic) = stat_func(group1, group2, alternative)
         if alternative is not None:
-            res['p_val'][k, l, m] = p_val
-        res['statistic'][k, l, m] = statistic
+            res['p_val'][k, m, n] = p_val
+        res['statistic'][k, m, n] = statistic
 
     LOGGER.info(str(datetime.datetime.now() - start_time))
 
@@ -828,7 +832,8 @@ def compress_vol(vol):
 
 def decompress_file(gzip_path):
     """Decompress file """
-    if gzip_path[:-3] != '.gz':
+    gzip_path = gzip_path.strip()
+    if gzip_path[-3:] != '.gz':
         return gzip_path
 
     in_file = gzip.open(gzip_path, 'rb')
@@ -885,25 +890,40 @@ def get_center_of_mass(filepath):
     return com, com_idx
 
 
-def write_fcsv(filepath_out, tag_data, color):
+def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
     """Write fcsv file, https://www.slicer.org/wiki/Modules:Fiducials-Documentation-3.6"""
-    fscv_data = '# Markups fiducial file version = 4.4' + os.linesep
-    fscv_data += '# visibility = 1' + os.linesep
-    fscv_data += '# color = ' + color + os.linesep
-    fscv_data += '# selectedColor = ' + color + os.linesep
-    fscv_data += '# locked = 1'
+    fscv_data = '# Markups fiducial file version = 4.7' + os.linesep
+    fscv_data += '# CoordinateSystem = 0' + os.linesep
     fscv_data += '# columns = id,x,y,z,ow,ox,oy,oz,vis,sel,lock,label,desc,associatedNodeID'
     fscv_data += os.linesep
 
     for val in tag_data:
-        fscv_data += val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,0,"
+        fscv_data += val['Name'] + "," + val['PositionGlobal'] + ",0,0,0,1,1,1,1,"
         fscv_data += val['Name'] + "," + val.get("desc", "") + "," + os.linesep
-    fcsv_file = open(filepath_out, 'w')
+    fcsv_file = open(folder_out + name_out + ".fcsv", 'w')
     fcsv_file.write(fscv_data)
     fcsv_file.close()
 
+    mrml_text = '<MRML  version="Slicer4.4.0" userTags="">' + os.linesep + \
+                ' <MarkupsDisplay id="vtkMRMLMarkupsDisplayNode1" name="MarkupsDisplay" color="'\
+                + color + '" selectedColor="' + color\
+                + '" textScale="2" glyphScale="3" glyphType="'\
+                + str(glyph_type) + '" sliceProjection="7" sliceProjectionColor="1 1 1" '\
+                + 'sliceProjectionOpacity="0.6" />' + os.linesep\
+                + ' <MarkupsFiducial id="vtkMRMLMarkupsFiducialNode1" name="' + name_out\
+                + '" references="display:vtkMRMLMarkupsDisplayNode1;storage:'\
+                + 'vtkMRMLMarkupsFiducialStorageNode1;" />' + os.linesep\
+                + ' <MarkupsFiducialStorage id="vtkMRMLMarkupsFiducialStorageNode1" '\
+                + 'name="MarkupsFiducialStorage" fileName="'\
+                + name_out + u'.fcsv" coordinateSystem="0" />' + os.linesep\
+                + '</MRML>' + os.linesep
 
-def get_bigger_label_defs():
+    mrml_file = open(folder_out + name_out + ".mrml", 'w')
+    mrml_file.write(mrml_text)
+    mrml_file.close()
+
+
+def get_label_defs():
     """Get brain area defs"""
     label_defs = dict()
     label_defs[30] = "frontal left"
@@ -1023,6 +1043,7 @@ def get_right_left_label_defs():
 
 def get_label_defs_hammers_mith():
     """Get brain area defs"""
+    # pylint: disable= too-many-statements
     label_defs = dict()
     label_defs[1] = "TL hippocampus R"
     label_defs[2] = "TL hippocampus L"

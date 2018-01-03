@@ -61,7 +61,7 @@ if __name__ == "__main__":
             ny_pid = row[0]
             try:
                 old_pid = int(convert_table_inv[str(ny_pid)])
-            except:
+            except Exception:
                 continue
             cursor2 = conn2.execute('''SELECT id from Images where pid = ? AND diag_pre_post = ?''', (old_pid, "pre"))
             for _id in cursor2:

@@ -63,8 +63,8 @@ def process_dataset(args, num_tries=3):
                                           image_registration.RIGID)
     print("\n\n\n\n -- Total run time: ")
     print(datetime.datetime.now() - start_time)
-
     img.fixed_image = pre_image_id
+
     if save_to_db:
         image_registration.save_transform_to_database([img])
 

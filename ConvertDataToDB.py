@@ -6,13 +6,12 @@ Created on Tue Apr 19 15:19:49 2016
 """
 # pylint: disable= line-too-long
 from __future__ import print_function
-
-from openpyxl import load_workbook
 import glob
 import os
 import shutil
 import sqlite3
 import pyexcel_xlsx
+from openpyxl import load_workbook
 
 import util
 
@@ -310,16 +309,16 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
 
         file_type_nrrd = True
         volume_label = glob.glob(data_path + '/*label.nrrd')
-        if len(volume_label) == 0:
+        if not volume_label:
             volume_label = glob.glob(data_path + '/*label_1.nrrd')
-        if len(volume_label) == 0:
+        if not volume_label:
             volume_label = glob.glob(data_path + '/Segmentation/*label.nrrd')
         if len(volume_label) > 1:
             log = log + "\n Warning!! More than one file with label found "
             for volume_label_i in volume_label:
                 log = log + volume_label_i
             continue
-        if len(volume_label) == 0:
+        if not volume_label:
             file_type_nrrd = False
             volume = data_path + "k" + pid + "-T1_" + "preop" + ".nii"
             if not os.path.exists(volume):
@@ -337,11 +336,11 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
             if not os.path.exists(volume):
                 volume = glob.glob(data_path + '*.nrrd')
                 volume.remove(volume_label)
-                if len(volume) == 0:
+                if not volume:
                     volume = glob.glob(data_path + '*.nii')
                 if len(volume) > 1:
                     log = log + "\n Warning!! More than one file with volume found " + volume
-                if len(volume) == 0:
+                if not volume:
                     log = log + "\n Warning!! No volume found " + data_path
                 volume = volume[0]
 
@@ -534,6 +533,73 @@ def add_survival_days():
     conn.close()
 
 
+def add_survival_age_kps_days():
+    """add survival_days to database """
+    # pylint: disable= too-many-branches, too-many-statements
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/Segmentations/slettes.xlsx')['Ark1']
+    try:
+        conn.execute("alter table Patient add column 'age_at_op_date_in_days' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+
+    k = 0
+    for row in data:
+        k = k + 1
+        if not row:
+            continue
+        if k < 2:
+            continue
+        pid = row[0]
+        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
+        exist = cursor.fetchone()
+        if exist is None:
+            continue
+        try:
+            op_date = row[1]
+        except IndexError:
+            op_date = None
+        try:
+            dob = row[2]
+        except IndexError:
+            dob = None
+        try:
+            dod = row[3]
+        except IndexError:
+            dod = None
+        if dod is None:
+            try:
+                dod = row[4]
+            except IndexError:
+                dod = None
+
+        if None not in [dod, op_date]:
+            survival_days = (dod - op_date).days
+        else:
+            survival_days = None
+        if None not in [dob, op_date]:
+            age_at_op_date_in_days = (op_date - dob).days
+        else:
+            age_at_op_date_in_days = None
+
+        try:
+            kps = float(row[6])
+        except (IndexError, ValueError):
+            kps = None
+        print(pid, survival_days, age_at_op_date_in_days, kps)
+
+        cursor.execute('''UPDATE Patient SET survival_days = ?, age_at_op_date_in_days = ? WHERE pid = ?''',
+                       (survival_days, age_at_op_date_in_days, pid))
+        cursor.execute('''UPDATE QualityOfLife SET karnofsky = ? WHERE pid = ?''', (kps, pid))
+
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
 def add_study():
     """add study to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -568,7 +634,6 @@ def add_study():
 
 def add_study_lgg():
     """add study to database """
-    from openpyxl import load_workbook
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
     try:
@@ -617,19 +682,19 @@ def add_tumor_volume():
             continue
         pid = row[0]
         cursor.execute('''SELECT id from Images where pid = ? AND diag_pre_post="pre"''', (pid,))
-        id = cursor.fetchone()
-        if id is None:
+        _id = cursor.fetchone()
+        if _id is None:
             continue
-        id = id[0]
+        _id = _id[0]
         try:
             tumor_volume = row[1]
         except IndexError:
             continue
 
-        print(pid, id, tumor_volume)
+        print(pid, _id, tumor_volume)
 
         cursor.execute('''UPDATE Images SET tumor_volume = ? WHERE id = ?''',
-                       (tumor_volume, id))
+                       (tumor_volume, _id))
         conn.commit()
 
     cursor.close()
@@ -679,6 +744,9 @@ if __name__ == "__main__":
 #    qol_to_db("siste_runde")
 
 #    qol_change_to_db()
+
+    add_survival_age_kps_days()
+
 
 #    add_study_lgg()
 

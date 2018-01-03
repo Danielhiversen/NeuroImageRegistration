@@ -28,8 +28,9 @@ class img_data(object):
         self.fixed_image = -1
 
         self._img_filepath = None
+        self._reg_img_filepath = None
         self._label_filepath = None
-        self._label__inv_filepath = None
+        self._label_inv_filepath = None
 
     @property
     def img_filepath(self):
@@ -49,8 +50,25 @@ class img_data(object):
 
         return self._img_filepath
 
+    @property
+    def reg_img_filepath(self):
+        if self._reg_img_filepath is not None:
+            return self._reg_img_filepath
+        conn = sqlite3.connect(self.db_path)
+        conn.text_factory = str
+        cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (self.image_id,))
+        path = cursor.fetchone()
+        if path is None:
+            print("Could not find data for " + str(self.image_id))
+            self._reg_img_filepath = ""
+        else:
+            self._reg_img_filepath = self.data_path + path[0]
+        cursor.close()
+        conn.close()
+
+        return self._reg_img_filepath
+
     def load_db_transforms(self):
-        print(self.db_path, self.image_id)
         conn = sqlite3.connect(self.db_path)
         conn.text_factory = str
         cursor = conn.execute('''SELECT transform, fixed_image from Images where id = ? ''', (self.image_id,))
@@ -61,7 +79,7 @@ class img_data(object):
         for _transform in db_temp[0].split(","):
             self.transform.append(self.data_path + _transform.strip())
 
-        self.fixed_image_id = db_temp[1]
+        self.fixed_image = db_temp[1]
         cursor.close()
         conn.close()
 
@@ -82,8 +100,8 @@ class img_data(object):
 
     @property
     def label_inv_filepath(self):
-        if self._label_filepath is not None:
-            return self._label_filepath
+        if self._label_inv_filepath is not None:
+            return self._label_inv_filepath
 
         # resample volume to 1 mm slices
         target_affine_3x3 = np.eye(3) * 1
@@ -94,10 +112,10 @@ class img_data(object):
         temp_img = 1 - temp_img
         result_img = nib.Nifti1Image(temp_img, img_3d_affine.affine, img_3d_affine.header)
 
-        self._label_filepath = self.temp_data_path + splitext(splitext(basename(self.label_filepath))[0])[0] + "maskInv.nii.gz"
-        nib.save(result_img, self._label_filepath)
+        self._label_inv_filepath = self.temp_data_path + splitext(splitext(basename(self.label_filepath))[0])[0] + "maskInv.nii.gz"
+        nib.save(result_img, self._label_inv_filepath)
 
-        return self._label_filepath
+        return self._label_inv_filepath
 
     @property
     def db_path(self):

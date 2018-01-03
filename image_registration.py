@@ -52,7 +52,9 @@ import util
 RIGID = 'rigid'
 AFFINE = 'affine'
 SYN = 'syn'
+COMPOSITEAFFINE = 'compositeaffine'
 
+BET_FRAC = 0.1
 BE_METHOD = 2
 
 HOSTNAME = os.uname()[1]
@@ -61,7 +63,7 @@ if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
     MULTITHREAD = 8
     BET_COMMAND = "/home/danieli/fsl/bin/bet"
 else:
-    NUM_THREADS_ANTS = 2
+    NUM_THREADS_ANTS = 4
     # MULTITHREAD = 1  # 1,23,4....., "max"
     MULTITHREAD = "max"
     BET_COMMAND = "fsl5.0-bet"
@@ -78,13 +80,6 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
     resampled_file = path + util.get_basename(norm_file) + '_resample.nii.gz'
     name = util.get_basename(resampled_file) + "_be"
     img.pre_processed_filepath = path + name + '.nii.gz'
-
-    if os.path.exists(img.pre_processed_filepath) and\
-       (os.path.exists(path + name + 'Composite.h5') or BE_METHOD == 1):
-        if BE_METHOD == 0:
-            img.init_transform = path + name + 'Composite.h5'
-        util.generate_image(img.pre_processed_filepath, util.TEMPLATE_VOLUME)
-        return img
 
     n4bias = ants.N4BiasFieldCorrection()
     n4bias.inputs.dimension = 3
@@ -125,6 +120,8 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         if reg_type == RIGID:
             reg.inputs.transforms = ['Rigid', 'Rigid']
+        elif reg_type == COMPOSITEAFFINE:
+            reg.inputs.transforms = ['Rigid', 'CompositeAffine']
         else:
             reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
@@ -185,44 +182,49 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         bet.run()
         util.generate_image(img.pre_processed_filepath, resampled_file)
     elif be_method == 2:
-        name = util.get_basename(resampled_file) + "_bet"
+        if BET_FRAC > 0:
+            name = util.get_basename(resampled_file) + "_bet"
+            # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
+            bet = fsl.BET(command=BET_COMMAND)
+            bet.inputs.in_file = resampled_file
+            # pylint: disable= pointless-string-statement
+            """ fractional intensity threshold (0->1); default=0.5;
+            smaller values give larger brain outline estimates"""
+            bet.inputs.frac = BET_FRAC
+            """ vertical gradient in fractional intensity threshold (-1->1);
+            default=0; positive values give larger brain outline at bottom,
+            smaller at top """
+            bet.inputs.vertical_gradient = 0
+            """  This attempts to reduce image bias, and residual neck voxels.
+            This can be useful when running SIENA or SIENAX, for example.
+            Various stages involving FAST segmentation-based bias field removal
+            and standard-space masking are combined to produce a result which
+            can often give better results than just running bet2."""
+            bet.inputs.reduce_bias = True
+            bet.inputs.mask = True
+            bet.inputs.out_file = path + name + '.nii.gz'
+            util.LOGGER.info("starting bet registration")
+            start_time = datetime.datetime.now()
+            util.LOGGER.info(bet.cmdline)
+            if not os.path.exists(bet.inputs.out_file):
+                bet.run()
+            util.LOGGER.info("Finished bet registration 0: ")
+            util.LOGGER.info(datetime.datetime.now() - start_time)
+            name += "_be"
+            moving_image = util.TEMPLATE_MASKED_VOLUME
+            fixed_image = bet.inputs.out_file
+        else:
+            name = util.get_basename(resampled_file) + "_be"
+            moving_image = util.TEMPLATE_VOLUME
+            fixed_image = resampled_file
 
-        # http://fsl.fmrib.ox.ac.uk/fsl/fslwiki/BET/UserGuide#Main_bet2_options:
-        bet = fsl.BET(command=BET_COMMAND)
-        bet.inputs.in_file = resampled_file
-        # pylint: disable= pointless-string-statement
-        """ fractional intensity threshold (0->1); default=0.5;
-        smaller values give larger brain outline estimates"""
-        bet.inputs.frac = 0.1
-        """ vertical gradient in fractional intensity threshold (-1->1);
-        default=0; positive values give larger brain outline at bottom,
-        smaller at top """
-        bet.inputs.vertical_gradient = 0
-        """  This attempts to reduce image bias, and residual neck voxels.
-        This can be useful when running SIENA or SIENAX, for example.
-        Various stages involving FAST segmentation-based bias field removal
-        and standard-space masking are combined to produce a result which
-        can often give better results than just running bet2."""
-        bet.inputs.reduce_bias = True
-        bet.inputs.mask = True
-        bet.inputs.out_file = path + name + '.nii.gz'
-        util.LOGGER.info("starting bet registration")
-        start_time = datetime.datetime.now()
-        util.LOGGER.info(bet.cmdline)
-        if not os.path.exists(bet.inputs.out_file):
-            bet.run()
-        util.LOGGER.info("Finished bet registration 0: ")
-        util.LOGGER.info(datetime.datetime.now() - start_time)
-
-        name = name + "_be"
-        img.pre_processed_filepath = path + name + '.nii.gz'
         img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
-
+        img.pre_processed_filepath = path + name + '.nii.gz'
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
-        reg.inputs.fixed_image = bet.inputs.out_file
-        reg.inputs.moving_image = util.TEMPLATE_MASKED_VOLUME
+        reg.inputs.fixed_image = fixed_image
+        reg.inputs.moving_image = moving_image
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
         reg.inputs.num_threads = NUM_THREADS_ANTS
@@ -230,7 +232,9 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         if reg_type == RIGID:
             reg.inputs.transforms = ['Rigid', 'Rigid']
-        else:
+        elif reg_type == COMPOSITEAFFINE:
+            reg.inputs.transforms = ['Rigid', 'CompositeAffine']
+        elif reg_type == AFFINE:
             reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
         reg.inputs.radius_or_number_of_bins = [32, 32]
@@ -253,6 +257,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
 
         transform = path + name + 'InverseComposite.h5'
         util.LOGGER.info("starting be registration")
+        util.LOGGER.info(reg.cmdline)
         start_time = datetime.datetime.now()
         if not os.path.exists(reg.inputs.output_warped_image):
             reg.run()
@@ -329,8 +334,11 @@ def registration(moving_img, fixed, reg_type):
                                            (0.25,)]
         reg.inputs.use_estimate_learning_rate_once = [True] * 3
         reg.inputs.use_histogram_matching = [False, False, True]
-    elif reg_type == AFFINE:
-        reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
+    elif reg_type == AFFINE or reg_type == COMPOSITEAFFINE:
+        if reg_type == AFFINE:
+            reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
+        else:
+            reg.inputs.transforms = ['Rigid', 'CompositeAffine', 'CompositeAffine']
         reg.inputs.metric = ['MI', 'MI', 'MI']
         reg.inputs.metric_weight = [1] * 2 + [1]
         reg.inputs.radius_or_number_of_bins = [32, 32, 32]
@@ -412,14 +420,14 @@ def registration(moving_img, fixed, reg_type):
 
 def process_dataset(args):
     """ pre process and registrate volume"""
-    (moving_image_id, reg_type, save_to_db, be_method) = args
+    (moving_image_id, reg_type, save_to_db, be_method, reg_type_be) = args
     util.LOGGER.info(moving_image_id)
 
     for k in range(3):
         try:
             start_time = datetime.datetime.now()
             img = img_data(moving_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
-            img = pre_process(img, reg_type=reg_type, be_method=be_method)
+            img = pre_process(img, reg_type=reg_type_be, be_method=be_method)
             util.LOGGER.info("-- Run time preprocess: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
 
@@ -434,10 +442,13 @@ def process_dataset(args):
         del img
 
 
+# pylint: disable= too-many-arguments
 def get_transforms(moving_dataset_image_ids, reg_type=None,
                    process_dataset_func=process_dataset, save_to_db=False,
-                   be_method=BE_METHOD):
+                   be_method=BE_METHOD, reg_type_be=None):
     """Calculate transforms """
+    if not reg_type_be:
+        reg_type_be = reg_type
     if MULTITHREAD > 1:
         if MULTITHREAD == 'max':
             pool = Pool()
@@ -448,7 +459,8 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
                        zip(moving_dataset_image_ids,
                            [reg_type]*len(moving_dataset_image_ids),
                            [save_to_db]*len(moving_dataset_image_ids),
-                           [be_method]*len(moving_dataset_image_ids))).get(999999999)
+                           [be_method]*len(moving_dataset_image_ids),
+                           [reg_type_be]*len(moving_dataset_image_ids))).get(999999999)
         pool.close()
         pool.join()
     else:
@@ -456,11 +468,11 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
             process_dataset_func((moving_image_id, reg_type, save_to_db, be_method))
 
 
-def move_vol(moving, transform, label_img=False):
+def move_vol(moving, transform, label_img=False, slice_size=1, ref_img=None):
     """ Move data with transform """
     if label_img:
         # resample volume to 1 mm slices
-        target_affine_3x3 = np.eye(3) * 1
+        target_affine_3x3 = np.eye(3) * slice_size
         img_3d_affine = resample_img(moving, target_affine=target_affine_3x3,
                                      interpolation='nearest')
         resampled_file = util.TEMP_FOLDER_PATH + util.get_basename(moving) + '_resample.nii.gz'
@@ -472,7 +484,7 @@ def move_vol(moving, transform, label_img=False):
         img.set_img_filepath(moving)
         resampled_file = pre_process(img, False).pre_processed_filepath
 
-    result = util.transform_volume(moving, transform, label_img)
+    result = util.transform_volume(resampled_file, transform, label_img, ref_img=ref_img)
     util.generate_image(result, util.TEMPLATE_VOLUME)
     return result
 
