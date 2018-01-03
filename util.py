@@ -479,7 +479,7 @@ def median_calculation(images, label, val=None, save=False, folder=None, default
 
     median = np.zeros(shape) + default_value
 
-    for key, val_i in total.iteritems():
+    for key, val_i in total.items():
         _temp = key.split("_")
         k = int(_temp[0])
         m = int(_temp[1])
@@ -676,7 +676,7 @@ def permutation_test(total, values, shape, alternative, stat_func):
         res['p_val'] = np.zeros(shape) + 1
     res['statistic'] = np.zeros(shape)
 
-    for key, vox_ids in total.iteritems():
+    for key, vox_ids in total.items():
         if len(vox_ids) < 2:
             continue
         _temp = key.split("_")
