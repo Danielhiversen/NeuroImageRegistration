@@ -534,6 +534,74 @@ def add_survival_days():
     conn.close()
 
 
+def add_survival_age_kps_days():
+    """add survival_days to database """
+    from datetime import datetime
+
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/Segmentations/slettes.xlsx')['Ark1']
+    try:
+        conn.execute("alter table Patient add column 'age_at_op_date_in_days' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+
+    k = 0
+    for row in data:
+        k = k + 1
+        if not row:
+            continue
+        if k < 2:
+            continue
+        pid = row[0]
+        cursor.execute('''SELECT pid from Patient where pid = ?''', (pid,))
+        exist = cursor.fetchone()
+        if exist is None:
+            continue
+        try:
+            op_date = row[1]
+        except IndexError:
+            op_date = None
+        try:
+            dob = row[2]
+        except IndexError:
+            dob = None
+        try:
+            dod = row[3]
+        except IndexError:
+            dod = None
+        if dod is None:
+            try:
+                dod = row[4]
+            except IndexError:
+                dod = None
+
+        if None not in [dod, op_date]:
+            survival_days = (dod - op_date).days
+        else:
+            survival_days = None
+        if None not in [dob, op_date]:
+            age_at_op_date_in_days = (op_date - dob).days
+        else:
+            age_at_op_date_in_days = None
+
+        try:
+            kps = float(row[6])
+        except (IndexError, ValueError):
+            kps = None
+        print(pid, survival_days, age_at_op_date_in_days, kps)
+
+        cursor.execute('''UPDATE Patient SET survival_days = ?, age_at_op_date_in_days = ? WHERE pid = ?''',
+                       (survival_days, age_at_op_date_in_days, pid))
+        cursor.execute('''UPDATE QualityOfLife SET karnofsky = ? WHERE pid = ?''', (kps, pid))
+
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
 def add_study():
     """add study to database """
     from openpyxl import load_workbook
@@ -609,5 +677,6 @@ if __name__ == "__main__":
 
 #    qol_to_db("siste_runde")
 
-    qol_change_to_db()
-    vacuum_db()
+#    qol_change_to_db()
+    add_survival_age_kps_days()
+    # vacuum_db()

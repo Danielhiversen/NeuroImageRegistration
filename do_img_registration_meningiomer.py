@@ -50,7 +50,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 
     util.setup(path, "meningiomer")
 
-    moving_datasets_ids = find_images(pids=[], exclude=[])
+    moving_datasets_ids = find_images(pids=[1, 35, 105, 192, 201, 463, 508], exclude=[])
 
     if len(sys.argv) > 2:
         num_of_splits = int(sys.argv[1])
@@ -64,7 +64,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
             moving_datasets_ids = moving_datasets_ids[start_idx:]
 
     util.LOGGER.info(str(moving_datasets_ids) + " " + str(len(moving_datasets_ids)))
-    image_registration.BET_FRAC = -1
+    image_registration.BET_FRAC = 0.2
     image_registration.get_transforms(moving_datasets_ids,
                                       reg_type=image_registration.COMPOSITEAFFINE,
                                       reg_type_be=image_registration.COMPOSITEAFFINE,
@@ -86,4 +86,7 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 # 1, 35, 105, 192, 201, 463, 508, 530, 563, 709, 866, 1020, 1061,  image_registration.BET_FRAC = 0.1
 
 # 1, 35,      192, 201, 463, 508, 530, 709, 866, 1020, 1061,  image_registration.BET_FRAC = 0.3
+
+
+# 508, 866,
 
