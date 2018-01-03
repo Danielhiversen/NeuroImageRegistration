@@ -6,12 +6,12 @@ Created on Tue Apr 19 15:19:49 2016
 """
 # pylint: disable= line-too-long
 from __future__ import print_function
-from openpyxl import load_workbook
 import glob
 import os
 import shutil
 import sqlite3
 import pyexcel_xlsx
+from openpyxl import load_workbook
 
 import util
 
@@ -535,6 +535,7 @@ def add_survival_days():
 
 def add_survival_age_kps_days():
     """add survival_days to database """
+    # pylint: disable= too-many-branches, too-many-statements
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
@@ -633,7 +634,6 @@ def add_study():
 
 def add_study_lgg():
     """add study to database """
-    from openpyxl import load_workbook
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
     try:
@@ -682,19 +682,19 @@ def add_tumor_volume():
             continue
         pid = row[0]
         cursor.execute('''SELECT id from Images where pid = ? AND diag_pre_post="pre"''', (pid,))
-        id = cursor.fetchone()
-        if id is None:
+        _id = cursor.fetchone()
+        if _id is None:
             continue
-        id = id[0]
+        _id = _id[0]
         try:
             tumor_volume = row[1]
         except IndexError:
             continue
 
-        print(pid, id, tumor_volume)
+        print(pid, _id, tumor_volume)
 
         cursor.execute('''UPDATE Images SET tumor_volume = ? WHERE id = ?''',
-                       (tumor_volume, id))
+                       (tumor_volume, _id))
         conn.commit()
 
     cursor.close()

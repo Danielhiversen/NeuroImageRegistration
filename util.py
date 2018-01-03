@@ -27,7 +27,7 @@ from scipy import ndimage
 from scipy import stats
 import matplotlib
 matplotlib.use('Agg')
-# pylint: disable= wrong-import-position
+# pylint: disable= wrong-import-position, too-many-lines
 import matplotlib.pyplot as plt  # noqa
 import matplotlib.cm as cm  # noqa
 
@@ -450,50 +450,9 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     return average
 
 
-def avg_calculation2(images, label, val=None, save=False, folder=None, save_sum=False, default_value=0):
-    if not folder:
-        folder = TEMP_FOLDER_PATH
-    path = folder + 'avg2_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-    path = path.replace('all', 'tumor')
-    path = path.replace('img', 'volum')
-
-    if not val:
-        val = [1]*len(images)
-
-    _sum = None
-    _total = None
-    for (file_name, val_i) in zip(images, val):
-        if val_i is None:
-            continue
-        img = nib.load(file_name)
-        if _sum is None:
-            _sum = np.zeros(img.get_data().shape)
-            _total = np.zeros(img.get_data().shape)
-        temp = np.array(img.get_data())
-        _sum += temp*val_i
-        temp[temp != 0] = 1.0
-        _total += temp
-
-    average = _sum / _total
-    average[_total == 0] = default_value
-
-    if save:
-        img = nib.load(images[0])
-        result_img = nib.Nifti1Image(average, img.affine)
-        result_img.to_filename(path)
-        generate_image(path, TEMPLATE_VOLUME)
-    if save_sum:
-        path_n = folder + 'total2_' + label + '.nii'
-        path_n = path_n.replace('label', 'tumor')
-        img = nib.load(images[0])
-        result_img = nib.Nifti1Image(_sum, img.affine)
-        result_img.to_filename(path_n)
-        generate_image(path, TEMPLATE_VOLUME)
-    return average
-
-
 def median_calculation(images, label, val=None, save=False, folder=None, default_value=0):
+    """ Calculate median volumes """
+    # pylint: disable= too-many-locals, invalid-name
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'median_' + label + '.nii'
@@ -564,7 +523,7 @@ def std_calculation(images, label, val=None, save=False, folder=None):
         temp = np.array(img.get_data())
         _std += (temp*val_i - avg_img)**2
         temp[temp != 0] = 1.0
-        _total += + temp
+        _total += temp
     _std /= _total
 
     if save:
@@ -1084,6 +1043,7 @@ def get_right_left_label_defs():
 
 def get_label_defs_hammers_mith():
     """Get brain area defs"""
+    # pylint: disable= too-many-statements
     label_defs = dict()
     label_defs[1] = "TL hippocampus R"
     label_defs[2] = "TL hippocampus L"
