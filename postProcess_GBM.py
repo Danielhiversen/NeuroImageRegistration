@@ -392,7 +392,7 @@ def process_tracts(folder):
             if 'Internal_Capsule' not in tract:
                 continue
             m += 1
-            sheet.cell(row=1, column=l).value = tract
+            sheet.cell(row=1, column=m).value = tract
             atlas_data = nib.load(folder + tract + '.nii.gz').get_data()
             union_data = atlas_data * tumor_data
 
