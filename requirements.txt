@@ -1,13 +1,19 @@
+astroid==1.6.0
+backports.functools-lru-cache==1.4
 backports.shutil-get-terminal-size==1.0.0
+configparser==3.5.0
 cycler==0.10.0
 decorator==4.0.9
 enum34==1.1.6
 future==0.15.2
 ipython==5.5.0
 ipython-genutils==0.2.0
+isort==4.2.15
 jdcal==1.2
 joblib==0.9.4
+lazy-object-proxy==1.3.1
 matplotlib==1.5.1
+mccabe==0.6.1
 mpmath==1.0.0
 networkx==1.11
 nibabel==2.0.2
@@ -30,6 +36,7 @@ pyexcel-io==0.1.0
 pyexcel-xls==0.1.0
 pyexcel-xlsx==0.1.0
 Pygments==2.2.0
+pylint==1.7.1
 pyparsing==2.1.1
 python-dateutil==2.5.2
 pytz==2016.3
@@ -37,6 +44,7 @@ scandir==1.6
 scikit-learn==0.17.1
 scipy==0.17.0
 simplegeneric==0.8.1
+singledispatch==3.4.0.3
 six==1.10.0
 sympy==1.0
 texttable==0.9.1
@@ -45,5 +53,6 @@ traitlets==4.3.2
 traits==4.5.0
 virtualenv==15.0.1
 wcwidth==0.1.7
+wrapt==1.10.11
 xlrd==1.1.0
 xlwt-future==0.8.0
