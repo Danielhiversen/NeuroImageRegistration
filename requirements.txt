@@ -20,7 +20,6 @@ openpyxl==2.2.2
 pathlib2==2.3.0
 pexpect==4.2.1
 pickleshare==0.7.4
-pkg-resources==0.0.0
 pluggy==0.3.1
 prompt-toolkit==1.0.15
 psutil==3.4.2
