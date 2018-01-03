@@ -6,7 +6,6 @@ Created on Tue Apr 19 15:19:49 2016
 """
 # pylint: disable= line-too-long
 from __future__ import print_function
-
 from openpyxl import load_workbook
 import glob
 import os
@@ -536,8 +535,6 @@ def add_survival_days():
 
 def add_survival_age_kps_days():
     """add survival_days to database """
-    from datetime import datetime
-
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
 
@@ -756,4 +753,3 @@ if __name__ == "__main__":
     add_tumor_volume()
 
     vacuum_db()
-

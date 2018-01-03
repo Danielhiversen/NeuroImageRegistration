@@ -80,13 +80,6 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 
 
 # 192, 201, 35, 463. 709, 1020
-
-
-
 # 1, 35, 105, 192, 201, 463, 508, 530, 563, 709, 866, 1020, 1061,  image_registration.BET_FRAC = 0.1
-
 # 1, 35,      192, 201, 463, 508, 530, 709, 866, 1020, 1061,  image_registration.BET_FRAC = 0.3
-
-
 # 508, 866,
-

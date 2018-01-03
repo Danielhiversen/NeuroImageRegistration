@@ -523,9 +523,9 @@ def median_calculation(images, label, val=None, save=False, folder=None, default
     for key, val_i in total.iteritems():
         _temp = key.split("_")
         k = int(_temp[0])
-        l = int(_temp[1])
-        m = int(_temp[2])
-        median[k, l, m] = np.median(val_i)
+        m = int(_temp[1])
+        n = int(_temp[2])
+        median[k, m, n] = np.median(val_i)
 
     if save:
         img = nib.load(images[0])

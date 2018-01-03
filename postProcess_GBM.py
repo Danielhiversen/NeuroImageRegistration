@@ -9,8 +9,6 @@ import os
 import nipype.interfaces.slicer as slicer
 from openpyxl import Workbook
 import datetime
-# import sys
-from scipy import ndimage
 import numpy as np
 import nibabel as nib
 import sqlite3
@@ -20,6 +18,7 @@ import do_img_registration_GBM
 
 
 BRAINSResample_PATH = '/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/BRAINSResample'
+
 
 def find_images():
     """ Find images for registration """
@@ -267,8 +266,9 @@ def process_labels2(folder):
     atlas_path = "/home/dahoiv/disk/Dropbox/Jobb/gbm/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
     resample = slicer.registration.brainsresample.BRAINSResample(command=BRAINSResample_PATH,
                                                                  inputVolume=atlas_path,
-                                                                 outputVolume=os.path.abspath(
-                                                                 folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz'),
+                                                                 outputVolume=os.path.abspath(folder +
+                                                                                              'Hammers_mith-n30r95-MaxProbMap-full'
+                                                                                              '-MNI152-SPM12_resample.nii.gz'),
                                                                  referenceVolume=os.path.abspath(util.TEMPLATE_VOLUME))
     resample.run()
 
@@ -400,7 +400,6 @@ def process_tracts(folder):
         k += 1
 
     book.save("brain_tracts_Internal_Capsule.xlsx")
-
 
 
 if __name__ == "__main__":
