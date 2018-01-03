@@ -386,17 +386,17 @@ def process_tracts(folder):
         tumor_data = nib.load(util.DATA_FOLDER + _filepath).get_data()
 
         sheet.cell(row=k, column=1).value = pid
-        l = 1
+        m = 1
         for atlas_path in atlas_paths:
             tract = util.get_basename(atlas_path)
             if 'Internal_Capsule' not in tract:
                 continue
-            l += 1
+            m += 1
             sheet.cell(row=1, column=l).value = tract
             atlas_data = nib.load(folder + tract + '.nii.gz').get_data()
             union_data = atlas_data * tumor_data
 
-            sheet.cell(row=k, column=l).value = '1' if np.max(union_data) >= thres else '0'
+            sheet.cell(row=k, column=m).value = '1' if np.max(union_data) >= thres else '0'
         k += 1
 
     book.save("brain_tracts_Internal_Capsule.xlsx")

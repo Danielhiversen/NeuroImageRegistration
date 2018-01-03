@@ -722,15 +722,15 @@ def permutation_test(total, values, shape, alternative, stat_func):
             continue
         _temp = key.split("_")
         k = int(_temp[0])
-        l = int(_temp[1])
-        m = int(_temp[2])
+        m = int(_temp[1])
+        n = int(_temp[2])
         group1 = [values[index] for index in vox_ids]
         ids = range(len(values))
         group2 = [values[index] for index in ids if index not in vox_ids]
         (p_val, statistic) = stat_func(group1, group2, alternative)
         if alternative is not None:
-            res['p_val'][k, l, m] = p_val
-        res['statistic'][k, l, m] = statistic
+            res['p_val'][k, m, n] = p_val
+        res['statistic'][k, m, n] = statistic
 
     LOGGER.info(str(datetime.datetime.now() - start_time))
 
