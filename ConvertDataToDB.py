@@ -7,6 +7,7 @@ Created on Tue Apr 19 15:19:49 2016
 # pylint: disable= line-too-long
 from __future__ import print_function
 
+from openpyxl import load_workbook
 import glob
 import os
 import shutil
@@ -201,46 +202,45 @@ def qol_change_to_db():
     cursor = conn.cursor()
 
     try:
+        conn.execute("alter table QualityOfLife add column 'Delta_mobility' 'INTEGER'")
+        conn.execute("alter table QualityOfLife add column 'Delta_selfcare' 'INTEGER'")
+        conn.execute("alter table QualityOfLife add column 'Delta_activity' 'INTEGER'")
+        conn.execute("alter table QualityOfLife add column 'Delta_pain' 'INTEGER'")
+        conn.execute("alter table QualityOfLife add column 'Delta_anixety' 'INTEGER'")
+        conn.execute("alter table QualityOfLife add column 'Resection' 'INTEGER'")
         conn.execute("alter table QualityOfLife add column 'Delta_qol' 'REAL'")
         conn.execute("alter table QualityOfLife add column 'Delta_kps' 'INTEGER'")
     except sqlite3.OperationalError:
         pass
-
-    data = pyexcel_xlsx.get_data('/home/dahoiv/disk/data/Segmentations/Endring_QoL_KPS.xlsx')['Ark1']
-
-    k = 0
-    i = 0
-    j = 0
-    for row in data:
-        k = k + 1
-        if k < 1:
-            continue
-
-        pid = row[0]
-        if pid is None:
-            continue
+    sheet = load_workbook('/home/dahoiv/disk/data/Segmentations/Endring_QoL_KPS_1904.xlsx', data_only=True)['Ark1']
+    for row in range(2, 223):
+        cell_name = "{}{}".format("A", row)
+        color = sheet[cell_name].fill.start_color.index
+        value = sheet[cell_name].value
         try:
-            float(row[0])
-        except ValueError:
+            pid = int(value)
+        except (ValueError, TypeError):
             continue
+        print(pid, color)
+        d_qol = sheet["{}{}".format("B", row)].value
+        d_mobility = sheet["{}{}".format("C", row)].value
+        d_selfcare = sheet["{}{}".format("D", row)].value
+        d_activity = sheet["{}{}".format("E", row)].value
+        d_pain = sheet["{}{}".format("F", row)].value
+        d_anxity = sheet["{}{}".format("G", row)].value
+        resection = 1 if color != 'FFFFFF00' else 0
 
-        if len(row) < 2:
-            continue
-        d_qol = row[1]
-        if d_qol is not None:
-            i += 1
-            cursor.execute('''UPDATE QualityOfLife SET Delta_qol = ? WHERE pid = ?''', (d_qol, pid))
-
-        if len(row) < 3:
-            continue
-        d_kps = row[2]
-        if d_kps is not None:
-            j += 1
-            cursor.execute('''UPDATE QualityOfLife SET Delta_kps = ? WHERE pid = ?''', (d_kps, pid))
-
+        cursor.execute('''UPDATE QualityOfLife SET Delta_qol = ? WHERE pid = ?''', (d_qol, pid))
+        cursor.execute('''UPDATE QualityOfLife SET Delta_mobility = ? WHERE pid = ?''', (d_mobility, pid))
+        cursor.execute('''UPDATE QualityOfLife SET Delta_selfcare = ? WHERE pid = ?''', (d_selfcare, pid))
+        cursor.execute('''UPDATE QualityOfLife SET Delta_activity = ? WHERE pid = ?''', (d_activity, pid))
+        cursor.execute('''UPDATE QualityOfLife SET Delta_pain = ? WHERE pid = ?''', (d_pain, pid))
+        cursor.execute('''UPDATE QualityOfLife SET Delta_anixety = ? WHERE pid = ?''', (d_anxity, pid))
+        cursor.execute('''UPDATE QualityOfLife SET Resection = ? WHERE pid = ?''', (resection, pid))
         conn.commit()
 
-    print(k, i, j)
+        print(d_mobility, d_selfcare, d_activity, d_pain, d_anxity, resection)
+
     conn.commit()
     cursor.close()
     conn.close()
@@ -604,7 +604,6 @@ def add_survival_age_kps_days():
 
 def add_study():
     """add study to database """
-    from openpyxl import load_workbook
     conn = sqlite3.connect(util.DB_PATH)
     cursor = conn.cursor()
     try:
@@ -630,6 +629,76 @@ def add_study():
                 cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
                                ("qol_grade3,4", pid))
                 conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
+def add_study_lgg():
+    """add study to database """
+    from openpyxl import load_workbook
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+    try:
+        conn.execute("alter table Patient add column 'study_id' 'TEXT'")
+    except sqlite3.OperationalError:
+        pass
+    sheet = load_workbook('/home/dahoiv/disk/data/Segmentations/pas_til_kart_oversikt.xlsx', data_only=True)['Ark1']
+    k = 0
+    for row in range(3, 223):
+        cell_name = "{}{}".format("A", row)
+        # color = sheet[cell_name].fill.start_color.index
+        value = sheet[cell_name].value
+        try:
+            pid = int(value)
+        except ValueError:
+            continue
+        except TypeError:
+            continue
+        k += 1
+        print(pid, k)
+        cursor.execute('''UPDATE Patient SET study_id = ? WHERE pid = ?''',
+                       ("LGG_reseksjonsgrad", pid))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
+def add_tumor_volume():
+    """add tumor volume to database """
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    data = pyexcel_xlsx.get_data('/mnt/b7cde2db-ac2d-4cbb-b2b0-a9b110f05d32/data/Segmentations/Volum_kart.xlsx')['Ark1']
+    try:
+        conn.execute("alter table Images add column 'tumor_volume' 'REAL'")
+    except sqlite3.OperationalError:
+        pass
+
+    k = 0
+    for row in data:
+        k = k + 1
+        if not row:
+            continue
+        if k < 2:
+            continue
+        pid = row[0]
+        cursor.execute('''SELECT id from Images where pid = ? AND diag_pre_post="pre"''', (pid,))
+        id = cursor.fetchone()
+        if id is None:
+            continue
+        id = id[0]
+        try:
+            tumor_volume = row[1]
+        except IndexError:
+            continue
+
+        print(pid, id, tumor_volume)
+
+        cursor.execute('''UPDATE Images SET tumor_volume = ? WHERE id = ?''',
+                       (tumor_volume, id))
+        conn.commit()
 
     cursor.close()
     conn.close()
@@ -678,5 +747,13 @@ if __name__ == "__main__":
 #    qol_to_db("siste_runde")
 
 #    qol_change_to_db()
+
     add_survival_age_kps_days()
-    # vacuum_db()
+
+
+#    add_study_lgg()
+
+    add_tumor_volume()
+
+    vacuum_db()
+
