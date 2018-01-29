@@ -49,8 +49,9 @@ import numpy as np
 from img_data import img_data
 import util
 
-RIGID = 'rigid'
 AFFINE = 'affine'
+RIGID = 'rigid'
+SIMILARITY = 'similarity'
 SYN = 'syn'
 COMPOSITEAFFINE = 'compositeaffine'
 
@@ -122,6 +123,8 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
             reg.inputs.transforms = ['Rigid', 'Rigid']
         elif reg_type == COMPOSITEAFFINE:
             reg.inputs.transforms = ['Rigid', 'CompositeAffine']
+        elif reg_type == SIMILARITY:
+            reg.inputs.transforms = ['Rigid', 'Similarity']
         else:
             reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
@@ -234,6 +237,8 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
             reg.inputs.transforms = ['Rigid', 'Rigid']
         elif reg_type == COMPOSITEAFFINE:
             reg.inputs.transforms = ['Rigid', 'CompositeAffine']
+        elif reg_type == SIMILARITY:
+            reg.inputs.transforms = ['Rigid', 'Similarity']
         elif reg_type == AFFINE:
             reg.inputs.transforms = ['Rigid', 'Affine']
         reg.inputs.metric = ['MI', 'MI']
@@ -334,9 +339,11 @@ def registration(moving_img, fixed, reg_type):
                                            (0.25,)]
         reg.inputs.use_estimate_learning_rate_once = [True] * 3
         reg.inputs.use_histogram_matching = [False, False, True]
-    elif reg_type == AFFINE or reg_type == COMPOSITEAFFINE:
+    elif reg_type == AFFINE or reg_type == COMPOSITEAFFINE or reg_type == SIMILARITY:
         if reg_type == AFFINE:
             reg.inputs.transforms = ['Rigid', 'Affine', 'Affine']
+        elif reg_type == SIMILARITY:
+            reg.inputs.transforms = ['Rigid', 'Similarity', 'Similarity']
         else:
             reg.inputs.transforms = ['Rigid', 'CompositeAffine', 'CompositeAffine']
         reg.inputs.metric = ['MI', 'MI', 'MI']
@@ -465,7 +472,7 @@ def get_transforms(moving_dataset_image_ids, reg_type=None,
         pool.join()
     else:
         for moving_image_id in moving_dataset_image_ids:
-            process_dataset_func((moving_image_id, reg_type, save_to_db, be_method))
+            process_dataset_func((moving_image_id, reg_type, save_to_db, be_method, reg_type_be))
 
 
 def move_vol(moving, transform, label_img=False, slice_size=1, ref_img=None):
