@@ -15,7 +15,6 @@ import sqlite3
 import nibabel as nib
 import numpy as np
 import os
-import nipype.interfaces.ants as ants
 
 BRAINSResample_PATH = '/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/BRAINSResample'
 
@@ -28,7 +27,6 @@ def format_dict(d):
         tab = 25 - len(k)
         s.append('%s%s %s\n' % (k, ' '*tab,  v))
     return ''.join(s) + '\n\n'
-
 
 def process(folder):
     """ Post process data """

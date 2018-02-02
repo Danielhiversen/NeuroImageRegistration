@@ -28,7 +28,7 @@ def find_images(exclude=None, max_dim_size=None):
             _id = _id[0]
             cursor3 = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (_id,))
 
-            _img_filepath = cursor3.fetchone()[0]
+            # _img_filepath = cursor3.fetchone()[0]
             cursor3.close()
             # if _img_filepath and os.path.exists(util.DATA_FOLDER + _img_filepath):
             #     continue
