@@ -28,6 +28,7 @@ def format_dict(d):
         s.append('%s%s %s\n' % (k, ' '*tab,  v))
     return ''.join(s) + '\n\n'
 
+
 def process(folder):
     """ Post process data """
     print(folder)
@@ -132,7 +133,6 @@ def process(folder):
 
     result = util.post_calculations(image_ids)
     util.avg_calculation(result['all'], 'mm_1_2_3', None, True, folder, save_sum=True)
-
 
     return
     tag_data = {"tag_data_1": tag_data_1, "tag_data_2": tag_data_2, "tag_data_3": tag_data_3}
