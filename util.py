@@ -132,7 +132,7 @@ def setup_paths(data="glioma"):
     DB_PATH = DATA_FOLDER + "brainSegmentation.db"
 
 
-def prepare_template(template_vol, template_mask):
+def prepare_template(template_vol, template_mask, overwrite=False):
     """ prepare template volumemoving"""
     # pylint: disable= global-statement,
     global TEMPLATE_MASKED_VOLUME
@@ -143,7 +143,7 @@ def prepare_template(template_vol, template_mask):
     mult.inputs.first_input = template_vol
     mult.inputs.second_input = template_mask
     mult.inputs.output_product_image = TEMPLATE_MASKED_VOLUME
-    if os.path.exists(mult.inputs.output_product_image):
+    if not overwrite and os.path.exists(mult.inputs.output_product_image):
         return
     mult.run()
 
@@ -261,9 +261,6 @@ def get_qol(image_ids, qol_param):
             image_ids_with_qol.extend([image_id])
 
     conn.close()
-    print(qol_param)
-    print(len(pids))
-
     return image_ids_with_qol, qol
 
 
@@ -273,7 +270,6 @@ def get_tumor_volume(image_ids):
     conn.text_factory = str
     volumes = []
     image_ids_with_volume = []
-    pids = []
     for image_id in image_ids:
         _volume = conn.execute("SELECT tumor_volume from Images where id = ?",
                                (image_id, )).fetchone()
@@ -284,8 +280,6 @@ def get_tumor_volume(image_ids):
         image_ids_with_volume.extend([image_id])
 
     conn.close()
-    print(len(pids))
-
     return image_ids_with_volume, volumes
 
 
@@ -783,18 +777,19 @@ def mannwhitneyu_test(x, y, alternative='less'):
 
 def generate_image(path, path2, out_path=None):
     """ generate png images"""
-    img = nib.load(path).get_data()
-    img_template = nib.load(path2).get_data()
-
     def show_slices(slices, layers):
         """ Show 2d slices"""
         _, axes = plt.subplots(1, len(slices))
         for i, slice_i in enumerate(slices):
             # pylint: disable= no-member
-            axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
+            if layers:
+                axes[i].imshow(layers[i].T, cmap="gray", origin="lower")
             axes[i].imshow(slice_i.T, cmap=cm.Reds, origin="lower", alpha=0.6)
 
     # pylint: disable= invalid-name
+    img = nib.load(path).get_data()
+    if len(img.shape) > 3:
+        img = img[:, :, :, 0]
     x = int(img.shape[0]/2)
     y = int(img.shape[1]/2)
     z = int(img.shape[2]/2)
@@ -803,13 +798,17 @@ def generate_image(path, path2, out_path=None):
     slice_2 = img[:, :, z]
     slices = [slice_0, slice_1, slice_2]
 
-    x = int(img_template.shape[0]/2)
-    y = int(img_template.shape[1]/2)
-    z = int(img_template.shape[2]/2)
-    slice_0 = img_template[x, :, :]
-    slice_1 = img_template[:, y, :]
-    slice_2 = img_template[:, :, z]
-    slices_template = [slice_0, slice_1, slice_2]
+    if path2:
+        img_template = nib.load(path2).get_data()
+        x = int(img_template.shape[0]/2)
+        y = int(img_template.shape[1]/2)
+        z = int(img_template.shape[2]/2)
+        slice_0 = img_template[x, :, :]
+        slice_1 = img_template[:, y, :]
+        slice_2 = img_template[:, :, z]
+        slices_template = [slice_0, slice_1, slice_2]
+    else:
+        slices_template = None
 
     show_slices(slices, slices_template)
     name = get_basename(out_path) if out_path else get_basename(path)
