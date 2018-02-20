@@ -2,13 +2,18 @@
 
 Some computer specific pathes must be sat in util.py
 
-ConvertDataToDB.py and ConvertDataToDB_MM.py are used to convert the data and add it to a database
+ConvertDataToDB.py,ConvertDataToDB_menigiomer.py and ConvertDataToDB_MM.py are used to convert the data and add it to a database
 
 do_img_registration.py,	
+
 do_img_registration_GBM.py, 
+
 do_img_registration_LGG_POST.py,	
+
 do_img_registration_LGG_PRE.py	and 
+
 do_img_registration_MM.py
+
 are used do registration of the volume to a reference volume.
 
 
