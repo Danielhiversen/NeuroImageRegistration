@@ -45,7 +45,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
         img = img_data(_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
         img.load_db_transforms()
 
-        img_pre = img_data(img.fixed_image_id, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
+        img_pre = img_data(img.fixed_image, util.DATA_FOLDER, util.TEMP_FOLDER_PATH)
         img_pre.load_db_transforms()
 
         reg_vol = util.transform_volume(img.reg_img_filepath, img_pre.get_transforms())
@@ -118,7 +118,7 @@ def process(folder):
 
         cursor.close()
         conn.close()
-        return
+        # return
 
     result_post = post_calculations(image_ids)
     print(len(result_post['all']))
