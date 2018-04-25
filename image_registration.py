@@ -24,8 +24,7 @@ pip install -r requirements.txt
 
 ant registration parameters inspired by
 http://miykael.github.io/nipype-beginner-s-guide/normalize.html
-https://www.icts.uiowa.edu/
-confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
+https://apps.icts.uiowa.edu/confluence/display/BRAINSPUBLIC/ANTS+conversion+to+antsRegistration+for+same+data+set
 
 """
 # pylint: disable= redefined-builtin
