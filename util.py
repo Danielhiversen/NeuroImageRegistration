@@ -109,7 +109,7 @@ def setup_paths(data="glioma"):
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
-            DATA_FOLDER = "/media/ingerid/data/daniel/database_MM/"
+            DATA_FOLDER = "/media/leb/data/database_MM/"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/database_MM/'
         else:

@@ -16,8 +16,7 @@ import nibabel as nib
 import numpy as np
 import os
 
-BRAINSResample_PATH = '/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/BRAINSResample'
-
+BRAINSResample_PATH = '/home/leb/Slicer-4.6.2-linux-amd64/lib/Slicer-4.6/cli-modules/BRAINSResample'
 
 def format_dict(d):
     d = collections.OrderedDict(sorted(d.iteritems()))
@@ -156,7 +155,7 @@ def process_labels(folder):
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from MolekylareMarkorer ORDER BY pid''')
 
-    atlas_path = "/home/dahoiv/disk/Dropbox/Jobb/gbm/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
+    atlas_path = "/media/leb/data/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
     resample = slicer.registration.brainsresample.BRAINSResample(command=BRAINSResample_PATH,
                                                                  inputVolume=atlas_path,
                                                                  outputVolume=os.path.abspath(folder +
