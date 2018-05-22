@@ -23,6 +23,7 @@ from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
+print(np.version.version)
 from scipy import ndimage
 from scipy import stats
 import matplotlib

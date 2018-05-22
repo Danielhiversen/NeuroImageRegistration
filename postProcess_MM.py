@@ -8,7 +8,8 @@ Created on Tue May 24 10:41:50 2016
 # import os
 from openpyxl import Workbook
 import collections
-import nipype.interfaces.slicer as slicer
+#import nipype.interfaces.slicer as slicer
+import nipype.interfaces.semtools.registration.brainsresample as brainsresample
 import pickle
 import util
 import sqlite3
@@ -16,7 +17,8 @@ import nibabel as nib
 import numpy as np
 import os
 
-BRAINSResample_PATH = '/home/leb/Slicer-4.6.2-linux-amd64/lib/Slicer-4.6/cli-modules/BRAINSResample'
+
+BRAINSResample_PATH = '/home/leb/dev/BRAINSTools/build/bin/BRAINSResample'
 
 def format_dict(d):
     d = collections.OrderedDict(sorted(d.iteritems()))
@@ -43,7 +45,7 @@ def process(folder):
     tag_data_2 = []
     tag_data_3 = []
 
-    img = nib.load("/home/dahoiv/disk/data/MolekylareMarkorer/lobes_brain.nii")
+    img = nib.load("/media/leb/data/Atlas/lobes_brain.nii")
     lobes_brain = img.get_data()
     label_defs = util.get_label_defs()
     res_right_left_brain = {}
@@ -156,12 +158,12 @@ def process_labels(folder):
     cursor = conn.execute('''SELECT pid from MolekylareMarkorer ORDER BY pid''')
 
     atlas_path = "/media/leb/data/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
-    resample = slicer.registration.brainsresample.BRAINSResample(command=BRAINSResample_PATH,
-                                                                 inputVolume=atlas_path,
-                                                                 outputVolume=os.path.abspath(folder +
-                                                                                              'Hammers_mith-n30r95-MaxProbMap-full'
-                                                                                              '-MNI152-SPM12_resample.nii.gz'),
-                                                                 referenceVolume=os.path.abspath(util.TEMPLATE_VOLUME))
+    resample = brainsresample.BRAINSResample(command=BRAINSResample_PATH,
+                                             inputVolume=atlas_path,
+                                             outputVolume=os.path.abspath(folder +
+                                                                          'Hammers_mith-n30r95-MaxProbMap-full'
+                                                                          '-MNI152-SPM12_resample.nii.gz'),
+                                             referenceVolume=os.path.abspath(util.TEMPLATE_VOLUME))
     resample.run()
 
     img = nib.load(folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz')
