@@ -83,7 +83,7 @@ def setup_paths(data="glioma"):
     elif hostname == 'dahoiv-Precision-M6500':
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
-        os.environ["PATH"] += os.pathsep + '/home/daniel/antsbin/bin/'
+        os.environ["PATH"] += os.pathsep + '/home/leb/dev/ANTs/antsbin/bin'
     elif 'unity' in hostname or 'compute' in hostname:
         os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/' + os.pathsep + '/home/danieli/antsbin/bin/'
     else:
@@ -97,7 +97,7 @@ def setup_paths(data="glioma"):
         elif hostname == 'dahoiv-Precision-M6500':
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
-            DATA_FOLDER = "/media/ingerid/data/daniel/database4/"
+            DATA_FOLDER = "/media/leb/data/database/"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/neuro_data/database/'
         else:

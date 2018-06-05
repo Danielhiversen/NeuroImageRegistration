@@ -22,8 +22,8 @@ import util
 # PID_ANNE_LISE = MAIN_FOLDER + "Koblingsliste__Anne_Line.xlsx"
 # DATA_PATH_LGG = MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/"
 
-MAIN_FOLDER = "/home/dahoiv/disk/data/Segmentations/"
-DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/DWIConvert"
+MAIN_FOLDER = "/media/leb/data/"
+DWICONVERT_PATH = "/home/leb/dev/BRAINSTools/build/bin/DWIConvert"
 
 
 def create_db(path):
@@ -352,7 +352,7 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
     cursor.close()
     conn.close()
 
-
+    
 def convert_lgg_data(path):
     """convert_lgg_data"""
     convert_table = get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
@@ -403,6 +403,79 @@ def vacuum_db():
     conn.close()
 
 
+def update_segmentations(path, glioma_grade, update=False, case_ids=range(2000)):
+    """Update existing patients with new segmentations from Even"""
+    # pylint: disable= too-many-locals, too-many-branches, too-many-statements
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    log = ""
+
+    # -label.nrrd
+    # hele-label.nii, kontrast-label.nii,nekrose-label.nii 
+    # Segmentering/*-label.nrrd
+
+    included_cases = path + "Included cases - final.xlsx"
+    case_list = pyexcel_xlsx.get_data(included_cases)
+    
+    for case in case_list:
+        pid = str(case[0])
+        new_segmentation = case[1]
+        data_path = path + "Segmenteringer/" + pid + "/"
+
+        if new_segmentation and os.path.exists(data_path) and pid == "26":
+            
+            volume_label = glob.glob(data_path + '*label.nrrd')
+            if not volume_label:
+                volume_label = glob.glob(data_path + '*label_1.nrrd')
+            if not volume_label:
+                volume_label = glob.glob(data_path + 'Segmentation/*label.nrrd')
+            if not volume_label:
+                volume_label = glob.glob(data_path + '*hele-label.nii')                
+            if len(volume_label) > 1:
+                log = log + "\n Warning!! More than one file with label found "
+                for volume_label_i in volume_label:
+                    log = log + volume_label_i
+                continue
+            if not os.path.exists(volume_label):
+                log = log + "\n Warning!! No label found " + data_path + volume_label
+            
+            cursor.execute("SELECT id FROM Images WHERE pid = ?", (pid,))
+            image_id = cursor.fetchone()
+            
+            cursor.execute("SELECT transform FROM Images WHERE id = ?", (image_id,))
+            transforms_temp = cursor.fetchone()
+            if transforms_temp is None:
+                log = log + "\n Warning!! No transform found for image " + image_id
+            transforms = []
+            for _transform in transforms_temp[0].split(","):
+                transforms.append(util.DATA_FOLDER + _transform.strip())
+
+
+            cursor.execute("SELECT filepath, filepath_reg FROM Labels WHERE image_id = ?", (image_id,))
+            for (_filepath,_filepath_reg) in cursor
+                   try:
+                        os.remove(util.DATA_FOLDER + _filepath)
+                        os.remove(util.DATA_FOLDER + _filepath_reg)
+                    except OSError:
+                        pass
+            
+                shutil.copy(volume_label, util.DATA_FOLDER + _filepath)
+                temp = util.compress_vol(image_registration.move_vol(util.DATA_FOLDER + _filepath,
+                                              transforms, True))
+                shutil.copy(temp, _filepath_reg)
+
+
+
+                
+            #conn.commit()
+
+    with open("Log.txt", "w") as text_file:
+        text_file.write(log)
+    cursor.close()
+    conn.close()    
+
+    
 def update_glioma_grade(glioma_grade):
     """Convert qol data to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -702,7 +775,15 @@ def add_tumor_volume():
 
 
 if __name__ == "__main__":
-    util.setup_paths()
+#    util.setup_paths()
+
+    temp_path = "reg_labels_temp"
+    util.setup(temp_path)
+
+    path = "Even_survival/"
+    glioma_grade = 2
+    update_segmentations(MAIN_FOLDER + "Even_survival/", 2):
+        
 #    try:
 #        shutil.rmtree(util.DATA_FOLDER)
 #    except OSError:
@@ -745,11 +826,11 @@ if __name__ == "__main__":
 
 #    qol_change_to_db()
 
-    add_survival_age_kps_days()
+#    add_survival_age_kps_days()
 
 
 #    add_study_lgg()
 
-    add_tumor_volume()
+#    add_tumor_volume()
 
     vacuum_db()
