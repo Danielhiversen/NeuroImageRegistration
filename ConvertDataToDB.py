@@ -12,7 +12,9 @@ import shutil
 import sqlite3
 import pyexcel_xlsx
 from openpyxl import load_workbook
+import nibabel as nib
 
+import image_registration
 import util
 
 # DATA_PATH_LISA = MAIN_FOLDER + "Segmenteringer_Lisa/"
@@ -23,8 +25,7 @@ import util
 # DATA_PATH_LGG = MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/"
 
 MAIN_FOLDER = "/media/leb/data/"
-DWICONVERT_PATH = "/home/leb/dev/BRAINSTools/build/bin/DWIConvert"
-
+CONVERTER_PATH = "/home/leb/dev/BRAINSTools/build/bin/ConvertBetweenFileFormats"
 
 def create_db(path):
     """Make the database"""
@@ -109,8 +110,8 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
 
     volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
     print("--->", volume_out)
-    os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out +
-              " --conversionMode NrrdToFSL --allowLossyConversion")
+    os.system(CONVERTER_PATH + " '" + volume_temp + "' " + volume_out)
+
     volume_out_db = volume_out.replace(util.DATA_FOLDER, "")
     cursor.execute('''UPDATE Images SET filepath = ?, filepath_reg = ? WHERE id = ?''', (volume_out_db, None, img_id))
     os.remove(volume_temp)
@@ -126,8 +127,7 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
 
         volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type\
             + "_label_all.nii.gz"
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label_temp + " -o " +
-                  volume_label_out + " --conversionMode NrrdToFSL --allowLossyConversion")
+        os.system(CONVERTER_PATH + " '" + volume_label_temp + "' " + volume_label_out)
         volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
         cursor.execute('''UPDATE Labels SET filepath = ?, filepath_reg = ? WHERE id = ?''',
                        (volume_label_out_db, None, label_id))
@@ -284,13 +284,14 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
     cursor = conn.cursor()
 
     log = ""
-
+    
     for case_id in case_ids:
         data_path = path + str(case_id) + "/"
         if not os.path.exists(data_path):
             continue
-
+        
         pid = str(case_id)
+        print("\n ====================\n Adding patient " + pid)
         if update:
             for _file in glob.glob(util.DATA_FOLDER + str(pid) + "/volumes_labels/*"):
                 _file = _file.replace(util.DATA_FOLDER, "")
@@ -300,12 +301,6 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
                 shutil.rmtree(util.DATA_FOLDER + str(pid))
             except OSError:
                 pass
-
-        data_path = path + str(case_id) + "/"
-        if not os.path.exists(data_path):
-            continue
-
-        print(data_path)
 
         file_type_nrrd = True
         volume_label = glob.glob(data_path + '/*label.nrrd')
@@ -403,7 +398,7 @@ def vacuum_db():
     conn.close()
 
 
-def update_segmentations(path, glioma_grade, update=False, case_ids=range(2000)):
+def update_segmentations(path):
     """Update existing patients with new segmentations from Even"""
     # pylint: disable= too-many-locals, too-many-branches, too-many-statements
     conn = sqlite3.connect(util.DB_PATH)
@@ -411,64 +406,72 @@ def update_segmentations(path, glioma_grade, update=False, case_ids=range(2000))
 
     log = ""
 
-    # -label.nrrd
-    # hele-label.nii, kontrast-label.nii,nekrose-label.nii 
-    # Segmentering/*-label.nrrd
-
     included_cases = path + "Included cases - final.xlsx"
-    case_list = pyexcel_xlsx.get_data(included_cases)
-    
-    for case in case_list:
-        pid = str(case[0])
-        new_segmentation = case[1]
+    case_list = load_workbook(included_cases,data_only=True)['Included cases - final']
+    for case in range(2, 213):
+
+        cell_name = "{}{}".format("A", case)
+        pid = str(case_list[cell_name].value)
+
+        cell_name = "{}{}".format("B", case)
+        new_segmentation = str(case_list[cell_name].value)
+
         data_path = path + "Segmenteringer/" + pid + "/"
 
-        if new_segmentation and os.path.exists(data_path) and pid == "26":
+        if new_segmentation == "1" and os.path.exists(util.DATA_FOLDER + pid + "/" ):# and pid == "711":
+            print("Converting image " + pid)
+            log = log + "\n Converting image " + pid
             
-            volume_label = glob.glob(data_path + '*label.nrrd')
-            if not volume_label:
-                volume_label = glob.glob(data_path + '*label_1.nrrd')
-            if not volume_label:
-                volume_label = glob.glob(data_path + 'Segmentation/*label.nrrd')
-            if not volume_label:
-                volume_label = glob.glob(data_path + '*hele-label.nii')                
+            label_file_endings = ('*label.nrrd',
+                                  '*label_1.nrrd',
+                                  'Segmentation/*label.nrrd',
+                                  'Segmentering/*label.nrrd',
+                                  '*hele-label.nii')       
+
+            for file_ending in label_file_endings:
+                volume_label = glob.glob(data_path + file_ending)    
+                if volume_label:
+                    break
             if len(volume_label) > 1:
                 log = log + "\n Warning!! More than one file with label found "
                 for volume_label_i in volume_label:
                     log = log + volume_label_i
                 continue
+            volume_label = volume_label[0]
             if not os.path.exists(volume_label):
                 log = log + "\n Warning!! No label found " + data_path + volume_label
             
             cursor.execute("SELECT id FROM Images WHERE pid = ?", (pid,))
             image_id = cursor.fetchone()
-            
+            image_id = str(image_id[0])
+
             cursor.execute("SELECT transform FROM Images WHERE id = ?", (image_id,))
             transforms_temp = cursor.fetchone()
             if transforms_temp is None:
                 log = log + "\n Warning!! No transform found for image " + image_id
+            else:
+                transforms_temp = str(transforms_temp[0])
             transforms = []
-            for _transform in transforms_temp[0].split(","):
+            for _transform in transforms_temp.split(","):
                 transforms.append(util.DATA_FOLDER + _transform.strip())
-
-
+             
             cursor.execute("SELECT filepath, filepath_reg FROM Labels WHERE image_id = ?", (image_id,))
-            for (_filepath,_filepath_reg) in cursor
-                   try:
-                        os.remove(util.DATA_FOLDER + _filepath)
-                        os.remove(util.DATA_FOLDER + _filepath_reg)
-                    except OSError:
-                        pass
-            
-                shutil.copy(volume_label, util.DATA_FOLDER + _filepath)
-                temp = util.compress_vol(image_registration.move_vol(util.DATA_FOLDER + _filepath,
-                                              transforms, True))
-                shutil.copy(temp, _filepath_reg)
-
-
-
+                        
+            for row in cursor:
+                _filepath = row[0]
+                _filepath_reg = row[1]
+                try:
+                    os.remove(util.DATA_FOLDER + _filepath)
+                    os.remove(util.DATA_FOLDER + _filepath_reg)
+                except OSError:
+                    pass
                 
-            #conn.commit()
+                # Converting file to nii.gz if necessary
+                os.system(CONVERTER_PATH + " '" + volume_label + "' " + util.DATA_FOLDER + _filepath)
+
+                temp = util.compress_vol( image_registration.move_vol(util.DATA_FOLDER + _filepath, transforms, True) )
+                shutil.copy(temp, util.DATA_FOLDER + _filepath_reg)
+
 
     with open("Log.txt", "w") as text_file:
         text_file.write(log)
@@ -777,12 +780,11 @@ def add_tumor_volume():
 if __name__ == "__main__":
 #    util.setup_paths()
 
-    temp_path = "reg_labels_temp"
+    temp_path = "reg_labels_temp/"
     util.setup(temp_path)
 
-    path = "Even_survival/"
-    glioma_grade = 2
-    update_segmentations(MAIN_FOLDER + "Even_survival/", 2):
+    convert_data(MAIN_FOLDER + "Even_survival/Segmenteringer/New_patients/", 2, update=True, case_ids=range(16000, 17000))
+#    update_segmentations(MAIN_FOLDER + "Even_survival/")
         
 #    try:
 #        shutil.rmtree(util.DATA_FOLDER)
