@@ -783,7 +783,7 @@ if __name__ == "__main__":
     temp_path = "reg_labels_temp/"
     util.setup(temp_path)
 
-    convert_data(MAIN_FOLDER + "Even_survival/Segmenteringer/New_patients/", 2, update=True, case_ids=range(16000, 17000))
+    convert_data(MAIN_FOLDER + "Even_survival/Segmenteringer/New_patients/", 4, update=True, case_ids=range(16000, 17000))
 #    update_segmentations(MAIN_FOLDER + "Even_survival/")
         
 #    try:
