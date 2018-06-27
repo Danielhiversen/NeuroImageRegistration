@@ -738,6 +738,78 @@ def add_study_lgg():
     conn.close()
 
 
+def add_study_survival(path):
+    """add study to database """
+    conn = sqlite3.connect(util.DB_PATH)
+
+    # Remove commas in study IDs
+    cursor = conn.cursor()
+    cursor2 = conn.cursor()
+    cursor.execute("SELECT pid, study_id FROM Patient")
+    for row in cursor:
+        pid = row[0]
+        study_id = row[1]
+        if study_id:
+            cursor2.execute("UPDATE Patient SET study_id = ? WHERE pid = ?",
+                                   (study_id.replace('qol_grade3,4','qol_grade34'), pid))
+            conn.commit()
+    cursor2.close()
+    
+    # Add new study IDs
+    survival_id = "GBM_survival_time"
+    included_cases = path + "Included cases - final.xlsx"
+    case_list = load_workbook(included_cases,data_only=True)['Included cases - final']
+    for case in range(2, 213):
+
+        cell_name = "{}{}".format("A", case)
+        pid = case_list[cell_name].value
+
+        cursor.execute("SELECT study_id FROM Patient WHERE pid = ?", (pid,))
+        study_id = cursor.fetchone()
+        if study_id and study_id[0]:
+            study_id = study_id[0]
+            if survival_id not in study_id:
+                study_id += ", " + survival_id
+        else:
+            study_id = survival_id    
+        cursor.execute("UPDATE Patient SET study_id = ? WHERE pid = ?",
+                                  (study_id, pid))
+        conn.commit()
+        
+    cursor.close()        
+    conn.close()    
+
+def add_survival_in_days(path):
+    """add survival data to database """
+    
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+    
+    included_cases = path + "Location and survival - survival in days.xlsx"
+    case_list = load_workbook(included_cases,data_only=True)['Included cases - final']
+    for case in range(2, 213):
+
+        cell_name = "{}{}".format("A", case)
+        pid = case_list[cell_name].value
+
+        cell_name = "{}{}".format("B", case)
+        survival_days = case_list[cell_name].value
+
+        cursor.execute("SELECT survival_days FROM Patient WHERE pid = ?", (pid,))
+        survival_days_db = cursor.fetchone()
+        if survival_days_db and survival_days_db[0]:
+            if survival_days_db[0] != survival_days:
+                print("survival_days_db is not equal to survival_days for pid " + str(pid))
+        elif survival_days != "#NULL!":
+            print("Survival days for pid " + str(pid) + ": " + str(survival_days))
+            cursor.execute("UPDATE Patient SET survival_days = ? WHERE pid = ?",
+                              (survival_days, pid))
+            conn.commit()
+        
+    cursor.close()
+    conn.close()    
+    
+
 def add_tumor_volume():
     """add tumor volume to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -783,9 +855,18 @@ if __name__ == "__main__":
     temp_path = "reg_labels_temp/"
     util.setup(temp_path)
 
-    convert_data(MAIN_FOLDER + "Even_survival/Segmenteringer/New_patients/", 4, update=True, case_ids=range(16000, 17000))
+    add_survival_in_days(MAIN_FOLDER + "Even_survival/")
+    add_study_survival(MAIN_FOLDER + "Even_survival/")
+    
 #    update_segmentations(MAIN_FOLDER + "Even_survival/")
-        
+
+#    convert_data(MAIN_FOLDER + "Even_survival/Segmenteringer/New_patients/", 4, update=True, case_ids=range(16000, 17000))
+
+
+
+
+
+
 #    try:
 #        shutil.rmtree(util.DATA_FOLDER)
 #    except OSError:
