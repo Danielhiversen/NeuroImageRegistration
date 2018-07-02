@@ -786,7 +786,7 @@ def add_survival_in_days(path):
     cursor = conn.cursor()
     
     included_cases = path + "Location and survival - survival in days.xlsx"
-    case_list = load_workbook(included_cases,data_only=True)['Included cases - final']
+    case_list = load_workbook(included_cases,data_only=True)['Location and survival - surviva']
     for case in range(2, 213):
 
         cell_name = "{}{}".format("A", case)
@@ -856,7 +856,7 @@ if __name__ == "__main__":
     util.setup(temp_path)
 
     add_survival_in_days(MAIN_FOLDER + "Even_survival/")
-    add_study_survival(MAIN_FOLDER + "Even_survival/")
+#    add_study_survival(MAIN_FOLDER + "Even_survival/")
     
 #    update_segmentations(MAIN_FOLDER + "Even_survival/")
 
