@@ -30,7 +30,7 @@ def format_dict(d):
     return ''.join(s) + '\n\n'
 
 
-def process(folder):
+def process(folder, pids_to_exclude=()):
     """ Post process data """
     print(folder)
     util.setup(folder, 'MolekylareMarkorer')
@@ -44,7 +44,6 @@ def process(folder):
     tag_data_1 = []
     tag_data_2 = []
     tag_data_3 = []
-
     img = nib.load("/media/leb/data/Atlas/lobes_brain.nii")
     lobes_brain = img.get_data()
     label_defs = util.get_label_defs()
@@ -54,6 +53,9 @@ def process(folder):
 
     for pid in cursor:
         pid = pid[0]
+        if pid in pids_to_exclude:
+            continue
+            
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
             print("---No data for ", pid)
@@ -149,7 +151,7 @@ def process(folder):
     util.avg_calculation(result['img'], 'img', None, True, folder)
 
 
-def process_labels(folder):
+def process_labels(folder, pids_to_exclude=()):
     """ Post process data tumor volume"""
     print(folder)
     util.setup(folder, 'MolekylareMarkorer')
@@ -187,6 +189,9 @@ def process_labels(folder):
     k = 2
     for pid in cursor:
         pid = pid[0]
+
+        if pid in pids_to_exclude:
+            continue
 
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
@@ -269,6 +274,8 @@ def validate(folder):
 
 if __name__ == "__main__":
     folder = "RES_MM/"
-    process_labels(folder)
-    process(folder)
+    
+    pids_to_exclude = (122,148)
+    process_labels(folder, pids_to_exclude)
+    process(folder, pids_to_exclude)
     # validate(folder)
