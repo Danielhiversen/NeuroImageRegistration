@@ -24,6 +24,7 @@ def process(folder):
         if label == 'img':
             continue
         util.avg_calculation(result[label], 'survival_time', survival_days, True, folder, default_value=-1)
+        util.median_calculation(result[label], 'survival_time', survival_days, True, folder, default_value=-1)
 
 def process_labels(folder, pids_to_exclude=None:
     """ Create Excel-document with overview of which brain areas are affected by the tumors"""
