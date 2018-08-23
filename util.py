@@ -335,6 +335,51 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
     return image_id, survival_days
 
 
+def get_pids_and_image_ids(study_id=None, exclude_pid=None, glioma_grades=None):
+    """ Get image PIDs and image IDs for a given study ID and/or glioma grade """
+    conn = sqlite3.connect(DB_PATH, timeout=120)
+    conn.text_factory = str
+    cursor = conn.execute('''SELECT pid from Patient''')
+
+    pids = []
+    image_ids = []
+    for pid in cursor:
+        pid = pid[0]
+        
+        if exclude_pid and pid in exclude_pid:
+            continue
+            
+        if study_id:
+            _study_id = conn.execute('''SELECT study_id from Patient where pid = ?''',
+                                     (pid, )).fetchone()
+            if not _study_id[0]:
+                continue
+            elif study_id not in _study_id[0]:
+                continue
+        
+        if glioma_grades:
+            _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
+                                     (pid, )).fetchone()
+            if not _glioma_grade:
+                LOGGER.error("No glioma_grade for " + str(pid))
+                continue
+            if _glioma_grade[0] not in glioma_grades:
+                continue
+        
+        _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
+        if not _id:
+            LOGGER.error("---No data for " + str(pid))
+            continue
+        _id = _id[0]
+        
+        pids.extend([pid])
+        image_ids.extend([_id])
+    cursor.close()
+    conn.close()
+
+    return pids, image_ids
+
+
 def find_seg_images(moving_image_id):
     """ Find segmentation images"""
     conn = sqlite3.connect(DB_PATH, timeout=120)
