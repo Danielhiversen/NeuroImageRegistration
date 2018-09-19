@@ -39,6 +39,7 @@ LOGGER = logging.getLogger("NeuroReg")
 TEMP_FOLDER_PATH = ""
 DATA_FOLDER = ""
 DB_PATH = ""
+ATLAS_FOLDER_PATH = ""
 
 TEMPLATE_VOLUME = datasets.fetch_icbm152_2009(data_dir="./").get("t1")
 TEMPLATE_MASK = datasets.fetch_icbm152_2009(data_dir="./").get("mask")
@@ -75,7 +76,7 @@ def setup(temp_path, data="glioma"):
 def setup_paths(data="glioma"):
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long, too-many-branches, too-many-statements
-    global DATA_FOLDER, DB_PATH
+    global DATA_FOLDER, DB_PATH, ATLAS_FOLDER_PATH
 
     hostname = os.uname()[1]
     if hostname == 'dddd':
@@ -84,6 +85,7 @@ def setup_paths(data="glioma"):
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
         os.environ["PATH"] += os.pathsep + '/home/leb/dev/ANTs/antsbin/bin'
+        ATLAS_FOLDER_PATH = '/media/leb/data/Atlas/'
     elif 'unity' in hostname or 'compute' in hostname:
         os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/' + os.pathsep + '/home/danieli/antsbin/bin/'
     else:
@@ -294,10 +296,10 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
     survival_days = []
     for pid in cursor:
         pid = pid[0]
-        
+
         if exclude_pid and pid in exclude_pid:
             continue
-            
+
         if study_id:
             _study_id = conn.execute('''SELECT study_id from Patient where pid = ?''',
                                      (pid, )).fetchone()
@@ -305,7 +307,7 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
                 continue
             elif study_id not in _study_id[0]:
                 continue
-        
+
         if glioma_grades:
             _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
                                      (pid, )).fetchone()
@@ -320,13 +322,13 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
         if _survival_days is None:
             LOGGER.error("No survival_days data for " + str(_id))
             continue
-        
+
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
             LOGGER.error("---No data for " + str(pid))
             continue
         _id = _id[0]
-        
+
         survival_days.extend([_survival_days])
         image_id.extend([_id])
     cursor.close()
@@ -345,10 +347,10 @@ def get_pids_and_image_ids(study_id=None, exclude_pid=None, glioma_grades=None):
     image_ids = []
     for pid in cursor:
         pid = pid[0]
-        
+
         if exclude_pid and pid in exclude_pid:
             continue
-            
+
         if study_id:
             _study_id = conn.execute('''SELECT study_id from Patient where pid = ?''',
                                      (pid, )).fetchone()
@@ -356,7 +358,7 @@ def get_pids_and_image_ids(study_id=None, exclude_pid=None, glioma_grades=None):
                 continue
             elif study_id not in _study_id[0]:
                 continue
-        
+
         if glioma_grades:
             _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
                                      (pid, )).fetchone()
@@ -365,13 +367,13 @@ def get_pids_and_image_ids(study_id=None, exclude_pid=None, glioma_grades=None):
                 continue
             if _glioma_grade[0] not in glioma_grades:
                 continue
-        
+
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
             LOGGER.error("---No data for " + str(pid))
             continue
         _id = _id[0]
-        
+
         pids.extend([pid])
         image_ids.extend([_id])
     cursor.close()
@@ -944,6 +946,27 @@ def get_center_of_mass(filepath):
     trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
     com = [r+t for (r, t) in zip(res, trans)]
     return com, com_idx
+
+
+def get_cortical_convexity():
+    convexity_file = ATLAS_FOLDER_PATH + 'cortical_convexity.nii'
+    img = nib.load(convexity_file)
+    data = img.get_data()
+    dims = data.shape
+    spacing = img.header.get_zooms()
+    qform = img.header.get_qform()
+    trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
+
+    convexity_coordinates = []
+    for i = range(dims[0]):
+        for j = range(dims[1]):
+            for k = range(dims[2]):
+                if data[i,j,k]:
+                    idx = [i, j, k]
+                    res = [c*s for (c, s) in zip(idx, spacing)]
+                    coordinates = [r+t for (r, t) in zip(res, trans)]
+                    convexity_coordinates.append(coordinates)
+    return convexity_coordinates
 
 
 def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
