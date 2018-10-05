@@ -49,14 +49,12 @@ def process_labels(folder, pids_to_exclude=None:
     label_defs = util.get_label_defs_hammers_mith()
     res_lobes_brain = {}
 
-    convexity_coordinates = util.get_cortical_convexity()
-
     book = Workbook()
     sheet = book.active
 
     sheet.cell(row=1, column=1).value = 'PID'
     sheet.cell(row=1, column=2).value = 'Lobe, center of tumor'
-    sheet.cell(row=1, column=3).value = 'Distance from COM to convexity'
+    sheet.cell(row=1, column=3).value = 'Distance from COM to 3rd ventricle'
     i = 3
     label_defs_to_column = {}
     for key in label_defs:
@@ -74,16 +72,17 @@ def process_labels(folder, pids_to_exclude=None:
             continue
 
         com, com_idx = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
-
         print(pid, com_idx)
+        ventricle_label = 49
+        com_ventricle, com_idx_ventricle =  util.get_center_of_mass(folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz',ventricle_label)
+        dist_to_ventricle = np.linalg.norm(np.array(com)-np.array(com_ventricle))
 
-        dist_to_convexity = None
-        for conv in convexity_coordinates:
-            dist = np.linalg.norm(np.array(com)-np.array(conv))
-            if not dist_to_convexity:
-                dist_to_convexity = dist
-            else if dist < dist_to_convexity:
-                    dist_to_convexity = dist
+        disp('\nCOM:')
+        disp(com)
+        disp('COM Ventricle:')
+        disp(com_ventricle)
+        disp('Distance to Ventricle:')
+        disp(dist_to_ventricle)
 
         lobe = label_defs.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
         res_lobes_brain[pid] = lobe
@@ -103,7 +102,7 @@ def process_labels(folder, pids_to_exclude=None:
 
         sheet.cell(row=k, column=1).value = pid
         sheet.cell(row=k, column=2).value = lobe
-        sheet.cell(row=k, column=3).value = dist_to_convexity
+        sheet.cell(row=k, column=3).value = dist_to_ventricle
 
         k += 1
 

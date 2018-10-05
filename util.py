@@ -934,10 +934,14 @@ def get_basename(filepath):
     return splitext(splitext(basename(filepath))[0])[0]
 
 
-def get_center_of_mass(filepath):
+def get_center_of_mass(filepath,label=None):
     """Get center_of_mass of filepath"""
     img = nib.load(filepath)
-    com = ndimage.measurements.center_of_mass(img.get_data())
+    if label:
+        data = img.get_data() == label
+    else:
+        data = img.get_data()
+    com = ndimage.measurements.center_of_mass(data)
     com_idx = [int(_com) for _com in com]
 
     qform = img.header.get_qform()
@@ -946,27 +950,6 @@ def get_center_of_mass(filepath):
     trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
     com = [r+t for (r, t) in zip(res, trans)]
     return com, com_idx
-
-
-def get_cortical_convexity():
-    convexity_file = ATLAS_FOLDER_PATH + 'cortical_convexity.nii'
-    img = nib.load(convexity_file)
-    data = img.get_data()
-    dims = data.shape
-    spacing = img.header.get_zooms()
-    qform = img.header.get_qform()
-    trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
-
-    convexity_coordinates = []
-    for i = range(dims[0]):
-        for j = range(dims[1]):
-            for k = range(dims[2]):
-                if data[i,j,k]:
-                    idx = [i, j, k]
-                    res = [c*s for (c, s) in zip(idx, spacing)]
-                    coordinates = [r+t for (r, t) in zip(res, trans)]
-                    convexity_coordinates.append(coordinates)
-    return convexity_coordinates
 
 
 def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
