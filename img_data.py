@@ -31,6 +31,7 @@ class img_data(object):
         self._reg_img_filepath = None
         self._label_filepath = None
         self._label_inv_filepath = None
+        self._reg_brainmask_filepath = None
 
     @property
     def img_filepath(self):
@@ -116,6 +117,26 @@ class img_data(object):
         nib.save(result_img, self._label_inv_filepath)
 
         return self._label_inv_filepath
+
+    @property
+    def reg_brainmask_filepath(self):
+        if self._reg_brainmask_filepath is not None:
+            return self._reg_brainmask_filepath
+
+        conn = sqlite3.connect(self.db_path)
+        conn.text_factory = str
+        cursor = conn.execute('''SELECT filepath_reg from BrainMasks where image_id = ? ''',
+                              (self.image_id,))
+        path = cursor.fetchone()
+        if path is None:
+            print("Could not find custom brain mask for " + str(self.image_id))
+            self._reg_brainmask_filepath = ""
+        else:
+            self._reg_brainmask_filepath = self.data_path + path[0]
+        cursor.close()
+        conn.close()
+
+        return self._reg_brainmask_filepath
 
     @property
     def db_path(self):

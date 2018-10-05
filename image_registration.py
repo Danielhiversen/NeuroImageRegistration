@@ -271,10 +271,16 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg_volume = util.transform_volume(resampled_file, transform)
         shutil.copy(transform, img.init_transform)
 
+        brain_mask = util.TEMPLATE_MASK
+        #brain_mask = img.reg_brainmask_filepath
+        if not brain_mask:
+            brain_mask = util.TEMPLATE_MASK
+        print("Using brain mask " + brain_mask)
+
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
         mult.inputs.first_input = reg_volume
-        mult.inputs.second_input = util.TEMPLATE_MASK
+        mult.inputs.second_input = brain_mask
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
@@ -446,6 +452,9 @@ def process_dataset(args):
     if save_to_db:
         save_transform_to_database([img])
         del img
+    else:
+        transform_labels_temp([img])
+        del img
 
 
 # pylint: disable= too-many-arguments
@@ -559,5 +568,28 @@ def save_transform_to_database(imgs):
         cursor.close()
         cursor2.close()
 
-#    cursor = conn.execute('''VACUUM; ''')
+def transform_labels_temp(imgs):
+    """ Save transformed labels to a temp folder in database"""
+    # pylint: disable= too-many-locals, bare-except
+    conn = sqlite3.connect(util.DB_PATH, timeout=900)
+    conn.text_factory = str
+
+    for img in imgs:
+        cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
+        pid = cursor.fetchone()[0]
+
+        folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/temp/"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        cursor = conn.execute('''SELECT filepath, id from Labels where image_id = ? ''',
+                              (img.image_id,))
+        for (filepath, label_id) in cursor:
+            temp = util.compress_vol(move_vol(util.DATA_FOLDER + filepath,
+                                              img.get_transforms(), True))
+            shutil.copy(temp, folder)
+
+        conn.commit()
+        cursor.close()
+
     conn.close()
