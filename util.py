@@ -312,7 +312,7 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
             _glioma_grade = conn.execute('''SELECT glioma_grade from Patient where pid = ?''',
                                      (pid, )).fetchone()
             if not _glioma_grade:
-                LOGGER.error("No glioma_grade for " + str(pid))
+                LOGGER.error("No glioma_grade for PID = " + str(pid))
                 continue
             if _glioma_grade[0] not in glioma_grades:
                 continue
@@ -320,12 +320,12 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
         _survival_days = conn.execute("SELECT survival_days from Patient where pid = ?",
                                       (pid, )).fetchone()[0]
         if _survival_days is None:
-            LOGGER.error("No survival_days data for " + str(_id))
+            LOGGER.error("No survival_days data for PID = " + str(pid))
             continue
 
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
-            LOGGER.error("---No data for " + str(pid))
+            LOGGER.error("No image data for PID = " + str(pid))
             continue
         _id = _id[0]
 
