@@ -43,7 +43,7 @@ def process_labels(folder, pids_to_exclude=None):
     pids, image_ids = util.get_pids_and_image_ids(study_id="GBM_survival_time",exclude_pid=pids_to_exclude)
 
 
-    atlas_path = "/media/leb/data/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
+    atlas_path = ATLAS_FOLDER_PATH + "Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
     resample = brainsresample.BRAINSResample(command=BRAINSResample_PATH,
                                              inputVolume=atlas_path,
                                              outputVolume=os.path.abspath(folder +
@@ -62,7 +62,8 @@ def process_labels(folder, pids_to_exclude=None):
 
     sheet.cell(row=1, column=1).value = 'PID'
     sheet.cell(row=1, column=2).value = 'Lobe, center of tumor'
-    i = 2
+    sheet.cell(row=1, column=3).value = 'Distance from COM to 3rd ventricle'
+    i = 3
     label_defs_to_column = {}
     for key in label_defs:
         i += 1
@@ -79,8 +80,17 @@ def process_labels(folder, pids_to_exclude=None):
             continue
 
         com, com_idx = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
-
         print(pid, com_idx)
+        ventricle_label = 49
+        com_ventricle, com_idx_ventricle =  util.get_center_of_mass(folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz',ventricle_label)
+        dist_to_ventricle = np.linalg.norm(np.array(com)-np.array(com_ventricle))
+
+        disp('\nCOM:')
+        disp(com)
+        disp('COM Ventricle:')
+        disp(com_ventricle)
+        disp('Distance to Ventricle:')
+        disp(dist_to_ventricle)
 
         lobe = label_defs.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
         res_lobes_brain[pid] = lobe
@@ -100,6 +110,7 @@ def process_labels(folder, pids_to_exclude=None):
 
         sheet.cell(row=k, column=1).value = pid
         sheet.cell(row=k, column=2).value = lobe
+        sheet.cell(row=k, column=3).value = dist_to_ventricle
 
         k += 1
 
