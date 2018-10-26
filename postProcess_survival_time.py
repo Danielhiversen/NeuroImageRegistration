@@ -15,8 +15,6 @@ import numpy as np
 import os
 
 
-BRAINSResample_PATH = '/home/leb/dev/BRAINSTools/build/bin/BRAINSResample'
-
 def process(folder):
     """ Post process data """
     print(folder)
@@ -44,7 +42,7 @@ def process_labels(folder, pids_to_exclude=None):
 
 
     atlas_path = util.ATLAS_FOLDER_PATH + "Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
-    resample = brainsresample.BRAINSResample(command=BRAINSResample_PATH,
+    resample = brainsresample.BRAINSResample(command=util.BRAINSResample_PATH,
                                              inputVolume=atlas_path,
                                              outputVolume=os.path.abspath(folder +
                                                                           'Hammers_mith-n30r95-MaxProbMap-full'

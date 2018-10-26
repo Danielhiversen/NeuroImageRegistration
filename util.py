@@ -76,16 +76,22 @@ def setup(temp_path, data="glioma"):
 def setup_paths(data="glioma"):
     """setup for current computer """
     # pylint: disable= global-statement, line-too-long, too-many-branches, too-many-statements
-    global DATA_FOLDER, DB_PATH, ATLAS_FOLDER_PATH
+    global DATA_FOLDER, DB_PATH, ATLAS_FOLDER_PATH, BRAINSResample_PATH
 
     hostname = os.uname()[1]
     if hostname == 'dddd':
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/disk/kode/ANTs/antsbin/bin/'
+        BRAINSResample_PATH = '/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/BRAINSResample'
     elif hostname == 'dahoiv-Precision-M6500':
         os.environ["PATH"] += os.pathsep + '/home/dahoiv/antsbin/bin/'
     elif hostname == 'ingerid-PC':
         os.environ["PATH"] += os.pathsep + '/home/leb/dev/ANTs/antsbin/bin'
         ATLAS_FOLDER_PATH = '/media/leb/data/Atlas/'
+        BRAINSResample_PATH = '/home/leb/dev/BRAINSTools/build/bin/BRAINSResample'
+    elif hostname == 'medtech-beast':
+        os.environ["PATH"] += os.pathsep + '/home/leb/dev/ANTs/antsbin/bin'
+        ATLAS_FOLDER_PATH = '/home/leb/data/Atlas/'
+        BRAINSResample_PATH = '/home/leb/dev/BRAINSTools/build/bin/BRAINSResample'
     elif 'unity' in hostname or 'compute' in hostname:
         os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/' + os.pathsep + '/home/danieli/antsbin/bin/'
     else:
@@ -100,6 +106,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = "/home/dahoiv/database/"
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/leb/data/database/"
+        elif hostname == 'medtech-beast':
+            DATA_FOLDER = "/home/leb/data/database/"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/neuro_data/database/'
         else:
@@ -113,6 +121,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = ""
         elif hostname == 'ingerid-PC':
             DATA_FOLDER = "/media/leb/data/database_MM/"
+        elif hostname == 'medtech-beast':
+            DATA_FOLDER = "/home/leb/data/database_MM/"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/database_MM/'
         else:

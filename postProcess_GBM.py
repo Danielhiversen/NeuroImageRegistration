@@ -6,7 +6,8 @@ Created on Tue May 24 10:41:50 2016
 """
 
 import os
-import nipype.interfaces.slicer as slicer
+#import nipype.interfaces.slicer as slicer
+import nipype.interfaces.semtools.registration.brainsresample as brainsresample
 from openpyxl import Workbook
 import datetime
 import numpy as np
@@ -15,9 +16,6 @@ import sqlite3
 
 import util
 import do_img_registration_GBM
-
-
-BRAINSResample_PATH = '/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/BRAINSResample'
 
 
 def find_images():
@@ -264,7 +262,7 @@ def process_labels2(folder):
     cursor = conn.execute('''SELECT pid from Patient where study_id = ?''', ("qol_grade3,4", ))
 
     atlas_path = "/home/dahoiv/disk/Dropbox/Jobb/gbm/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
-    resample = slicer.registration.brainsresample.BRAINSResample(command=BRAINSResample_PATH,
+    resample = slicer.registration.brainsresample.BRAINSResample(command=util.BRAINSResample_PATH,
                                                                  inputVolume=atlas_path,
                                                                  outputVolume=os.path.abspath(folder +
                                                                                               'Hammers_mith-n30r95-MaxProbMap-full'
@@ -351,7 +349,7 @@ def process_tracts(folder):
 
     for atlas_path in atlas_paths:
         tract = util.get_basename(atlas_path)
-        resample = slicer.registration.brainsresample.BRAINSResample(command=BRAINSResample_PATH,
+        resample = slicer.registration.brainsresample.BRAINSResample(command=util.BRAINSResample_PATH,
                                                                      inputVolume=atlas_path,
                                                                      outputVolume=os.path.abspath(folder + tract + '.nii.gz'),
                                                                      referenceVolume=os.path.abspath(util.TEMPLATE_VOLUME))

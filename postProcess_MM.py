@@ -18,8 +18,6 @@ import numpy as np
 import os
 
 
-BRAINSResample_PATH = '/home/leb/dev/BRAINSTools/build/bin/BRAINSResample'
-
 def format_dict(d):
     d = collections.OrderedDict(sorted(d.iteritems()))
     s = ['lobe                   Type1   Type2   Type3 \n']
@@ -55,7 +53,7 @@ def process(folder, pids_to_exclude=()):
         pid = pid[0]
         if pid in pids_to_exclude:
             continue
-            
+
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
             print("---No data for ", pid)
@@ -160,7 +158,7 @@ def process_labels(folder, pids_to_exclude=()):
     cursor = conn.execute('''SELECT pid from MolekylareMarkorer ORDER BY pid''')
 
     atlas_path = "/media/leb/data/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
-    resample = brainsresample.BRAINSResample(command=BRAINSResample_PATH,
+    resample = brainsresample.BRAINSResample(command=util.BRAINSResample_PATH,
                                              inputVolume=atlas_path,
                                              outputVolume=os.path.abspath(folder +
                                                                           'Hammers_mith-n30r95-MaxProbMap-full'
@@ -274,7 +272,7 @@ def validate(folder):
 
 if __name__ == "__main__":
     folder = "RES_MM/"
-    
+
     pids_to_exclude = (122,148)
     process_labels(folder, pids_to_exclude)
     process(folder, pids_to_exclude)
