@@ -16,7 +16,7 @@ ninja
 
 sudo apt-get install python-pip
 cd
-git clone git@github.com:Danielhiversen/NeuroImageRegistration.git
+git clone https://github.com/SINTEFMedtek/NeuroImageRegistration.git
 cd NeuroImageRegistration/
 virtualenv venv
 source venv/bin/activate
