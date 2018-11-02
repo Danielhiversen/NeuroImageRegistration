@@ -62,7 +62,11 @@ if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
     NUM_THREADS_ANTS = 6
     MULTITHREAD = 8
     BET_COMMAND = "/home/danieli/fsl/bin/bet"
-else:
+elif 'medtech-beast' in HOSTNAME:
+    NUM_THREADS_ANTS = 4
+    MULTITHREAD = 6
+    BET_COMMAND = "fsl5.0-bet"
+else: 
     NUM_THREADS_ANTS = 4
     # MULTITHREAD = 1  # 1,23,4....., "max"
     MULTITHREAD = "max"
