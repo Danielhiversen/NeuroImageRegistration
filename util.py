@@ -296,7 +296,7 @@ def get_tumor_volume(image_ids):
     return image_ids_with_volume, volumes
 
 
-def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None):
+def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None, registration_date_upper_lim=None):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
@@ -338,6 +338,16 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
             LOGGER.error("No image data for PID = " + str(pid))
             continue
         _id = _id[0]
+
+        if registration_date_upper_lim:
+            _reg_date_str = conn.execute('''SELECT registration_date from Images where id = ?''',
+                                     (_id, )).fetchone()
+            if _reg_date_str:
+                _reg_date = datetime.strptime(_reg_date_str,'%Y-%m-%d')
+                _date_upper_lim = datetime.strptime(registration_date_upper_lim,'%Y-%m-%d')
+                if _reg_date > _date_upper_lim:
+                    LOGGER.info("Image with ID = " + str(_id) + "has a recent registration date and is excluded")
+                    continue
 
         survival_days.extend([_survival_days])
         image_id.extend([_id])
