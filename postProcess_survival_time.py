@@ -42,18 +42,18 @@ def process_labels(folder, pids_to_exclude=None):
 
 
     atlas_path = util.ATLAS_FOLDER_PATH + "Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
+    atlas_resampled_path = folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz'
     resample = brainsresample.BRAINSResample(command=util.BRAINSResample_PATH,
                                              inputVolume=atlas_path,
-                                             outputVolume=os.path.abspath(folder +
-                                                                          'Hammers_mith-n30r95-MaxProbMap-full'
-                                                                          '-MNI152-SPM12_resample.nii.gz'),
+                                             outputVolume=os.path.abspath(atlas_resampled_path),
                                              referenceVolume=os.path.abspath(util.TEMPLATE_VOLUME))
     resample.run()
 
-    img = nib.load(folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz')
+    img = nib.load(atlas_resampled_path)
     lobes_brain = img.get_data()
     label_defs = util.get_label_defs_hammers_mith()
     res_lobes_brain = {}
+
     ventricle_label = 49
     com_ventricle, com_idx_ventricle =  util.get_center_of_mass(folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz',ventricle_label)
 
@@ -62,8 +62,9 @@ def process_labels(folder, pids_to_exclude=None):
 
     sheet.cell(row=1, column=1).value = 'PID'
     sheet.cell(row=1, column=2).value = 'Lobe, center of tumor'
-    sheet.cell(row=1, column=3).value = 'Distance between centres of tumor and 3rd ventricle (mm)'
-    i = 3
+    sheet.cell(row=1, column=3).value = 'Distance from center of 3rd ventricle to center of tumor (mm)'
+    sheet.cell(row=1, column=4).value = 'Distance from center of 3rd ventricle to border of tumor (mm)'
+    i = 4
     label_defs_to_column = {}
     for key in label_defs:
         i += 1
@@ -80,8 +81,12 @@ def process_labels(folder, pids_to_exclude=None):
             continue
 
         com, com_idx = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
+        surface = util.get_surface(util.DATA_FOLDER + _filepath)
+
         print(pid, com_idx)
-        dist_to_ventricle = np.linalg.norm(np.array(com)-np.array(com_ventricle))
+
+        dist_from_ventricle_to_com = np.linalg.norm(np.array(com)-np.array(com_ventricle))
+        dist_from_ventricle_to_border = util.get_min_distance(surface, [com_ventricle])
 
         lobe = label_defs.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
         res_lobes_brain[pid] = lobe
@@ -101,7 +106,8 @@ def process_labels(folder, pids_to_exclude=None):
 
         sheet.cell(row=k, column=1).value = pid
         sheet.cell(row=k, column=2).value = lobe
-        sheet.cell(row=k, column=3).value = round(dist_to_ventricle,2)
+        sheet.cell(row=k, column=3).value = round(dist_from_ventricle_to_com,2)
+        sheet.cell(row=k, column=4).value = round(dist_from_ventricle_to_border,2)
 
         k += 1
 
