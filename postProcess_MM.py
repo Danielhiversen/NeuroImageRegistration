@@ -179,10 +179,10 @@ def process_labels(folder, pids_to_exclude=()):
     sheet.cell(row=1, column=1).value = 'PID'
     sheet.cell(row=1, column=2).value = 'MM'
     sheet.cell(row=1, column=3).value = 'Lobe, center of tumor'
-    sheet.cell(row=1, column=4).value = 'Distance from SVZ to center of tumor'
-    sheet.cell(row=1, column=5).value = 'Distance from SVZ to border of tumor'
-    sheet.cell(row=1, column=6).value = 'Distance from GD to center of tumor'
-    sheet.cell(row=1, column=7).value = 'Distance from GD to border of tumor'
+    sheet.cell(row=1, column=4).value = 'Distance from SVZ to center of tumor (mm)'
+    sheet.cell(row=1, column=5).value = 'Distance from SVZ to border of tumor (mm)'
+    sheet.cell(row=1, column=6).value = 'Distance from GD to center of tumor (mm)'
+    sheet.cell(row=1, column=7).value = 'Distance from GD to border of tumor (mm)'
     i = 7
     label_defs_to_column = {}
     for key in label_defs:
@@ -241,10 +241,10 @@ def process_labels(folder, pids_to_exclude=()):
         sheet.cell(row=k, column=1).value = pid
         sheet.cell(row=k, column=2).value = str(_mm)
         sheet.cell(row=k, column=3).value = lobe
-        sheet.cell(row=k, column=4).value = dist_from_svz_to_com
-        sheet.cell(row=k, column=5).value = dist_from_svz_to_border
-        sheet.cell(row=k, column=6).value = dist_from_gd_to_com
-        sheet.cell(row=k, column=7).value = dist_from_gd_to_border
+        sheet.cell(row=k, column=4).value = round(dist_from_svz_to_com,2)
+        sheet.cell(row=k, column=5).value = round(dist_from_svz_to_border,2)
+        sheet.cell(row=k, column=6).value = round(dist_from_gd_to_com,2)
+        sheet.cell(row=k, column=7).value = round(dist_from_gd_to_border,2)
 
         k += 1
 
