@@ -157,27 +157,33 @@ def process_labels(folder, pids_to_exclude=()):
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from MolekylareMarkorer ORDER BY pid''')
 
-    atlas_path = "/media/leb/data/Atlas/Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz"
+    atlas_path = util.ATLAS_FOLDER_PATH + 'Hammers/Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12.nii.gz'
+    atlas_resampled_path = folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz'
     resample = brainsresample.BRAINSResample(command=util.BRAINSResample_PATH,
                                              inputVolume=atlas_path,
-                                             outputVolume=os.path.abspath(folder +
-                                                                          'Hammers_mith-n30r95-MaxProbMap-full'
-                                                                          '-MNI152-SPM12_resample.nii.gz'),
+                                             outputVolume=os.path.abspath(atlas_resampled_path),
                                              referenceVolume=os.path.abspath(util.TEMPLATE_VOLUME))
     resample.run()
 
-    img = nib.load(folder + 'Hammers_mith-n30r95-MaxProbMap-full-MNI152-SPM12_resample.nii.gz')
+    img = nib.load(atlas_resampled_path)
     lobes_brain = img.get_data()
     label_defs = util.get_label_defs_hammers_mith()
     res_lobes_brain = {}
+
+    surface_svz = util.get_surface(util.ATLAS_FOLDER_PATH + 'SubventricularZone.nii.gz')
+    surface_gd = util.get_suface(util.ATLAS_FOLDER_PATH + 'GyrusDentatus.nii.gz')
 
     book = Workbook()
     sheet = book.active
 
     sheet.cell(row=1, column=1).value = 'PID'
-    sheet.cell(row=1, column=3).value = 'MM'
+    sheet.cell(row=1, column=2).value = 'MM'
     sheet.cell(row=1, column=3).value = 'Lobe, center of tumor'
-    i = 3
+    sheet.cell(row=1, column=4).value = 'Distance from SVZ to center of tumor'
+    sheet.cell(row=1, column=5).value = 'Distance from SVZ to border of tumor'
+    sheet.cell(row=1, column=6).value = 'Distance from GD to center of tumor'
+    sheet.cell(row=1, column=7).value = 'Distance from GD to border of tumor'
+    i = 7
     label_defs_to_column = {}
     for key in label_defs:
         i += 1
@@ -204,8 +210,14 @@ def process_labels(folder, pids_to_exclude=()):
             continue
 
         com, com_idx = util.get_center_of_mass(util.DATA_FOLDER + _filepath)
+        surface = util.get_surface(util.DATA_FOLDER + _filepath)
 
         print(pid, com_idx)
+
+        dist_from_svz_to_com = util.get_min_distance(surface_svz, [com])
+        dist_from_svz_to_border = util.get_min_distance(surface_svz, surface['point_cloud'])
+        dist_from_gd_to_com = util.get_min_distance(surface_gd, [com])
+        dist_from_gd_to_border = util.get_min_distance(surface_gd, surface['point_cloud'])
 
         lobe = label_defs.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
         res_lobes_brain[pid] = lobe
@@ -229,6 +241,10 @@ def process_labels(folder, pids_to_exclude=()):
         sheet.cell(row=k, column=1).value = pid
         sheet.cell(row=k, column=2).value = str(_mm)
         sheet.cell(row=k, column=3).value = lobe
+        sheet.cell(row=k, column=4).value = dist_from_svz_to_com
+        sheet.cell(row=k, column=5).value = dist_from_svz_to_border
+        sheet.cell(row=k, column=6).value = dist_from_gd_to_com
+        sheet.cell(row=k, column=7).value = dist_from_gd_to_border
 
         k += 1
 

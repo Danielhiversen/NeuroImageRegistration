@@ -26,6 +26,9 @@ import numpy as np
 print(np.version.version)
 from scipy import ndimage
 from scipy import stats
+from scipy.spatial import distance
+import vtk
+from vtk.util.numpy_support import vtk_to_numpy
 import matplotlib
 matplotlib.use('Agg')
 # pylint: disable= wrong-import-position, too-many-lines
@@ -970,6 +973,137 @@ def get_center_of_mass(filepath,label=None):
     trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
     com = [r+t for (r, t) in zip(res, trans)]
     return com, com_idx
+
+def get_label_coordinates(filepath,label=None):
+    img = nib.load(filepath)
+    if label:
+        data = img.get_data() == label
+    else:
+        data = img.get_data()
+    dims = data.shape
+    spacing = img.header.get_zooms()
+    qform = img.header.get_qform()
+    trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
+
+    label_coordinates = []
+    for i in range(dims[0]):
+        for j in range(dims[1]):
+            for k in range(dims[2]):
+                if data[i,j,k]:
+                    idx = [i, j, k]
+                    res = [c*s for (c, s) in zip(idx, spacing)]
+                    coordinates = [r+t for (r, t) in zip(res, trans)]
+                    label_coordinates.append(coordinates)
+    return label_coordinates
+
+
+def get_surface(filepath,label=1):
+    reader = vtk.vtkNIFTIImageReader()
+    reader.SetFileName(filepath)
+    reader.Update()
+
+    labelmap = reader.GetOutput()
+
+    qform_matrix = reader.GetQFormMatrix()
+    if not qform_matrix:
+        LOGGER.error('The file ' + filepath + ' contains no QForm matrix')
+        raise Exception
+    qform_transform = vtk.vtkTransform()
+    qform_transform.SetMatrix(qform_matrix)
+
+    # Find surface of label map
+    dmc = vtk.vtkDiscreteMarchingCubes()
+    dmc.SetInputConnection(reader.GetOutputPort())
+    dmc.GenerateValues(1, label, label)
+    dmc.Update()
+
+    # Transform surface to patient coordinates
+    tpd = vtk.vtkTransformPolyDataFilter()
+    tpd.SetTransform(qform_transform)
+    tpd.SetInputConnection(dmc.GetOutputPort())
+    tpd.Update()
+
+    # Convert surface points to Python list
+    point_cloud = vtk_to_numpy(tpd.GetOutput().GetPoints().GetData()).tolist()
+
+    surface = {
+        'point_cloud': point_cloud,
+        'labelmap': labelmap,
+        'qform_transform': qform_transform
+    }
+
+    return surface
+
+
+def get_min_distance(surface,points):
+    """
+    Find minimum distance between a single point/point cloud and a surface.
+
+    Parameters
+    ----------
+    surface : dict
+        Dictionary containing a labelmap, a point_cloud and a transform
+        as produced by get_surface()
+    points : nested list
+        Coordinates of points as a nested list.
+
+    Returns
+    -------
+    min_dist : double
+        Minimum distance in millimeter. If the number is negative, the points
+        are inside the surface.
+        NB! If there are multiple points and the distances are very small,
+            it is likely that there are points both inside and outside surface.
+
+    """
+    def point_is_inside(surface,point):
+        """
+        Check if a point is inside or outside of a surface.
+
+        Parameters
+        ----------
+        surface : dict
+            Dictionary containing a labelmap, a point_cloud and a transform
+            as produced by get_surface()
+        point : [x,y,z]
+            Coordinates of point that will be checked.
+
+        Returns
+        -------
+        point_is_inside : {1,-1}
+             1 if point is outside of surface.
+            -1 if point is inside of surface.
+
+        """
+
+        if len(point) is not 3:
+            LOGGER.error('Point does not have exactly three coordinates')
+            raise Exception
+
+        points = vtk.vtkPoints()
+        points.InsertNextPoint(point)
+        pointsPolydata = vtk.vtkPolyData()
+        pointsPolydata.SetPoints(points)
+
+        # Transform points to image coordinates
+        tpd_inverse = vtk.vtkTransformPolyDataFilter()
+        tpd_inverse.SetTransform(surface['qform_transform'].GetInverse())
+        tpd_inverse.SetInputData(pointsPolydata)
+        tpd_inverse.Update()
+
+        # Get scalar values
+        pf = vtk.vtkProbeFilter()
+        pf.SetSourceData(surface['labelmap'])
+        pf.SetInputConnection(tpd_inverse.GetOutputPort())
+        pf.Update()
+        label_at_point = vtk_to_numpy(pf.GetOutput().GetPointData().GetScalars()).tolist()
+        point_is_inside = 2*(label_at_point[0] > 0) - 1
+
+        return point_is_inside
+
+    point_is_inside = point_inside(surface,points[0])
+    min_dist = distance.cdist(surface, points, 'euclidean').min()*point_is_inside
+    return min_dist
 
 
 def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):

@@ -53,6 +53,7 @@ tox==2.3.1
 traitlets==4.3.2
 traits==4.5.0
 virtualenv==15.0.1
+vtk==8.1.1
 wcwidth==0.1.7
 wrapt==1.10.11
 xlrd==1.1.0
