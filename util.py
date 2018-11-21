@@ -1097,12 +1097,12 @@ def get_min_distance(surface,points):
         pf.SetInputConnection(tpd_inverse.GetOutputPort())
         pf.Update()
         label_at_point = vtk_to_numpy(pf.GetOutput().GetPointData().GetScalars()).tolist()
-        point_is_inside = 2*(label_at_point[0] > 0) - 1
+        point_is_inside = 1 - 2*(label_at_point[0] > 0)
 
         return point_is_inside
 
-    point_is_inside = point_inside(surface,points[0])
-    min_dist = distance.cdist(surface, points, 'euclidean').min()*point_is_inside
+    point_is_inside = point_is_inside(surface,points[0])
+    min_dist = distance.cdist(surface['point_cloud'], points, 'euclidean').min()*point_is_inside
     return min_dist
 
 
