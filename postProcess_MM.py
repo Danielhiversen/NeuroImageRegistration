@@ -287,7 +287,7 @@ def validate(folder):
 
 
 if __name__ == "__main__":
-    folder = "RES_MM/"
+    folder = "RES_MM" + "{:%Y%m%d_%H%M}".format(datetime.datetime.now()) + "/"
 
     pids_to_exclude = (122,148)
     process_labels(folder, pids_to_exclude)
