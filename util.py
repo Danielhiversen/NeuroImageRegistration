@@ -993,10 +993,19 @@ def get_center_of_mass(filepath,label=None):
     com = ndimage.measurements.center_of_mass(data)
     com_idx = [int(_com) for _com in com]
 
-    qform = img.header.get_qform()
     spacing = img.header.get_zooms()
+    qform = img.header.get_qform(coded=True)
+    if not qform[1]:
+        sform = img.header.get_sform(coded=True)
+        if not sform[1]:
+            LOGGER.error('The file ' + filepath + ' contains no QForm or SForm matrix.')
+            raise Exception
+        else:
+            qform = sform
+            LOGGER.warning('The file ' + filepath + ' contains no QForm matrix. Using SForm matrix instead.')
+    trans = [qform[0][0, 3], qform[0][1, 3], qform[0][2, 3]]
+
     res = [c*s for (c, s) in zip(com, spacing)]
-    trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
     com = [r+t for (r, t) in zip(res, trans)]
     return com, com_idx
 
@@ -1008,8 +1017,16 @@ def get_label_coordinates(filepath,label=None):
         data = img.get_data()
     dims = data.shape
     spacing = img.header.get_zooms()
-    qform = img.header.get_qform()
-    trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
+    qform = img.header.get_qform(coded=True)
+    if not qform[1]:
+        sform = img.header.get_sform(coded=True)
+        if not sform[1]:
+            LOGGER.error('The file ' + filepath + ' contains no QForm or SForm matrix.')
+            raise Exception
+        else:
+            qform = sform
+            LOGGER.warning('The file ' + filepath + ' contains no QForm matrix. Using SForm matrix instead.')
+    trans = [qform[0][0, 3], qform[0][1, 3], qform[0][2, 3]]
 
     label_coordinates = []
     for i in range(dims[0]):
@@ -1030,11 +1047,16 @@ def get_surface(filepath,label=1):
 
     labelmap = reader.GetOutput()
 
+    qform_transform = vtk.vtkTransform()
     qform_matrix = reader.GetQFormMatrix()
     if not qform_matrix:
-        LOGGER.error('The file ' + filepath + ' contains no QForm matrix')
-        raise Exception
-    qform_transform = vtk.vtkTransform()
+        sform_matrix = reader.GetSFormMatrix()
+        if not sform_matrix:
+            LOGGER.error('The file ' + filepath + ' contains no QForm or SForm matrix.')
+            raise Exception
+        else:
+            qform_matrix = sform_matrix
+            LOGGER.warning('The file ' + filepath + ' contains no QForm matrix. Using SForm matrix instead.')
     qform_transform.SetMatrix(qform_matrix)
 
     # Find surface of label map
@@ -1051,7 +1073,6 @@ def get_surface(filepath,label=1):
 
     # Convert surface points to Python list
     point_cloud = vtk_to_numpy(tpd.GetOutput().GetPoints().GetData()).tolist()
-
     surface = {
         'point_cloud': point_cloud,
         'labelmap': labelmap,
@@ -1128,7 +1149,7 @@ def get_min_distance(surface,points):
         return point_is_inside
 
     point_is_inside = point_is_inside(surface,points[0])
-    min_dist = distance.cdist(surface['point_cloud'], points, 'euclidean').min()*point_is_inside
+    min_dist = distance.cdist(surface['point_cloud'], points, 'euclidean').min()#*point_is_inside
     return min_dist
 
 

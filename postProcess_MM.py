@@ -11,10 +11,12 @@ import collections
 #import nipype.interfaces.slicer as slicer
 import nipype.interfaces.semtools.registration.brainsresample as brainsresample
 import pickle
+import datetime
 import util
 import sqlite3
 import nibabel as nib
 import numpy as np
+from scipy.spatial import distance
 import os
 
 
@@ -170,8 +172,8 @@ def process_labels(folder, pids_to_exclude=()):
     label_defs = util.get_label_defs_hammers_mith()
     res_lobes_brain = {}
 
-    surface_svz = util.get_surface(util.ATLAS_FOLDER_PATH + 'SubventricularZone.nii.gz')
-    surface_gd = util.get_suface(util.ATLAS_FOLDER_PATH + 'GyrusDentatus.nii.gz')
+    coordinates_svz = util.get_label_coordinates(util.ATLAS_FOLDER_PATH + 'SubventricularZone.nii.gz')
+    surface_dg = util.get_surface(util.ATLAS_FOLDER_PATH + 'DentateGyrus.nii.gz')
 
     book = Workbook()
     sheet = book.active
@@ -181,15 +183,14 @@ def process_labels(folder, pids_to_exclude=()):
     sheet.cell(row=1, column=3).value = 'Lobe, center of tumor'
     sheet.cell(row=1, column=4).value = 'Distance from SVZ to center of tumor (mm)'
     sheet.cell(row=1, column=5).value = 'Distance from SVZ to border of tumor (mm)'
-    sheet.cell(row=1, column=6).value = 'Distance from GD to center of tumor (mm)'
-    sheet.cell(row=1, column=7).value = 'Distance from GD to border of tumor (mm)'
+    sheet.cell(row=1, column=6).value = 'Distance from DG to center of tumor (mm)'
+    sheet.cell(row=1, column=7).value = 'Distance from DG to border of tumor (mm)'
     i = 7
     label_defs_to_column = {}
     for key in label_defs:
         i += 1
         sheet.cell(row=1, column=i).value = label_defs[key]
         label_defs_to_column[key] = i
-    # sheet.cell(row=1, column=3).value = 'Center of mass'
     k = 2
     for pid in cursor:
         pid = pid[0]
@@ -214,10 +215,10 @@ def process_labels(folder, pids_to_exclude=()):
 
         print(pid, com_idx)
 
-        dist_from_svz_to_com = util.get_min_distance(surface_svz, [com])
-        dist_from_svz_to_border = util.get_min_distance(surface_svz, surface['point_cloud'])
-        dist_from_gd_to_com = util.get_min_distance(surface_gd, [com])
-        dist_from_gd_to_border = util.get_min_distance(surface_gd, surface['point_cloud'])
+        dist_from_svz_to_com = distance.cdist(coordinates_svz, [com], 'euclidean').min()
+        dist_from_svz_to_border = distance.cdist(coordinates_svz, surface['point_cloud'], 'euclidean').min()
+        dist_from_dg_to_com = util.get_min_distance(surface_dg, [com])
+        dist_from_dg_to_border = util.get_min_distance(surface_dg, surface['point_cloud'])
 
         lobe = label_defs.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
         res_lobes_brain[pid] = lobe
@@ -243,8 +244,8 @@ def process_labels(folder, pids_to_exclude=()):
         sheet.cell(row=k, column=3).value = lobe
         sheet.cell(row=k, column=4).value = round(dist_from_svz_to_com,2)
         sheet.cell(row=k, column=5).value = round(dist_from_svz_to_border,2)
-        sheet.cell(row=k, column=6).value = round(dist_from_gd_to_com,2)
-        sheet.cell(row=k, column=7).value = round(dist_from_gd_to_border,2)
+        sheet.cell(row=k, column=6).value = round(dist_from_dg_to_com,2)
+        sheet.cell(row=k, column=7).value = round(dist_from_dg_to_border,2)
 
         k += 1
 
@@ -287,7 +288,7 @@ def validate(folder):
 
 
 if __name__ == "__main__":
-    folder = "RES_MM" + "{:%Y%m%d_%H%M}".format(datetime.datetime.now()) + "/"
+    folder = "RES_MM_" + "{:%Y%m%d_%H%M}".format(datetime.datetime.now()) + "/"
 
     pids_to_exclude = (122,148)
     process_labels(folder, pids_to_exclude)
