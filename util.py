@@ -299,7 +299,7 @@ def get_tumor_volume(image_ids):
     return image_ids_with_volume, volumes
 
 
-def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None, registration_date_upper_lim=None):
+def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None, registration_date_upper_lim=None, censor_date_str=None):
     """ Get image id and qol """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
@@ -333,8 +333,20 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
         _survival_days = conn.execute("SELECT survival_days from Patient where pid = ?",
                                       (pid, )).fetchone()[0]
         if _survival_days is None:
-            LOGGER.error("No survival_days data for PID = " + str(pid))
-            continue
+            _operation_date_str = conn.execute("SELECT op_date from Patient where pid = ?",
+                                                 (pid, )).fetchone()[0]
+            print(_operation_date_str)
+            print(censor_date_str)
+            if _operation_date_str and censor_date_str:
+                _operation_date = datetime.datetime.strptime(_operation_date_str[0:10],'%Y-%m-%d')
+                _censor_date = datetime.datetime.strptime(censor_date_str,'%Y-%m-%d')
+                _survival_days = (_censor_date-_operation_date).days
+                if _survival_days < 0:
+                    LOGGER.error("Operation date is after censor date for PID = " + str(pid))
+
+            else:
+                LOGGER.error("No survival_days or op_date/censor_date data for PID = " + str(pid))
+                continue
 
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
@@ -346,8 +358,8 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
             _reg_date_str = conn.execute('''SELECT registration_date from Images where id = ?''',
                                      (_id, )).fetchone()
             if _reg_date_str:
-                _reg_date = datetime.strptime(_reg_date_str,'%Y-%m-%d')
-                _date_upper_lim = datetime.strptime(registration_date_upper_lim,'%Y-%m-%d')
+                _reg_date = datetime.datetime.strptime(_reg_date_str,'%Y-%m-%d')
+                _date_upper_lim = datetime.datetime.strptime(registration_date_upper_lim,'%Y-%m-%d')
                 if _reg_date > _date_upper_lim:
                     LOGGER.info("Image with ID = " + str(_id) + "has a recent registration date and is excluded")
                     continue
@@ -506,9 +518,6 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-    path = path.replace('all', 'tumor')
-    path = path.replace('img', 'volum')
 
     (_sum, _total) = sum_calculation(images, label, val, save=save_sum)
     _total[_total == 0] = np.inf
@@ -526,15 +535,32 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     return average
 
 
+def mortality_rate_calculation(images, survival_days, save=False, folder=None,
+                    save_sum=False, default_value=0):
+    """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'mortality_rate.nii'
+
+    (_sum, _total) = sum_calculation(images, 'survival_days', survival_days, save=save_sum)
+    _sum[_sum == 0] = np.inf
+    mortality_rate = _total / _sum
+    mortality_rate[_sum == np.inf] = default_value
+
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(mortality_rate, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+    return mortality_rate
+
+
 def median_calculation(images, label, val=None, save=False, folder=None, default_value=0):
     """ Calculate median volumes """
     # pylint: disable= too-many-locals, invalid-name
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'median_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-    path = path.replace('all', 'tumor')
-    path = path.replace('img', 'volum')
 
     if not val:
         val = [1]*len(images)

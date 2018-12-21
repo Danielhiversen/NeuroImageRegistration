@@ -15,22 +15,18 @@ import numpy as np
 import os
 
 
-def process(folder):
+def process(folder, censor_date):
     """ Post process data """
     print(folder)
     util.setup(folder)
 
-    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time")
+    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time",censor_date_str=censor_date)
     result = util.post_calculations(image_ids)
     print(len(result['all']))
-    util.avg_calculation(result['all'], 'all_', None, True, folder, save_sum=True)
-    util.avg_calculation(result['img'], 'img_', None, True, folder)
+    util.avg_calculation(result['all'], 'tumor', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'volume', None, True, folder)
+    util.mortality_rate_calculation(result['all'], survival_days, True, folder, default_value=-1)
 
-    for label in result:
-        if label == 'img':
-            continue
-        util.avg_calculation(result[label], 'survival_time', survival_days, True, folder, default_value=-1)
-        util.median_calculation(result[label], 'survival_time', survival_days, True, folder, default_value=-1)
 
 def process_labels(folder, pids_to_exclude=None):
     """ Create Excel-document with overview of which brain areas are affected by the tumors"""
@@ -116,6 +112,7 @@ def process_labels(folder, pids_to_exclude=None):
     print(res_lobes_brain, len(res_lobes_brain))
 
 if __name__ == "__main__":
-    folder = "RES_survival_time_" + "{:%d%m%Y_%H%M}".format(datetime.datetime.now()) + "/"
+    folder = "RES_survival_time_" + "{:%Y%m%d_%H%M}".format(datetime.datetime.now()) + "/"
+    censor_date = "2018-10-31"
     process_labels(folder)
-    process(folder)
+    process(folder,censor_date)
