@@ -185,7 +185,8 @@ def process_labels(folder, pids_to_exclude=()):
     sheet.cell(row=1, column=5).value = 'Distance from SVZ to border of tumor (mm)'
     sheet.cell(row=1, column=6).value = 'Distance from DG to center of tumor (mm)'
     sheet.cell(row=1, column=7).value = 'Distance from DG to border of tumor (mm)'
-    i = 7
+    sheet.cell(row=1, column=8).value = 'Tumor volume (mm^3)'
+    i = 8
     label_defs_to_column = {}
     for key in label_defs:
         i += 1
@@ -223,7 +224,13 @@ def process_labels(folder, pids_to_exclude=()):
         lobe = label_defs.get(lobes_brain[com_idx[0], com_idx[1], com_idx[2]], 'other')
         res_lobes_brain[pid] = lobe
 
-        tumor_data = nib.load(util.DATA_FOLDER + _filepath).get_data()
+        img = nib.load(util.DATA_FOLDER + _filepath)
+        tumor_data = img.get_data()
+        voxel_size = img.get_zooms()
+        voxel_volume = np.prod(voxel_size[0:3])
+        n_voxels = (tumor_data > 0).sum()
+        tumor_volume = n_voxels*voxel_volume
+
         union_data = lobes_brain * tumor_data
         union_data = union_data.flatten()
         lobe_overlap = ''
@@ -246,6 +253,7 @@ def process_labels(folder, pids_to_exclude=()):
         sheet.cell(row=k, column=5).value = round(dist_from_svz_to_border,2)
         sheet.cell(row=k, column=6).value = round(dist_from_dg_to_com,2)
         sheet.cell(row=k, column=7).value = round(dist_from_dg_to_border,2)
+        sheet.cell(row=k, column=8).value = round(tumor_volume,1)
 
         k += 1
 
