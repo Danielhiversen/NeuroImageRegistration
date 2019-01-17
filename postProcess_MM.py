@@ -226,7 +226,7 @@ def process_labels(folder, pids_to_exclude=()):
 
         img = nib.load(util.DATA_FOLDER + _filepath)
         tumor_data = img.get_data()
-        voxel_size = img.get_zooms()
+        voxel_size = img.header.get_zooms()
         voxel_volume = np.prod(voxel_size[0:3])
         n_voxels = (tumor_data > 0).sum()
         tumor_volume = n_voxels*voxel_volume
