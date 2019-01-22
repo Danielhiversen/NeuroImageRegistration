@@ -849,13 +849,43 @@ def add_tumor_volume():
     conn.close()
 
 
+def add_resection_status(path):
+    """add resection status to database """
+
+    conn = sqlite3.connect(util.DB_PATH)
+
+    try:
+        conn.execute("alter table Patient add column 'resection' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+
+    # Add resection status
+    data = pyexcel_xlsx.get_data(path + "Biopsy cases.xlsx")
+    case_list = [int(pid[0]) for pid in data['Ark1'][2:]]
+
+    cursor = conn.execute("SELECT pid FROM Patient WHERE study_id LIKE '%GBM_survival_time%'")
+    for pid in cursor:
+        pid = pid[0]
+        if pid in case_list:
+            resection_status = 0
+        else:
+            resection_status = 1
+        conn.execute("UPDATE Patient SET resection = ? WHERE pid = ?",
+                    (resection_status, pid))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
 if __name__ == "__main__":
 #    util.setup_paths()
 
     temp_path = "reg_labels_temp/"
     util.setup(temp_path)
 
-    add_survival_in_days(MAIN_FOLDER + "Even_survival/")
+    add_resection_status(MAIN_FOLDER + "Even_survival/")
+#    add_survival_in_days(MAIN_FOLDER + "Even_survival/")
 #    add_study_survival(MAIN_FOLDER + "Even_survival/")
     
 #    update_segmentations(MAIN_FOLDER + "Even_survival/")
