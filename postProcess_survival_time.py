@@ -25,7 +25,14 @@ def process(folder, censor_date):
     print('Total: ' + str(len(result['all'])) + ' patients')
     util.avg_calculation(result['all'], 'tumor', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'volume', None, True, folder)
-    util.mortality_rate_calculation(result['all'], survival_days, True, folder, default_value=-1)
+    util.mortality_rate_calculation(result['all'], '', survival_days, True, folder, default_value=-1)
+
+    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time",censor_date_str=censor_date,resection=True)
+    result = util.post_calculations(image_ids)
+    print('Resected: ' + str(len(result['all'])) + ' patients')
+    util.avg_calculation(result['all'], 'tumor_resected', None, True, folder, save_sum=True)
+    util.avg_calculation(result['img'], 'volume_resected', None, True, folder)
+    util.mortality_rate_calculation(result['all'], '_resected', survival_days, True, folder, default_value=-1)
 
     survival_groups = [
         [0, 182],
@@ -37,7 +44,7 @@ def process(folder, censor_date):
         image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time",censor_date_str=censor_date,survival_group=group)
         result = util.post_calculations(image_ids)
         print('Group ' + str(group) + ': ' + str(len(result['all'])) + ' patients')
-        label = 'tumor' + str(group[0]) + '-' + str(group[1])
+        label = 'tumor_' + str(group[0]) + '-' + str(group[1])
         util.avg_calculation(result['all'], label, None, True, folder, save_sum=True)
 
 

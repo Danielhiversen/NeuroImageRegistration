@@ -298,7 +298,14 @@ def get_tumor_volume(image_ids):
     return image_ids_with_volume, volumes
 
 
-def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None, registration_date_upper_lim=None, censor_date_str=None, survival_group=None):
+def get_image_id_and_survival_days(
+        study_id=None,
+        exclude_pid=None,
+        glioma_grades=None,
+        registration_date_upper_lim=None,
+        censor_date_str=None,
+        survival_group=None,
+        resection=False):
     """ Get image id and qol
     :param study_id: string with ID of study to be included
     :param exclude_pid: list of patient IDs to be excluded
@@ -336,6 +343,15 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
                 LOGGER.error("No glioma_grade for PID = " + str(pid))
                 continue
             if _glioma_grade[0] not in glioma_grades:
+                continue
+
+        if resection:
+            _resection = conn.execute('''SELECT resection from Patient where pid = ?''',
+                                     (pid, )).fetchone()
+            if not _resection:
+                LOGGER.error("No resection status for PID = " + str(pid))
+                continue
+            if _resection[0] == 0:
                 continue
 
         _survival_days = conn.execute("SELECT survival_days from Patient where pid = ?",
@@ -547,12 +563,12 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     return average
 
 
-def mortality_rate_calculation(images, survival_days, save=False, folder=None,
+def mortality_rate_calculation(images, label, survival_days, save=False, folder=None,
                     save_sum=False, default_value=0):
     """ Calculate average volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
-    path = folder + 'mortality_rate.nii'
+    path = folder + 'mortality_rate' + label + '.nii'
 
     (_sum, _total) = sum_calculation(images, 'survival_days', survival_days, save=save_sum)
     _sum[_sum == 0] = np.inf
