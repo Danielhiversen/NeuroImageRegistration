@@ -351,13 +351,13 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
                 if _survival_days < 0:
                     LOGGER.error("Operation date is after censor date for PID = " + str(pid))
                 else:
-                    print('PID ' + pid + ' is still alive. Survival at censor date: ' + _survival_days)
+                    print('PID ' + str(pid) + ' is still alive. Survival at censor date: ' + str(_survival_days))
 
             else:
                 LOGGER.error("No survival_days or op_date/censor_date data for PID = " + str(pid))
                 continue
 
-        if survival_group and not survival_group(0)<= _survival_days <= survival_group(1):
+        if survival_group and not survival_group[0] <= _survival_days <= survival_group[1]:
             continue
 
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()

@@ -30,7 +30,7 @@ def process(folder, censor_date):
     survival_groups = [
         [0, 182],
         [183, 730],
-        [731-float('Inf')]
+        [731, float('Inf')]
         ]
 
     for group in survival_groups:
@@ -127,6 +127,6 @@ def process_labels(folder, pids_to_exclude=None):
 
 if __name__ == "__main__":
     folder = "RES_survival_time_" + "{:%Y%m%d_%H%M}".format(datetime.datetime.now()) + "/"
-    censor_date = "2018-10-31"
+    censor_date = "2018-12-31"
     process_labels(folder)
     process(folder,censor_date)
