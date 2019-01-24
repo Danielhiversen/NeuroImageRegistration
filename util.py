@@ -23,7 +23,6 @@ from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
-print(np.version.version)
 from scipy import ndimage
 from scipy import stats
 from scipy.spatial import distance
@@ -299,8 +298,17 @@ def get_tumor_volume(image_ids):
     return image_ids_with_volume, volumes
 
 
-def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None, registration_date_upper_lim=None, censor_date_str=None):
-    """ Get image id and qol """
+def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None, registration_date_upper_lim=None, censor_date_str=None, survival_group=None):
+    """ Get image id and qol
+    :param study_id: string with ID of study to be included
+    :param exclude_pid: list of patient IDs to be excluded
+    :param glioma_grades: list of glioma grades to be included
+    :param registration_date_upper_lim: string with date limiting how new registrations should be included
+    :param censor_date_str: string with censor date used for patients that are still alive
+    :param survival_group: list of survival groups, each group given by a list with two elements representing the lower and upper limits in days
+    :return: image_id: image IDs for all included patients
+    :return: survival_days: survival days up until censor date for all included patients
+    """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from Patient''')
@@ -335,18 +343,22 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
         if _survival_days is None:
             _operation_date_str = conn.execute("SELECT op_date from Patient where pid = ?",
                                                  (pid, )).fetchone()[0]
-            print(_operation_date_str)
-            print(censor_date_str)
+
             if _operation_date_str and censor_date_str:
                 _operation_date = datetime.datetime.strptime(_operation_date_str[0:10],'%Y-%m-%d')
                 _censor_date = datetime.datetime.strptime(censor_date_str,'%Y-%m-%d')
                 _survival_days = (_censor_date-_operation_date).days
                 if _survival_days < 0:
                     LOGGER.error("Operation date is after censor date for PID = " + str(pid))
+                else:
+                    print('PID ' + pid + ' is still alive. Survival at censor date: ' + _survival_days)
 
             else:
                 LOGGER.error("No survival_days or op_date/censor_date data for PID = " + str(pid))
                 continue
+
+        if survival_group and not survival_group(0)<= _survival_days <= survival_group(1):
+            continue
 
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
         if not _id:
