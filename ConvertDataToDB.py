@@ -860,7 +860,7 @@ def add_resection_status(path):
         pass
 
     # Add resection status
-    data = pyexcel_xlsx.get_data(path + "Biopsy cases.xlsx")
+    data = pyexcel_xlsx.get_data(path + "Biopsy_cases.xlsx")
     case_list = [int(pid[0]) for pid in data['Ark1'][2:]]
 
     cursor = conn.execute("SELECT pid FROM Patient WHERE study_id LIKE '%GBM_survival_time%'")
