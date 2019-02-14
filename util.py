@@ -72,7 +72,7 @@ def setup(temp_path, data="glioma"):
     TEMP_FOLDER_PATH = temp_path
     mkdir_p(TEMP_FOLDER_PATH)
     setup_paths(data)
-    prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
+    #prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
 
 def setup_paths(data="glioma"):
@@ -94,6 +94,9 @@ def setup_paths(data="glioma"):
         os.environ["PATH"] += os.pathsep + '/home/leb/dev/ANTs/antsbin/bin'
         ATLAS_FOLDER_PATH = '/home/leb/data/Atlas/'
         BRAINSResample_PATH = '/home/leb/dev/BRAINSTools/build/bin/BRAINSResample'
+    elif hostname == 'SINTEF-0ZQHTDG':
+        os.environ["PATH"] += os.pathsep + '/Users/leb/dev/ANTs/antsbin/bin'
+        ATLAS_FOLDER_PATH = '/Users/leb/OneDrive - SINTEF/Prosjekter/Nevro/Brain atlas/Atlases'
     elif 'unity' in hostname or 'compute' in hostname:
         os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/' + os.pathsep + '/home/danieli/antsbin/bin/'
     else:
@@ -110,6 +113,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = "/media/leb/data/database/"
         elif hostname == 'medtech-beast':
             DATA_FOLDER = "/home/leb/data/database/"
+        elif hostname == 'SINTEF-0ZQHTDG':
+            DATA_FOLDER = "/Volumes/Neuro/Segmentations/database/"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/neuro_data/database/'
         else:
@@ -125,6 +130,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = "/media/leb/data/database_MM/"
         elif hostname == 'medtech-beast':
             DATA_FOLDER = "/home/leb/data/database_MM/"
+        elif hostname == 'SINTEF-0ZQHTDG':
+            DATA_FOLDER = "/Volumes/Neuro/Segmentations/database_MM"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/database_MM/'
         else:

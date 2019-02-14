@@ -30,6 +30,7 @@ class img_data(object):
         self._img_filepath = None
         self._reg_img_filepath = None
         self._label_filepath = None
+        self._reg_label_filepath = None
         self._label_inv_filepath = None
         self._reg_brainmask_filepath = None
 
@@ -98,6 +99,21 @@ class img_data(object):
         conn.close()
 
         return self._label_filepath
+
+    @property
+    def reg_label_filepath(self):
+        if self._reg_label_filepath is not None:
+            return self._reg_label_filepath
+
+        conn = sqlite3.connect(self.db_path)
+        conn.text_factory = str
+        cursor = conn.execute('''SELECT filepath_reg from Labels where image_id = ? ''',
+                              (self.image_id,))
+        self._reg_label_filepath = self.data_path + cursor.fetchone()[0]
+        cursor.close()
+        conn.close()
+
+        return self._reg_label_filepath
 
     @property
     def label_inv_filepath(self):
