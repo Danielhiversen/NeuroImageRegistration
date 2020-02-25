@@ -72,7 +72,7 @@ def setup(temp_path, data="glioma"):
     TEMP_FOLDER_PATH = temp_path
     mkdir_p(TEMP_FOLDER_PATH)
     setup_paths(data)
-    #prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
+    prepare_template(TEMPLATE_VOLUME, TEMPLATE_MASK)
 
 
 def setup_paths(data="glioma"):
@@ -571,7 +571,7 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
 
 
 def mortality_rate_calculation(images, label, survival_days, save=False, folder=None,
-                    save_sum=False, default_value=0):
+                    save_sum=False, default_value=0, max_value=None, per_year=False):
     """ Calculate average volumes """
     if not folder:
         folder = TEMP_FOLDER_PATH
@@ -581,12 +581,42 @@ def mortality_rate_calculation(images, label, survival_days, save=False, folder=
     _sum[_sum == 0] = np.inf
     mortality_rate = _total / _sum
     mortality_rate[_sum == np.inf] = default_value
+    if per_year:
+        mortality_rate[mortality_rate>default_value] *= 36525 # Ganger med hundre for å få større verdier
+
+    mortality_rate_pos = mortality_rate[mortality_rate>default_value]
+
+    percentiles = np.zeros(3)
+    percentiles[0] = np.percentile(mortality_rate_pos,25)
+    percentiles[1] = np.percentile(mortality_rate_pos,50)
+    percentiles[2] = np.percentile(mortality_rate_pos,75)
+
+    if max_value:
+        mortality_rate[mortality_rate>max_value] = max_value
+
+    img = nib.load(TEMPLATE_MASK)
+    mask = img.get_data()
+    mortality_rate[mask==0] = default_value
 
     if save:
         img = nib.load(images[0])
         result_img = nib.Nifti1Image(mortality_rate, img.affine)
         result_img.to_filename(path)
         generate_image(path, TEMPLATE_VOLUME)
+
+        percentiles_file = open(path[:-4]+'_percentiles.txt','w')
+        percentiles_file.write(np.array2string(percentiles, precision=2, separator=', '))
+        percentiles_file.close()
+
+        # nifti_reader = vtk.vtkNIFTIImageReader()
+        # nifti_reader.SetFileName(path)
+        # nifti_reader.Update()
+        # vtk_image = nifti_reader.GetOutput()
+        # mhd_writer = vtk.vtkMetaImageWriter()
+        # mhd_writer.SetInputData(vtk_image)
+        # mhd_writer.SetFileName(path[:-3]+'mhd')
+        # mhd_writer.Write()
+
     return mortality_rate
 
 
@@ -1075,7 +1105,7 @@ def get_label_coordinates(filepath,label=None):
     return label_coordinates
 
 
-def get_surface(filepath,label=1):
+def get_surface(filepath,labelRange=[1,1]):
     reader = vtk.vtkNIFTIImageReader()
     reader.SetFileName(filepath)
     reader.Update()
@@ -1097,7 +1127,7 @@ def get_surface(filepath,label=1):
     # Find surface of label map
     dmc = vtk.vtkDiscreteMarchingCubes()
     dmc.SetInputConnection(reader.GetOutputPort())
-    dmc.GenerateValues(1, label, label)
+    dmc.GenerateValues(1, labelRange)
     dmc.Update()
 
     # Transform surface to patient coordinates

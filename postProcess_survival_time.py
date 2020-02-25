@@ -24,15 +24,15 @@ def process(folder, censor_date):
     result = util.post_calculations(image_ids)
     print('Total: ' + str(len(result['all'])) + ' patients')
     util.avg_calculation(result['all'], 'tumor', None, True, folder, save_sum=True)
+    util.mortality_rate_calculation(result['all'], '_all_year', survival_days, True, folder, default_value=-1, max_value=150, per_year=True)
     util.avg_calculation(result['img'], 'volume', None, True, folder)
-    util.mortality_rate_calculation(result['all'], '', survival_days, True, folder, default_value=-1)
 
     image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time",censor_date_str=censor_date,resection=True)
     result = util.post_calculations(image_ids)
     print('Resected: ' + str(len(result['all'])) + ' patients')
     util.avg_calculation(result['all'], 'tumor_resected', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'volume_resected', None, True, folder)
-    util.mortality_rate_calculation(result['all'], '_resected', survival_days, True, folder, default_value=-1)
+    util.mortality_rate_calculation(result['all'], '_resected_year', survival_days, True, folder, default_value=-1, max_value=150, per_year=True)
 
     survival_groups = [
         [0, 182],

@@ -38,12 +38,15 @@ class img_data(object):
     def img_filepath(self):
         if self._img_filepath is not None:
             return self._img_filepath
+        print(self.db_path)
         conn = sqlite3.connect(self.db_path)
+        print(conn)
+        print(self.image_id)
         conn.text_factory = str
         cursor = conn.execute('''SELECT filepath from Images where id = ? ''', (self.image_id,))
         path = cursor.fetchone()
         if path is None:
-            print("Could not find data for " + str(self.image_id))
+            print("Could not find image data for " + str(self.image_id))
             self._img_filepath = ""
         else:
             self._img_filepath = self.data_path + path[0]
@@ -61,7 +64,7 @@ class img_data(object):
         cursor = conn.execute('''SELECT filepath_reg from Images where id = ? ''', (self.image_id,))
         path = cursor.fetchone()
         if path is None:
-            print("Could not find data for " + str(self.image_id))
+            print("Could not find registration data for " + str(self.image_id))
             self._reg_img_filepath = ""
         else:
             self._reg_img_filepath = self.data_path + path[0]
@@ -156,6 +159,8 @@ class img_data(object):
 
     @property
     def db_path(self):
+        print('DATA PATH:')
+        print(self.data_path)
         return self.data_path + "brainSegmentation.db"
 
     def set_img_filepath(self, filepath):

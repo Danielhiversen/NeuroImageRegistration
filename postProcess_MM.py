@@ -172,7 +172,7 @@ def process_labels(folder, pids_to_exclude=()):
     label_defs = util.get_label_defs_hammers_mith()
     res_lobes_brain = {}
 
-    coordinates_svz = util.get_label_coordinates(util.ATLAS_FOLDER_PATH + 'SubventricularZone.nii.gz')
+    coordinates_svz = util.get_label_coordinates(util.ATLAS_FOLDER_PATH + 'SubventricularZone2.nii.gz')
     surface_dg = util.get_surface(util.ATLAS_FOLDER_PATH + 'DentateGyrus.nii.gz')
 
     book = Workbook()
@@ -298,7 +298,7 @@ def validate(folder):
 if __name__ == "__main__":
     folder = "RES_MM_" + "{:%Y%m%d_%H%M}".format(datetime.datetime.now()) + "/"
 
-    pids_to_exclude = (122,148)
+    pids_to_exclude = (122,148,142)
     process_labels(folder, pids_to_exclude)
     process(folder, pids_to_exclude)
     # validate(folder)
