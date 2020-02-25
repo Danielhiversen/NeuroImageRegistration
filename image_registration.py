@@ -217,20 +217,25 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
             util.LOGGER.info("Finished bet registration 0: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
             name += "_be"
+            print('OR HERE 3??????')
             moving_image = util.TEMPLATE_MASKED_VOLUME
+            print(moving_image)
             fixed_image = bet.inputs.out_file
         else:
             name = util.get_basename(resampled_file) + "_be"
             moving_image = util.TEMPLATE_VOLUME
             fixed_image = resampled_file
-
         img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
         img.pre_processed_filepath = path + name + '.nii.gz'
+        print('DO I GET HERE??????')
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = fixed_image
+        print('OR HERE 1??????')
+        print(moving_image)
         reg.inputs.moving_image = moving_image
+        print('OR HERE 2??????')
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
         reg.inputs.num_threads = NUM_THREADS_ANTS
@@ -262,7 +267,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
         reg.inputs.output_warped_image = path + name + '_TemplateReg.nii.gz'
-
+        print('FINISHED SETTING UP ALL reg.inputs')
         transform = path + name + 'InverseComposite.h5'
         util.LOGGER.info("starting be registration")
         util.LOGGER.info(reg.cmdline)
@@ -446,7 +451,6 @@ def process_dataset(args):
             img = pre_process(img, reg_type=reg_type_be, be_method=be_method)
             util.LOGGER.info("-- Run time preprocess: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
-
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
             break
         # pylint: disable= broad-except

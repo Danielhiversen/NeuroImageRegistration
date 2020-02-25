@@ -23,9 +23,11 @@ from nilearn import datasets
 import nipype.interfaces.ants as ants
 import nibabel as nib
 import numpy as np
-print(np.version.version)
 from scipy import ndimage
 from scipy import stats
+from scipy.spatial import distance
+import vtk
+from vtk.util.numpy_support import vtk_to_numpy
 import matplotlib
 matplotlib.use('Agg')
 # pylint: disable= wrong-import-position, too-many-lines
@@ -92,6 +94,9 @@ def setup_paths(data="glioma"):
         os.environ["PATH"] += os.pathsep + '/home/leb/dev/ANTs/antsbin/bin'
         ATLAS_FOLDER_PATH = '/home/leb/data/Atlas/'
         BRAINSResample_PATH = '/home/leb/dev/BRAINSTools/build/bin/BRAINSResample'
+    elif hostname == 'SINTEF-0ZQHTDG':
+        os.environ["PATH"] += os.pathsep + '/Users/leb/dev/ANTs/antsbin/bin'
+        ATLAS_FOLDER_PATH = '/Users/leb/OneDrive - SINTEF/Prosjekter/Nevro/Brain atlas/Atlases'
     elif 'unity' in hostname or 'compute' in hostname:
         os.environ["PATH"] += os.pathsep + '/home/danieli/antsbin/bin/' + os.pathsep + '/home/danieli/antsbin/bin/'
     else:
@@ -108,6 +113,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = "/media/leb/data/database/"
         elif hostname == 'medtech-beast':
             DATA_FOLDER = "/home/leb/data/database/"
+        elif hostname == 'SINTEF-0ZQHTDG':
+            DATA_FOLDER = "/Volumes/Neuro/Segmentations/database/"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/neuro_data/database/'
         else:
@@ -123,6 +130,8 @@ def setup_paths(data="glioma"):
             DATA_FOLDER = "/media/leb/data/database_MM/"
         elif hostname == 'medtech-beast':
             DATA_FOLDER = "/home/leb/data/database_MM/"
+        elif hostname == 'SINTEF-0ZQHTDG':
+            DATA_FOLDER = "/Volumes/Neuro/Segmentations/database_MM"
         elif 'unity' in hostname or 'compute' in hostname:
             DATA_FOLDER = '/work/danieli/database_MM/'
         else:
@@ -296,8 +305,24 @@ def get_tumor_volume(image_ids):
     return image_ids_with_volume, volumes
 
 
-def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grades=None, registration_date_upper_lim=None):
-    """ Get image id and qol """
+def get_image_id_and_survival_days(
+        study_id=None,
+        exclude_pid=None,
+        glioma_grades=None,
+        registration_date_upper_lim=None,
+        censor_date_str=None,
+        survival_group=None,
+        resection=False):
+    """ Get image id and qol
+    :param study_id: string with ID of study to be included
+    :param exclude_pid: list of patient IDs to be excluded
+    :param glioma_grades: list of glioma grades to be included
+    :param registration_date_upper_lim: string with date limiting how new registrations should be included
+    :param censor_date_str: string with censor date used for patients that are still alive
+    :param survival_group: list of survival groups, each group given by a list with two elements representing the lower and upper limits in days
+    :return: image_id: image IDs for all included patients
+    :return: survival_days: survival days up until censor date for all included patients
+    """
     conn = sqlite3.connect(DB_PATH, timeout=120)
     conn.text_factory = str
     cursor = conn.execute('''SELECT pid from Patient''')
@@ -327,10 +352,35 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
             if _glioma_grade[0] not in glioma_grades:
                 continue
 
+        if resection:
+            _resection = conn.execute('''SELECT resection from Patient where pid = ?''',
+                                     (pid, )).fetchone()
+            if not _resection:
+                LOGGER.error("No resection status for PID = " + str(pid))
+                continue
+            if _resection[0] == 0:
+                continue
+
         _survival_days = conn.execute("SELECT survival_days from Patient where pid = ?",
                                       (pid, )).fetchone()[0]
         if _survival_days is None:
-            LOGGER.error("No survival_days data for PID = " + str(pid))
+            _operation_date_str = conn.execute("SELECT op_date from Patient where pid = ?",
+                                                 (pid, )).fetchone()[0]
+
+            if _operation_date_str and censor_date_str:
+                _operation_date = datetime.datetime.strptime(_operation_date_str[0:10],'%Y-%m-%d')
+                _censor_date = datetime.datetime.strptime(censor_date_str,'%Y-%m-%d')
+                _survival_days = (_censor_date-_operation_date).days
+                if _survival_days < 0:
+                    LOGGER.error("Operation date is after censor date for PID = " + str(pid))
+                else:
+                    print('PID ' + str(pid) + ' is still alive. Survival at censor date: ' + str(_survival_days))
+
+            else:
+                LOGGER.error("No survival_days or op_date/censor_date data for PID = " + str(pid))
+                continue
+
+        if survival_group and not survival_group[0] <= _survival_days <= survival_group[1]:
             continue
 
         _id = conn.execute('''SELECT id from Images where pid = ?''', (pid, )).fetchone()
@@ -343,8 +393,8 @@ def get_image_id_and_survival_days(study_id=None, exclude_pid=None, glioma_grade
             _reg_date_str = conn.execute('''SELECT registration_date from Images where id = ?''',
                                      (_id, )).fetchone()
             if _reg_date_str:
-                _reg_date = datetime.strptime(_reg_date_str,'%Y-%m-%d')
-                _date_upper_lim = datetime.strptime(registration_date_upper_lim,'%Y-%m-%d')
+                _reg_date = datetime.datetime.strptime(_reg_date_str,'%Y-%m-%d')
+                _date_upper_lim = datetime.datetime.strptime(registration_date_upper_lim,'%Y-%m-%d')
                 if _reg_date > _date_upper_lim:
                     LOGGER.info("Image with ID = " + str(_id) + "has a recent registration date and is excluded")
                     continue
@@ -503,9 +553,6 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'avg_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-    path = path.replace('all', 'tumor')
-    path = path.replace('img', 'volum')
 
     (_sum, _total) = sum_calculation(images, label, val, save=save_sum)
     _total[_total == 0] = np.inf
@@ -523,15 +570,62 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     return average
 
 
+def mortality_rate_calculation(images, label, survival_days, save=False, folder=None,
+                    save_sum=False, default_value=0, max_value=None, per_year=False):
+    """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+    path = folder + 'mortality_rate' + label + '.nii'
+
+    (_sum, _total) = sum_calculation(images, 'survival_days', survival_days, save=save_sum)
+    _sum[_sum == 0] = np.inf
+    mortality_rate = _total / _sum
+    mortality_rate[_sum == np.inf] = default_value
+    if per_year:
+        mortality_rate[mortality_rate>default_value] *= 36525 # Ganger med hundre for å få større verdier
+
+    mortality_rate_pos = mortality_rate[mortality_rate>default_value]
+
+    percentiles = np.zeros(3)
+    percentiles[0] = np.percentile(mortality_rate_pos,25)
+    percentiles[1] = np.percentile(mortality_rate_pos,50)
+    percentiles[2] = np.percentile(mortality_rate_pos,75)
+
+    if max_value:
+        mortality_rate[mortality_rate>max_value] = max_value
+
+    img = nib.load(TEMPLATE_MASK)
+    mask = img.get_data()
+    mortality_rate[mask==0] = default_value
+
+    if save:
+        img = nib.load(images[0])
+        result_img = nib.Nifti1Image(mortality_rate, img.affine)
+        result_img.to_filename(path)
+        generate_image(path, TEMPLATE_VOLUME)
+
+        percentiles_file = open(path[:-4]+'_percentiles.txt','w')
+        percentiles_file.write(np.array2string(percentiles, precision=2, separator=', '))
+        percentiles_file.close()
+
+        # nifti_reader = vtk.vtkNIFTIImageReader()
+        # nifti_reader.SetFileName(path)
+        # nifti_reader.Update()
+        # vtk_image = nifti_reader.GetOutput()
+        # mhd_writer = vtk.vtkMetaImageWriter()
+        # mhd_writer.SetInputData(vtk_image)
+        # mhd_writer.SetFileName(path[:-3]+'mhd')
+        # mhd_writer.Write()
+
+    return mortality_rate
+
+
 def median_calculation(images, label, val=None, save=False, folder=None, default_value=0):
     """ Calculate median volumes """
     # pylint: disable= too-many-locals, invalid-name
     if not folder:
         folder = TEMP_FOLDER_PATH
     path = folder + 'median_' + label + '.nii'
-    path = path.replace('label', 'tumor')
-    path = path.replace('all', 'tumor')
-    path = path.replace('img', 'volum')
 
     if not val:
         val = [1]*len(images)
@@ -964,12 +1058,164 @@ def get_center_of_mass(filepath,label=None):
     com = ndimage.measurements.center_of_mass(data)
     com_idx = [int(_com) for _com in com]
 
-    qform = img.header.get_qform()
     spacing = img.header.get_zooms()
+    qform = img.header.get_qform(coded=True)
+    if not qform[1]:
+        sform = img.header.get_sform(coded=True)
+        if not sform[1]:
+            LOGGER.error('The file ' + filepath + ' contains no QForm or SForm matrix.')
+            raise Exception
+        else:
+            qform = sform
+            LOGGER.warning('The file ' + filepath + ' contains no QForm matrix. Using SForm matrix instead.')
+    trans = [qform[0][0, 3], qform[0][1, 3], qform[0][2, 3]]
+
     res = [c*s for (c, s) in zip(com, spacing)]
-    trans = [qform[0, 3], qform[1, 3], qform[2, 3]]
     com = [r+t for (r, t) in zip(res, trans)]
     return com, com_idx
+
+def get_label_coordinates(filepath,label=None):
+    img = nib.load(filepath)
+    if label:
+        data = img.get_data() == label
+    else:
+        data = img.get_data()
+    dims = data.shape
+    spacing = img.header.get_zooms()
+    qform = img.header.get_qform(coded=True)
+    if not qform[1]:
+        sform = img.header.get_sform(coded=True)
+        if not sform[1]:
+            LOGGER.error('The file ' + filepath + ' contains no QForm or SForm matrix.')
+            raise Exception
+        else:
+            qform = sform
+            LOGGER.warning('The file ' + filepath + ' contains no QForm matrix. Using SForm matrix instead.')
+    trans = [qform[0][0, 3], qform[0][1, 3], qform[0][2, 3]]
+
+    label_coordinates = []
+    for i in range(dims[0]):
+        for j in range(dims[1]):
+            for k in range(dims[2]):
+                if data[i,j,k]:
+                    idx = [i, j, k]
+                    res = [c*s for (c, s) in zip(idx, spacing)]
+                    coordinates = [r+t for (r, t) in zip(res, trans)]
+                    label_coordinates.append(coordinates)
+    return label_coordinates
+
+
+def get_surface(filepath,labelRange=[1,1]):
+    reader = vtk.vtkNIFTIImageReader()
+    reader.SetFileName(filepath)
+    reader.Update()
+
+    labelmap = reader.GetOutput()
+
+    qform_transform = vtk.vtkTransform()
+    qform_matrix = reader.GetQFormMatrix()
+    if not qform_matrix:
+        sform_matrix = reader.GetSFormMatrix()
+        if not sform_matrix:
+            LOGGER.error('The file ' + filepath + ' contains no QForm or SForm matrix.')
+            raise Exception
+        else:
+            qform_matrix = sform_matrix
+            LOGGER.warning('The file ' + filepath + ' contains no QForm matrix. Using SForm matrix instead.')
+    qform_transform.SetMatrix(qform_matrix)
+
+    # Find surface of label map
+    dmc = vtk.vtkDiscreteMarchingCubes()
+    dmc.SetInputConnection(reader.GetOutputPort())
+    dmc.GenerateValues(1, labelRange)
+    dmc.Update()
+
+    # Transform surface to patient coordinates
+    tpd = vtk.vtkTransformPolyDataFilter()
+    tpd.SetTransform(qform_transform)
+    tpd.SetInputConnection(dmc.GetOutputPort())
+    tpd.Update()
+
+    # Convert surface points to Python list
+    point_cloud = vtk_to_numpy(tpd.GetOutput().GetPoints().GetData()).tolist()
+    surface = {
+        'point_cloud': point_cloud,
+        'labelmap': labelmap,
+        'qform_transform': qform_transform
+    }
+
+    return surface
+
+
+def get_min_distance(surface,points):
+    """
+    Find minimum distance between a single point/point cloud and a surface.
+
+    Parameters
+    ----------
+    surface : dict
+        Dictionary containing a labelmap, a point_cloud and a transform
+        as produced by get_surface()
+    points : nested list
+        Coordinates of points as a nested list.
+
+    Returns
+    -------
+    min_dist : double
+        Minimum distance in millimeter. If the number is negative, the points
+        are inside the surface.
+        NB! If there are multiple points and the distances are very small,
+            it is likely that there are points both inside and outside surface.
+
+    """
+    def point_is_inside(surface,point):
+        """
+        Check if a point is inside or outside of a surface.
+
+        Parameters
+        ----------
+        surface : dict
+            Dictionary containing a labelmap, a point_cloud and a transform
+            as produced by get_surface()
+        point : [x,y,z]
+            Coordinates of point that will be checked.
+
+        Returns
+        -------
+        point_is_inside : {1,-1}
+             1 if point is outside of surface.
+            -1 if point is inside of surface.
+
+        """
+
+        if len(point) is not 3:
+            LOGGER.error('Point does not have exactly three coordinates')
+            raise Exception
+
+        points = vtk.vtkPoints()
+        points.InsertNextPoint(point)
+        pointsPolydata = vtk.vtkPolyData()
+        pointsPolydata.SetPoints(points)
+
+        # Transform points to image coordinates
+        tpd_inverse = vtk.vtkTransformPolyDataFilter()
+        tpd_inverse.SetTransform(surface['qform_transform'].GetInverse())
+        tpd_inverse.SetInputData(pointsPolydata)
+        tpd_inverse.Update()
+
+        # Get scalar values
+        pf = vtk.vtkProbeFilter()
+        pf.SetSourceData(surface['labelmap'])
+        pf.SetInputConnection(tpd_inverse.GetOutputPort())
+        pf.Update()
+        label_at_point = vtk_to_numpy(pf.GetOutput().GetPointData().GetScalars()).tolist()
+        point_is_inside = 1 - 2*(label_at_point[0] > 0)
+
+        return point_is_inside
+
+    point_is_inside = point_is_inside(surface,points[0])
+    min_dist = distance.cdist(surface['point_cloud'], points, 'euclidean').min()#*point_is_inside
+    return min_dist
 
 
 def write_fcsv(name_out, folder_out, tag_data, color, glyph_type):
