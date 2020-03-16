@@ -1,12 +1,14 @@
 library(oro.nifti)
 library(fslr)
 library(foreach)
+library(abind)
 #library(doMC)
 #registerDoMC(cores=30)
 library(doParallel)
-registerDoParallel(cores=30)
+registerDoParallel(cores=4)
 
-path_name <- ''
+#path_name <- ''
+path_name <- '/Users/leb/OneDrive - SINTEF/Prosjekter/Nevro/Brain atlas/Data/RES_survival_time_20191018_1156/'
 low_survival_file_name <- 'total_tumor_0-182.nii'
 medium_survival_file_name <- 'total_tumor_183-730.nii'
 high_survival_file_name <- 'total_tumor_183-730.nii'
@@ -34,18 +36,38 @@ p_values <- array(0,dim=img_dim)
 # i <- 137
 # j <- 84
 # k <- 93
-for(i in 1:img_dim[1]){
-    print(paste('Processing array',i, '/', img_dim[1]))
-    t = system.time({     
-        m <-
-            foreach(j = 1:img_dim[2], .combine='rbind') %:% 
-                foreach(k = 1:img_dim[3], .combine='c') %dopar% {      
-                    p_values[i,j,k] = medium_survival_img[i,j,k]
+print(paste('Processing array',i, '/', img_dim[1]))
+acomb <- function(...) abind(..., along=3)
+t = system.time({
+p_values <-
+        foreach(k = 1:img_dim[3], .combine='acomb', .multicombine=TRUE) %:% 
+            foreach(j = 1:img_dim[2], .combine='cbind') %dopar% {
+                if (j == 1) print(paste('Processing array',k, '/', img_dim[3]))
+                temp = c(0,img_dim[1])
+                for(i in 1:img_dim[1]){ 
+                    if(valid_voxels[i,j,k]){
+                        t <- c(
+                            low_survival_img[i,j,k],#4
+                            medium_survival_img[i,j,k],#7
+                            high_survival_img[i,j,k],#7
+                            low_survival_n - low_survival_img[i,j,k],
+                            medium_survival_n - medium_survival_img[i,j,k],
+                            high_survival_n - high_survival_img[i,j,k]
+                        )
+                        rownames <- c('Tumor', 'No tumor')
+                        colnames <- c('Low', 'Medium', 'High')
+                        cont_table <- matrix( t, nrow=2, byrow=TRUE, dimnames = list(rownames,colnames) )
 
-            }
-    })
-    print(t[3])
-}
+                        res <- fisher.test(cont_table)
+                        temp[i] <- res$p.value
+                    }
+                }
+                p-values <- temp
+        }
+})
+print(dim(p_values))
+print(t[3])
+
 # for(i in 1:img_dim[1]){
 #     print(paste('Processing array',i, '/', img_dim[1]))
 #     t = system.time({     
