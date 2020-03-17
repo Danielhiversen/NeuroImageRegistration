@@ -39,11 +39,11 @@ p_values <- array(0,dim=img_dim)
 print(paste('Processing array',i, '/', img_dim[1]))
 acomb <- function(...) abind(..., along=3)
 t = system.time({
-p_values <-
+    p_values <-
         foreach(k = 1:img_dim[3], .combine='acomb', .multicombine=TRUE) %:% 
             foreach(j = 1:img_dim[2], .combine='cbind') %dopar% {
                 if (j == 1) print(paste('Processing array',k, '/', img_dim[3]))
-                temp = c(0,img_dim[1])
+                temp = rep(0,img_dim[1])
                 for(i in 1:img_dim[1]){ 
                     if(valid_voxels[i,j,k]){
                         t <- c(
@@ -54,18 +54,26 @@ p_values <-
                             medium_survival_n - medium_survival_img[i,j,k],
                             high_survival_n - high_survival_img[i,j,k]
                         )
-                        rownames <- c('Tumor', 'No tumor')
-                        colnames <- c('Low', 'Medium', 'High')
-                        cont_table <- matrix( t, nrow=2, byrow=TRUE, dimnames = list(rownames,colnames) )
+                        cont_table <- matrix( t, nrow=2, byrow=TRUE )
+
+                        ## Long version (~17% slower)
+                        #rownames <- c('Tumor', 'No tumor')
+                        #colnames <- c('Low', 'Medium', 'High')
+                        #cont_table <- matrix( t, nrow=2, byrow=TRUE, dimnames = list(rownames,colnames) )
 
                         res <- fisher.test(cont_table)
                         temp[i] <- res$p.value
                     }
                 }
-                p-values <- temp
-        }
+                a<-temp
+
+                # temp = c(0,img_dim[1])
+                # for(i in 1:img_dim[1]){ 
+                #     temp[i] = medium_survival_img[i,j,k]
+                # }
+                # a <- temp
+            }
 })
-print(dim(p_values))
 print(t[3])
 
 # for(i in 1:img_dim[1]){
