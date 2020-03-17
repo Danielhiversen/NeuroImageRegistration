@@ -5,10 +5,20 @@ library(abind)
 #library(doMC)
 #registerDoMC(cores=30)
 library(doParallel)
-registerDoParallel(cores=4)
 
-#path_name <- ''
-path_name <- '/Users/leb/OneDrive - SINTEF/Prosjekter/Nevro/Brain atlas/Data/RES_survival_time_20191018_1156/'
+host <- Sys.info()["nodename"]
+if (host == 'SINTEF-0ZQHTDG'){
+    n_cores = 4
+    path_name <- '/Users/leb/OneDrive - SINTEF/Prosjekter/Nevro/Brain atlas/Data/RES_survival_time_20191018_1156/'
+}
+else if (host == 'medtech-beast') {
+    n_cores = 30
+    path_name <- ''
+}
+else
+
+registerDoParallel(cores=n_cores)
+
 low_survival_file_name <- 'total_tumor_0-182.nii'
 medium_survival_file_name <- 'total_tumor_183-730.nii'
 high_survival_file_name <- 'total_tumor_183-730.nii'
@@ -76,37 +86,5 @@ t = system.time({
 })
 print(t[3])
 
-# for(i in 1:img_dim[1]){
-#     print(paste('Processing array',i, '/', img_dim[1]))
-#     t = system.time({     
-#         m <-
-#             foreach(j = 1:img_dim[2], .combine='rbind') %:% 
-#                 foreach(k = 1:img_dim[3], .combine='c') %dopar% {      
-#                     # medium_survival_img[i,j,k]
-#                     #print(paste('Processing voxel', i, '/', img_dim[1], ', ', j, '/', img_dim[2], ', ', k, '/', img_dim[3]))
-#                     if(valid_voxels[i,j,k]){
-#                         t <- c(
-#                             low_survival_img[i,j,k],#4
-#                             medium_survival_img[i,j,k],#7
-#                             high_survival_img[i,j,k],#7
-#                             low_survival_n - low_survival_img[i,j,k],
-#                             medium_survival_n - medium_survival_img[i,j,k],
-#                             high_survival_n - high_survival_img[i,j,k]
-#                         )
-#                         rownames <- c('Tumor', 'No tumor')
-#                         colnames <- c('Low', 'Medium', 'High')
-#                         cont_table <- matrix( t, nrow=2, byrow=TRUE, dimnames = list(rownames,colnames) )
-
-#                         res <- fisher.test(cont_table)
-#                         p_value <- res$p.value
-#                     }
-#                     else{
-#                         p_value <- 0
-#                     }
-#             }
-#         p_values[i,,] = m
-#     })
-#     print(t[3])
-# }
 p_values_img <- niftiarr(low_survival_img, p_values)
 writeNIfTI(p_values_img, filename=paste0(path_name,'p_values_i1'))
