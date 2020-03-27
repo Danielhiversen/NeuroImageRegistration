@@ -16,6 +16,7 @@ import os
 from os.path import basename
 from os.path import splitext
 import sqlite3
+import json
 import time
 import multiprocessing
 import psutil
@@ -191,6 +192,7 @@ def post_calculations(moving_dataset_image_ids, result=None):
             result[label] = [vol]
 
         for (segmentation, label) in find_reg_label_images(_id):
+            if _id == 465: label = 'all' #Hack for å få med denne segmenteringen
             if label in result:
                 result[label].append(segmentation)
             else:
@@ -535,6 +537,7 @@ def sum_calculation(images, label, val=None, save=False, folder=None, default_va
         _sum += temp*val_i
         temp[temp != 0] = 1.0
         _total += temp
+
     if default_value is not None:
         _sum[_sum == 0] = default_value
 
@@ -570,6 +573,47 @@ def avg_calculation(images, label, val=None, save=False, folder=None,
     return average
 
 
+def export_labels_and_survival_groups(images, label, survival_days, survival_groups, save=False,
+                    folder=None):
+    """ Calculate average volumes """
+    if not folder:
+        folder = TEMP_FOLDER_PATH
+
+    pids_per_voxel = {}
+    _id = 0
+    for file_name in images:
+        #print('Processing image ' + str(_id+1))
+        img = nib.load(file_name)
+        label_idx = np.where(img.get_data() > 0)
+        for (k, l, m) in zip(label_idx[0], label_idx[1], label_idx[2]):
+            if k==136 and l==120 and m==60: print(str(_id+1) + ': ' + str(survival_days[_id])+ '  ' + file_name)
+            if k==137 and l==120 and m==60: print(str(_id+1) + ': ' + str(survival_days[_id])+ '  ' + file_name)
+            if k==138 and l==120 and m==60: print(str(_id+1) + ': ' + str(survival_days[_id])+ '  ' + file_name)
+            if k==139 and l==120 and m==60: print(str(_id+1) + ': ' + str(survival_days[_id])+ '  ' + file_name)
+            key = str(k) + "_" + str(l) + "_" + str(m)
+            if key in pids_per_voxel:
+                pids_per_voxel[key].append(_id)
+            else:
+                pids_per_voxel[key] = [_id]
+        _id += 1
+    image_shape = img.get_data().shape
+    
+    x = np.array(survival_days)
+    y = [ (x>=survival_groups[i][0])*(x<=survival_groups[i][1]) for i in range(len(survival_groups)) ]    
+    survival_group_per_patient = y[0] + 2*y[1] + 3*y[2]
+
+    if save:
+        pids_per_voxel_json = json.dumps(pids_per_voxel)
+        f = open(folder + 'pids_per_voxel.json','w')
+        f.write(pids_per_voxel_json)
+        f.close()
+
+        survival_group_per_patient_json = json.dumps(survival_group_per_patient.tolist())
+        f = open(folder + 'survival_group_per_patient.json','w')
+        f.write(survival_group_per_patient_json)
+        f.close()
+
+    
 def mortality_rate_calculation(images, label, survival_days, save=False, folder=None,
                     save_sum=False, default_value=0, max_value=None, per_year=False):
     """ Calculate average volumes """
