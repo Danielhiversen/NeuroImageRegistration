@@ -15,33 +15,41 @@ import numpy as np
 import os
 
 
-def process(folder, censor_date):
+
+def export_labels(folder, censor_date, survival_groups, pids_to_exclude):
     """ Post process data """
     print(folder)
     util.setup(folder)
 
-    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time",censor_date_str=censor_date)
+    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time", exclude_pid=pids_to_exclude, censor_date_str=censor_date)
+    result = util.post_calculations(image_ids)
+    print('Total: ' + str(len(result['all'])) + ' patients')
+        
+    util.export_labels_and_survival_groups(result['all'], 'tumor', survival_days, survival_groups, True, folder )
+
+
+
+def process(folder, censor_date, survival_groups, pids_to_exclude=None):
+    """ Post process data """
+    print(folder)
+    util.setup(folder)
+
+    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time", exclude_pid=pids_to_exclude, censor_date_str=censor_date)
     result = util.post_calculations(image_ids)
     print('Total: ' + str(len(result['all'])) + ' patients')
     util.avg_calculation(result['all'], 'tumor', None, True, folder, save_sum=True)
     util.mortality_rate_calculation(result['all'], '_all_year', survival_days, True, folder, default_value=-1, max_value=150, per_year=True)
     util.avg_calculation(result['img'], 'volume', None, True, folder)
 
-    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time",censor_date_str=censor_date,resection=True)
+    image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time", exclude_pid=pids_to_exclude, censor_date_str=censor_date,resection=True)
     result = util.post_calculations(image_ids)
     print('Resected: ' + str(len(result['all'])) + ' patients')
     util.avg_calculation(result['all'], 'tumor_resected', None, True, folder, save_sum=True)
     util.avg_calculation(result['img'], 'volume_resected', None, True, folder)
     util.mortality_rate_calculation(result['all'], '_resected_year', survival_days, True, folder, default_value=-1, max_value=150, per_year=True)
 
-    survival_groups = [
-        [0, 182],
-        [183, 730],
-        [731, float('Inf')]
-        ]
-
     for group in survival_groups:
-        image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time",censor_date_str=censor_date,survival_group=group)
+        image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time", exclude_pid=pids_to_exclude, censor_date_str=censor_date,survival_group=group)
         result = util.post_calculations(image_ids)
         print('Group ' + str(group) + ': ' + str(len(result['all'])) + ' patients')
         label = 'tumor_' + str(group[0]) + '-' + str(group[1])
@@ -135,5 +143,12 @@ def process_labels(folder, pids_to_exclude=None):
 if __name__ == "__main__":
     folder = "RES_survival_time_" + "{:%Y%m%d_%H%M}".format(datetime.datetime.now()) + "/"
     censor_date = "2018-12-31"
-    process_labels(folder)
-    process(folder,censor_date)
+    survival_groups = [
+        [0, 182],
+        [183, 730],
+        [731, float('Inf')]
+        ]
+    pids_to_exclude = (70,)
+    process_labels(folder, pids_to_exclude)
+    process(folder, censor_date, survival_groups, pids_to_exclude)
+    export_labels(folder, censor_date, survival_groups, pids_to_exclude)
