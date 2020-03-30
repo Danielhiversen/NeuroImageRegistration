@@ -2,10 +2,9 @@ library(jsonlite)
 library(oro.nifti)
 library(fslr)
 library(foreach)
-library(abind)
-#library(doMC)
 library(doParallel)
 library(logging)
+
 source('utils.r')
 
 # Setting up logging
@@ -36,7 +35,7 @@ pids_per_voxel <- fromJSON('pids_per_voxel.json')
 #load('test_data.RData')
 survival_group_per_patient <- unlist( fromJSON('survival_group_per_patient.json'), use.names=FALSE)
 
-template_img_file <- 'total_tumor_183-730.nii'
+template_img_file <- 'total_tumor.nii.gz'
 template_img <- readNIfTI(template_img_file)
 img_dim <- template_img@dim_[2:4]
 
@@ -91,7 +90,7 @@ loginfo('Total processing time: %i seconds.', round(t1[3]))
 loginfo('Writing results to file')
 p_values_img <- niftiarr(template_img, p_values_array)
 writeNIfTI(p_values_img, filename='p_values_corrected')
-#loginfo('Finished.')
+loginfo('Finished.')
 #cat(paste('Total processing time: ', round(t1[3]), ' seconds.\n'), file='log.txt', append=TRUE)
 
 
