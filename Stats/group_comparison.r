@@ -7,13 +7,20 @@ library(logging)
 
 source('utils.r')
 
+# Results folder
+results_folder_name <- format(Sys.time(),format='RES_survival_stats_%Y%m%d_%H%M')
+results_file_name <- 'p_values_corrected'
+log_file_name <- 'group_comparison.log'
+dir.create(results_folder_name)
+
 # Setting up logging
+
 log_file_name <- paste0('Group comparison ',Sys.time(),'.log', collapse=' ')
 log_file_name <- gsub(':','-',log_file_name)
 log_file_name <- gsub(' ','_',log_file_name)
 logReset()
 basicConfig(level='DEBUG')
-addHandler(writeToFile, file=log_file_name, level='INFO')
+addHandler(writeToFile, file=paste(results_folder_name, log_file_name, sep='/'), level='INFO')
 removeHandler('writeToConsol')
 
 # Host-specific parameters
@@ -28,11 +35,10 @@ if (host == 'SINTEF-0ZQHTDG'){
     n_cores <- 1
 }
 registerDoParallel(cores=n_cores)
-#registerDoMC(cores=n_cores)
 
 loginfo('Reading data')
-pids_per_voxel <- fromJSON('pids_per_voxel.json')
-#load('test_data.RData')
+#pids_per_voxel <- fromJSON('pids_per_voxel.json')
+load('test_data.RData')
 survival_group_per_patient <- unlist( fromJSON('survival_group_per_patient.json'), use.names=FALSE)
 
 template_img_file <- 'total_tumor.nii.gz'
@@ -49,8 +55,7 @@ set.seed(7)
 permuted_indices <- rperm( length(survival_group_per_patient), n_permutations )
 
 loginfo('Performing permutation tests')
-#writeLines(c(''), 'log.txt')
-batch_size <- 160000
+batch_size <- ((length(pids_per_voxel)/(2*n_cores))%/%1000+1)*1000 # Two batches per processor, rounded up to nearest 1000
 batch_lims <- seq(0,length(pids_per_voxel)-1, by=batch_size)
 t1 <- system.time({
     p_values_array <- 
@@ -84,15 +89,12 @@ t1 <- system.time({
             temp_array
         } 
 })
-#cat(paste('Total processing time: ', round(t1[3]), ' seconds.\n'), file='log.txt', append=TRUE)
 loginfo('Total processing time: %i seconds.', round(t1[3]))
 
 loginfo('Writing results to file')
 p_values_img <- niftiarr(template_img, p_values_array)
-writeNIfTI(p_values_img, filename='p_values_corrected')
+writeNIfTI(p_values_img, filename=paste(results_folder_name, results_file_name, sep='/'))
 loginfo('Finished.')
-#cat(paste('Total processing time: ', round(t1[3]), ' seconds.\n'), file='log.txt', append=TRUE)
-
 
 
 
