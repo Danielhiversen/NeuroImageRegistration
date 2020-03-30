@@ -7,17 +7,13 @@ library(logging)
 
 source('utils.r')
 
-# Results folder
+# File and folder names
 results_folder_name <- format(Sys.time(),format='RES_survival_stats_%Y%m%d_%H%M')
 results_file_name <- 'p_values_corrected'
 log_file_name <- 'group_comparison.log'
 dir.create(results_folder_name)
 
 # Setting up logging
-
-log_file_name <- paste0('Group comparison ',Sys.time(),'.log', collapse=' ')
-log_file_name <- gsub(':','-',log_file_name)
-log_file_name <- gsub(' ','_',log_file_name)
 logReset()
 basicConfig(level='DEBUG')
 addHandler(writeToFile, file=paste(results_folder_name, log_file_name, sep='/'), level='INFO')
