@@ -33,8 +33,8 @@ if (host == 'SINTEF-0ZQHTDG'){
 registerDoParallel(cores=n_cores)
 
 loginfo('Reading data')
-#pids_per_voxel <- fromJSON('pids_per_voxel.json')
-load('test_data.RData')
+pids_per_voxel <- fromJSON('pids_per_voxel.json')
+#load('test_data.RData')
 survival_group_per_patient <- unlist( fromJSON('survival_group_per_patient.json'), use.names=FALSE)
 
 template_img_file <- 'total_tumor.nii.gz'
@@ -43,19 +43,20 @@ img_dim <- template_img@dim_[2:4]
 
 n_total <- count_patients_per_group(survival_group_per_patient)
 
-n_permutations <- 50
+n_permutations <- 2000
 min_marginal <- 10
 
 loginfo('Creating permutations')
 set.seed(7)
-permuted_indices <- rperm( length(survival_group_per_patient), n_permutations )
+permuted_indices <- rperm(n_permutations, length(survival_group_per_patient))
 
 loginfo('Performing permutation tests')
-batch_size <- ((length(pids_per_voxel)/(2*n_cores))%/%1000+1)*1000 # Two batches per processor, rounded up to nearest 1000
+batches_per_core <- 4
+batch_size <- ((length(pids_per_voxel)/(batches_per_core*n_cores))%/%1000+1)*1000 # Rounded up to nearest 1000, leaving the last batch smaller than the rest. 
 batch_lims <- seq(0,length(pids_per_voxel)-1, by=batch_size)
 t1 <- system.time({
     p_values_array <- 
-        foreach( lim = batch_lims, .combine = '+') %dopar% {
+        foreach( lim = batch_lims, .combine = '+') %do% {
             lim1 <- lim+1
             lim2 <- min( lim+batch_size, length(pids_per_voxel) )
             batch <- c(lim1:lim2)
@@ -67,11 +68,11 @@ t1 <- system.time({
                         p_value_original <- stat_test(survival_group_per_patient[pids], n_total)
                         p_values <- rep(0, n_permutations)
                         for (j in 1:n_permutations) {
-                            survival_groups_permuted <- survival_group_per_patient[permuted_indices[j,]]
+                            survival_groups_permuted <- survival_group_per_patient[permuted_indices[,j]]
                             #groups <- survival_groups_permuted[pids] #evt. unlist(pid,use.names=FALSE)?
                             p_values[j] <- stat_test(survival_groups_permuted[pids], n_total)
                         }
-                        p_value_corrected <- sum(p_values>p_value_original)/n_permutations # ER DETTE RIKTIG??
+                        p_value_corrected <- sum(p_values<p_value_original)/n_permutations # ER DETTE RIKTIG??
 
                         index_str <- names(pids_per_voxel[i])
                         index_str_list <- strsplit(index_str,'_')
@@ -85,13 +86,9 @@ t1 <- system.time({
             temp_array
         } 
 })
-loginfo('Total processing time: %i seconds.', round(t1[3]))
+loginfo('Total processing 5time: %i seconds.', round(t1[3]))
 
 loginfo('Writing results to file')
 p_values_img <- niftiarr(template_img, p_values_array)
 writeNIfTI(p_values_img, filename=paste(results_folder_name, results_file_name, sep='/'))
 loginfo('Finished.')
-
-
-
-
