@@ -4,12 +4,13 @@ library(fslr)
 library(foreach)
 library(doParallel)
 library(logging)
+if (host == 'SINTEF-0ZQHTDG') library(fdrtool) # Bit available in R 3.4
 
 source('utils.r')
 
 # File and folder names
 results_folder_name <- format(Sys.time(),format='RES_survival_stats_%Y%m%d_%H%M')
-results_file_name <- 'p_values_corrected'
+results_file_name <- list('p_values_original', 'p_values_corrected', 'q_values')
 log_file_name <- 'group_comparison.log'
 dir.create(results_folder_name)
 
@@ -26,7 +27,6 @@ if (host == 'SINTEF-0ZQHTDG'){
 } else if (host == 'medtech-beast') {
     n_cores <- 30
 } else {
-    logwarn
     logwarn('The computer named %s is not known. Number of cores is set to 1.', host)
     n_cores <- 1
 }
@@ -42,11 +42,11 @@ template_img <- readNIfTI(template_img_file)
 img_dim <- template_img@dim_[2:4]
 
 n_total <- count_patients_per_group(survival_group_per_patient)
-
-n_permutations <- 2000
+n_permutations <- 50
 min_marginal <- 10
 
 loginfo('Creating permutations')
+loginfo('Number of permutations: %i', n_permutations)
 set.seed(7)
 permuted_indices <- rperm(n_permutations, length(survival_group_per_patient))
 
@@ -56,12 +56,12 @@ batch_size <- ((length(pids_per_voxel)/(batches_per_core*n_cores))%/%1000+1)*100
 batch_lims <- seq(0,length(pids_per_voxel)-1, by=batch_size)
 t1 <- system.time({
     p_values_array <- 
-        foreach( lim = batch_lims, .combine = '+') %do% {
+        foreach( lim = batch_lims, .combine = '+') %dopar% {
             lim1 <- lim+1
             lim2 <- min( lim+batch_size, length(pids_per_voxel) )
             batch <- c(lim1:lim2)
             t2 <- system.time({
-                temp_array <- array(0, dim=img_dim)
+                temp_array <- array(0, dim=c(2,img_dim))
                 for (i in batch) {
                     pids <- pids_per_voxel[[i]]+1 # Add 1 to convert from pythonic, zero-based indexing
                     if (length(pids)>=min_marginal) {
@@ -77,7 +77,8 @@ t1 <- system.time({
                         index_str <- names(pids_per_voxel[i])
                         index_str_list <- strsplit(index_str,'_')
                         index <- strtoi(unlist(index_str_list))+1 # Add 1 to convert from pythonic, zero-based indexing
-                        temp_array[img_dim[1]+1-index[1], index[2], index[3]] <- p_value_corrected #p_values_corrected[[index_str]]
+                        temp_array[1, img_dim[1]+1-index[1], index[2], index[3]] <- p_value_original #p_values_corrected[[index_str]]                        
+                        temp_array[2, img_dim[1]+1-index[1], index[2], index[3]] <- p_value_corrected #p_values_corrected[[index_str]]
                     }                
                 }
             })
@@ -86,9 +87,26 @@ t1 <- system.time({
             temp_array
         } 
 })
-loginfo('Total processing 5time: %i seconds.', round(t1[3]))
+loginfo('Total processing time: %i seconds.', round(t1[3]))
+
+results_array <- array(0, dim=c(3,img_dim))
+results_array[1:2,,,] <- p_values_array
+n_results <- 2
+if (host == 'SINTEF-0ZQHTDG'){
+    loginfo('Computing q values')
+    p_values <- p_values_array[2,,,]
+    p_values_vector <- p_values[p_values>0]
+    fdr <- fdrtool(p_values_vector, statistic="pvalue")
+    q_values_array <- array(0, img_dim)
+    q_values_array[p_values>0] <- fdr$qval
+    results_array[3,,,] <- q_values_array
+    n_results <- 3
+}
 
 loginfo('Writing results to file')
-p_values_img <- niftiarr(template_img, p_values_array)
-writeNIfTI(p_values_img, filename=paste(results_folder_name, results_file_name, sep='/'))
+for (i in 1:n_results){
+    results_img <- niftiarr(template_img, results_array[i,,,])
+    writeNIfTI(results_img, filename=paste(results_folder_name, results_file_name[[i]], sep='/'))
+}
+
 loginfo('Finished.')
