@@ -4,7 +4,6 @@ library(fslr)
 library(foreach)
 library(doParallel)
 library(logging)
-if (host == 'SINTEF-0ZQHTDG') library(fdrtool) # Bit available in R 3.4
 
 source('utils.r')
 
@@ -23,6 +22,7 @@ removeHandler('writeToConsol')
 # Host-specific parameters
 host <- Sys.info()["nodename"]
 if (host == 'SINTEF-0ZQHTDG'){
+    library(fdrtool) # Bit available in R 3.4
     n_cores <- 4
 } else if (host == 'medtech-beast') {
     n_cores <- 30
