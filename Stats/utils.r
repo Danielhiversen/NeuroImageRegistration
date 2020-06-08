@@ -1,3 +1,5 @@
+source('Exact_cond_midP_unspecific_ordering_rx2.R')
+
 #' Perform statistical test of association.
 #' 
 #' @param groups_per_patient Vector with group number for each group.
@@ -5,6 +7,7 @@
 #' @return p-value 
 #' @examples
 stat_test <- function(groups_per_patient, total_per_group) {
+
     n_total <- total_per_group
     n_tumor <- count_patients_per_group(groups_per_patient)
     t <- c(
@@ -15,14 +18,33 @@ stat_test <- function(groups_per_patient, total_per_group) {
         n_total$medium - n_tumor$medium,
         n_total$high - n_tumor$high
     )
+    # t <- c(
+    #     n_tumor$low,
+    #     n_tumor$medium,
+    #     n_tumor$low + n_tumor$medium,
+    #     n_tumor$high,
+    #     n_total$low - n_tumor$low,
+    #     n_total$medium - n_tumor$medium,
+    #     n_total$low - n_tumor$low + n_total$medium - n_tumor$medium,
+    #     n_total$high - n_tumor$high
+    #  )
     cont_table <- matrix( t, nrow=2, byrow=TRUE )
 
     ## Long version (~17% slower)
     #rownames <- c('Tumor', 'No tumor')
     #colnames <- c('Low', 'Medium', 'High')
     #cont_table <- matrix( t, nrow=2, byrow=TRUE, dimnames = list(rownames,colnames) )
-    res <- fisher.test(cont_table)
-    p_value <- res$p.value
+
+    test <- 'Pearson' # Fisher, Pearson, LR, PearsonCumOR or LRCumOR
+    if (test=='Fisher'){
+        res <- fisher.test(cont_table)
+        p_value <- res$p.value
+    } else {
+        direction = 'decreasing'    
+        res <- Exact_cond_midP_unspecific_ordering_rx2(t(cont_table), direction, test, FALSE)
+        p_value <- res$P
+        #p_value <- res$midP
+    }
 }
 
 count_patients_per_group <- function( group_per_patient ) {

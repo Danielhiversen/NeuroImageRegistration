@@ -42,7 +42,7 @@ template_img <- readNIfTI(template_img_file)
 img_dim <- template_img@dim_[2:4]
 
 n_total <- count_patients_per_group(survival_group_per_patient)
-n_permutations <- 50
+n_permutations <- 2000
 min_marginal <- 10
 
 loginfo('Creating permutations')
