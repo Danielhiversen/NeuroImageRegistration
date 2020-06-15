@@ -29,7 +29,7 @@ stat_test <- function(groups_per_patient, total_per_group) {
     #     n_total$high - n_tumor$high
     #  )
     cont_table <- matrix( t, nrow=2, byrow=TRUE )
-
+    
     ## Long version (~17% slower)
     #rownames <- c('Tumor', 'No tumor')
     #colnames <- c('Low', 'Medium', 'High')
@@ -40,10 +40,17 @@ stat_test <- function(groups_per_patient, total_per_group) {
         res <- fisher.test(cont_table)
         p_value <- res$p.value
     } else {
-        direction = 'decreasing'    
+        p1 <- n_tumor$low/n_total$low
+        p2 <- n_tumor$medium/n_total$medium
+        p3 <- n_tumor$high/n_total$high
+        if ((p1<=p2 & p1>=p3) | (p1>=p2 & p1>=p3) ){
+            direction <- 'decreasing'
+        } else {
+            direction <- 'increasing'
+        }
         res <- Exact_cond_midP_unspecific_ordering_rx2(t(cont_table), direction, test, FALSE)
-        p_value <- res$P
-        #p_value <- res$midP
+        result <- list('p'=res$P, 'direction'=direction)
+        #result <- list('p'=res$midP, 'direction'=direction)
     }
 }
 

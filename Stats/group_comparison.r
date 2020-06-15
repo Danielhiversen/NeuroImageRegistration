@@ -42,8 +42,8 @@ template_img <- readNIfTI(template_img_file)
 img_dim <- template_img@dim_[2:4]
 
 n_total <- count_patients_per_group(survival_group_per_patient)
-n_permutations <- 2000
-min_marginal <- 10
+n_permutations <- 50
+min_marginal <- 0
 
 loginfo('Creating permutations')
 loginfo('Number of permutations: %i', n_permutations)
@@ -65,20 +65,27 @@ t1 <- system.time({
                 for (i in batch) {
                     pids <- pids_per_voxel[[i]]+1 # Add 1 to convert from pythonic, zero-based indexing
                     if (length(pids)>=min_marginal) {
-                        p_value_original <- stat_test(survival_group_per_patient[pids], n_total)
+                        res_original <- stat_test(survival_group_per_patient[pids], n_total)
+                        p_value_original <- res_original$p
                         p_values <- rep(0, n_permutations)
                         for (j in 1:n_permutations) {
                             survival_groups_permuted <- survival_group_per_patient[permuted_indices[,j]]
                             #groups <- survival_groups_permuted[pids] #evt. unlist(pid,use.names=FALSE)?
-                            p_values[j] <- stat_test(survival_groups_permuted[pids], n_total)
+                            res <- stat_test(survival_groups_permuted[pids], n_total)
+                            p_values[j] <- res$p
                         }
-                        p_value_corrected <- sum(p_values<p_value_original)/n_permutations # ER DETTE RIKTIG??
+                        p_value_corrected <- sum(p_values<p_value_original)/n_permutations
+                        if( res_original$direction == 'increasing' ){
+                            dir_sign <- 1
+                        } else {
+                            dir_sign <- -1
+                        }
 
                         index_str <- names(pids_per_voxel[i])
                         index_str_list <- strsplit(index_str,'_')
                         index <- strtoi(unlist(index_str_list))+1 # Add 1 to convert from pythonic, zero-based indexing
-                        temp_array[1, img_dim[1]+1-index[1], index[2], index[3]] <- p_value_original #p_values_corrected[[index_str]]                        
-                        temp_array[2, img_dim[1]+1-index[1], index[2], index[3]] <- p_value_corrected #p_values_corrected[[index_str]]
+                        temp_array[1, img_dim[1]+1-index[1], index[2], index[3]] <- p_value_original*dir_sign #p_values_corrected[[index_str]]                        
+                        temp_array[2, img_dim[1]+1-index[1], index[2], index[3]] <- p_value_corrected*dir_sign #p_values_corrected[[index_str]]
                     }                
                 }
             })
