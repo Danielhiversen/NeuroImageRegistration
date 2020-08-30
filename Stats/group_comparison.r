@@ -8,7 +8,7 @@ library(logging)
 source('utils.r')
 
 # File and folder names
-results_folder_name <- format(Sys.time(),format='RES_survival_stats_%Y%m%d_%H%M')
+results_folder_name <- format(Sys.time(),format='RES_survival_stats_low-medium_%Y%m%d_%H%M')
 results_file_name <- list('p_values_original', 'p_values_corrected', 'q_values')
 log_file_name <- 'group_comparison.log'
 dir.create(results_folder_name)
@@ -42,7 +42,7 @@ template_img <- readNIfTI(template_img_file)
 img_dim <- template_img@dim_[2:4]
 
 n_total <- count_patients_per_group(survival_group_per_patient)
-n_permutations <- 50
+n_permutations <- 500
 min_marginal <- 0
 
 loginfo('Creating permutations')
@@ -102,11 +102,13 @@ n_results <- 2
 if (host == 'SINTEF-0ZQHTDG'){
     loginfo('Computing q values')
     p_values <- p_values_array[2,,,]
+    p_values_sign <- sign(p_values)
+    p_values <- abs(p_values)
     p_values_vector <- p_values[p_values>0]
     fdr <- fdrtool(p_values_vector, statistic="pvalue")
     q_values_array <- array(0, img_dim)
     q_values_array[p_values>0] <- fdr$qval
-    results_array[3,,,] <- q_values_array
+    results_array[3,,,] <- q_values_array*p_values_sign
     n_results <- 3
 }
 
