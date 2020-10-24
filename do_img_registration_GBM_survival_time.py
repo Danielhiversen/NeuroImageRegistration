@@ -25,25 +25,20 @@ if __name__ == "__main__":  # if 'unity' in hostname or 'compute' in hostname:
 
     util.setup(path)
 
-    (image_ids, survival_days) = util.get_image_id_and_survival_days(exclude_pid=[186], glioma_grades=[4])
-
-    if len(sys.argv) > 2:
-        # from mpi4py import MPI
-        # comm = MPI.COMM_WORLD
-        # split = comm.Get_rank()
-        # num_of_splits = comm.Get_size()
-
-        num_of_splits = int(sys.argv[1])
-        split = int(sys.argv[2])
-
-        length = int(len(image_ids) / num_of_splits)
-        start_idx = length * (split - 1)
-        if split < num_of_splits:
-            image_ids = image_ids[start_idx:(start_idx+length)]
-        else:
-            image_ids = image_ids[start_idx:]
+    #image_ids, survival_days = util.get_image_id_and_survival_days(study_id="GBM_survival_time", registration_date_upper_lim="2018-10-29")
+    #image_ids = [10]
+    #image_ids = [10, 19, 35, 371, 71, 83,98, 103, 106, 116, 231, 392, 458]
+    #image_ids = [10, 19, 71, 83, 98, 103, 106, 116, 231, 392, 458]
+    #image_ids = range(454,465)
+    #image_ids = [413, 386, 398, 406, 416, 420, 419, 392, 412, 408, 405, 407]
+    image_ids = [75, 465, 125, 126, 183, 377, 220]
+    #image_ids = [413]
 
     util.LOGGER.info(str(image_ids) + " " + str(len(image_ids)))
     image_registration.get_transforms(image_ids,
-                                      image_registration.RIGID,
+                                      #reg_type=image_registration.RIGID,
+                                      #save_to_db=True,
+                                      #reg_type_be=image_registration.SIMILARITY)
+                                      reg_type=image_registration.SYN,
+                                      reg_type_be=image_registration.SIMILARITY,
                                       save_to_db=True)

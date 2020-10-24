@@ -62,7 +62,11 @@ if 'unity' in HOSTNAME or 'compute' in HOSTNAME:
     NUM_THREADS_ANTS = 6
     MULTITHREAD = 8
     BET_COMMAND = "/home/danieli/fsl/bin/bet"
-else:
+elif 'medtech-beast' in HOSTNAME:
+    NUM_THREADS_ANTS = 4
+    MULTITHREAD = 6
+    BET_COMMAND = "fsl5.0-bet"
+else: 
     NUM_THREADS_ANTS = 4
     # MULTITHREAD = 1  # 1,23,4....., "max"
     MULTITHREAD = "max"
@@ -213,20 +217,25 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
             util.LOGGER.info("Finished bet registration 0: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
             name += "_be"
+            print('OR HERE 3??????')
             moving_image = util.TEMPLATE_MASKED_VOLUME
+            print(moving_image)
             fixed_image = bet.inputs.out_file
         else:
             name = util.get_basename(resampled_file) + "_be"
             moving_image = util.TEMPLATE_VOLUME
             fixed_image = resampled_file
-
         img.init_transform = path + name + '_InitRegTo' + str(img.fixed_image) + '.h5'
         img.pre_processed_filepath = path + name + '.nii.gz'
+        print('DO I GET HERE??????')
         reg = ants.Registration()
         # reg.inputs.args = "--verbose 1"
         reg.inputs.collapse_output_transforms = True
         reg.inputs.fixed_image = fixed_image
+        print('OR HERE 1??????')
+        print(moving_image)
         reg.inputs.moving_image = moving_image
+        print('OR HERE 2??????')
         reg.inputs.fixed_image_mask = img.label_inv_filepath
 
         reg.inputs.num_threads = NUM_THREADS_ANTS
@@ -258,7 +267,7 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg.inputs.write_composite_transform = True
         reg.inputs.output_transform_prefix = path + name
         reg.inputs.output_warped_image = path + name + '_TemplateReg.nii.gz'
-
+        print('FINISHED SETTING UP ALL reg.inputs')
         transform = path + name + 'InverseComposite.h5'
         util.LOGGER.info("starting be registration")
         util.LOGGER.info(reg.cmdline)
@@ -271,10 +280,16 @@ def pre_process(img, do_bet=True, slice_size=1, reg_type=None, be_method=None):
         reg_volume = util.transform_volume(resampled_file, transform)
         shutil.copy(transform, img.init_transform)
 
+        brain_mask = util.TEMPLATE_MASK
+        #brain_mask = img.reg_brainmask_filepath
+        if not brain_mask:
+            brain_mask = util.TEMPLATE_MASK
+        print("Using brain mask " + brain_mask)
+
         mult = ants.MultiplyImages()
         mult.inputs.dimension = 3
         mult.inputs.first_input = reg_volume
-        mult.inputs.second_input = util.TEMPLATE_MASK
+        mult.inputs.second_input = brain_mask
         mult.inputs.output_product_image = img.pre_processed_filepath
         mult.run()
 
@@ -436,7 +451,6 @@ def process_dataset(args):
             img = pre_process(img, reg_type=reg_type_be, be_method=be_method)
             util.LOGGER.info("-- Run time preprocess: ")
             util.LOGGER.info(datetime.datetime.now() - start_time)
-
             img = registration(img, util.TEMPLATE_MASKED_VOLUME, reg_type)
             break
         # pylint: disable= broad-except
@@ -445,6 +459,9 @@ def process_dataset(args):
     util.LOGGER.info(" -- Run time: " + str(datetime.datetime.now() - start_time))
     if save_to_db:
         save_transform_to_database([img])
+        del img
+    else:
+        transform_labels_temp([img])
         del img
 
 
@@ -559,5 +576,28 @@ def save_transform_to_database(imgs):
         cursor.close()
         cursor2.close()
 
-#    cursor = conn.execute('''VACUUM; ''')
+def transform_labels_temp(imgs):
+    """ Save transformed labels to a temp folder in database"""
+    # pylint: disable= too-many-locals, bare-except
+    conn = sqlite3.connect(util.DB_PATH, timeout=900)
+    conn.text_factory = str
+
+    for img in imgs:
+        cursor = conn.execute('''SELECT pid from Images where id = ? ''', (img.image_id,))
+        pid = cursor.fetchone()[0]
+
+        folder = util.DATA_FOLDER + str(pid) + "/reg_volumes_labels/temp/"
+        if not os.path.exists(folder):
+            os.makedirs(folder)
+
+        cursor = conn.execute('''SELECT filepath, id from Labels where image_id = ? ''',
+                              (img.image_id,))
+        for (filepath, label_id) in cursor:
+            temp = util.compress_vol(move_vol(util.DATA_FOLDER + filepath,
+                                              img.get_transforms(), True))
+            shutil.copy(temp, folder)
+
+        conn.commit()
+        cursor.close()
+
     conn.close()

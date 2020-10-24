@@ -72,7 +72,7 @@ if __name__ == "__main__":
         path = "/work/danieli/MM/"
     else:
         os.nice(17)
-        path = "MM_TEMP_" + "{:%m_%d_%Y}_BE2".format(datetime.datetime.now()) + "/"
+        path = "MM_TEMP_" + "{:%Y_%m_%d}_BE2".format(datetime.datetime.now()) + "/"
 
     util.setup(path, "MolekylareMarkorer")
     #
@@ -84,11 +84,14 @@ if __name__ == "__main__":
     #                                                     save_to_db=True)
 
     util.prepare_template(datasets.fetch_icbm152_2009(data_dir="./").get("t2"), util.TEMPLATE_MASK, True)
-    moving_datasets_ids = find_images_from_pid([125, 2101])
+    #moving_datasets_ids = find_images_from_pid([125, 2101])
+    #moving_datasets_ids = find_images_from_pid([108, 112, 125, 126, 133, 137, 138, 158, 164, 166, 171, 2101])
+    moving_datasets_ids = find_images_from_pid([116, 118, 121, 148, 155, 160, 179])
+    #moving_datasets_ids = find_images_from_pid([2010, 2029, 2030, 2021, 2041, 2062, 2079, 21114, 21159, 21214])
     print(moving_datasets_ids, len(moving_datasets_ids))
     data_transforms = image_registration.get_transforms(moving_datasets_ids,
                                                         image_registration.AFFINE,
-                                                        save_to_db=True)
+                                                        save_to_db=False)
 
     # moving_datasets_ids = find_images_from_pid([172])
     # print(moving_datasets_ids, len(moving_datasets_ids))

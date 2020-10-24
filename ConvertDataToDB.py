@@ -12,7 +12,9 @@ import shutil
 import sqlite3
 import pyexcel_xlsx
 from openpyxl import load_workbook
+import nibabel as nib
 
+import image_registration
 import util
 
 # DATA_PATH_LISA = MAIN_FOLDER + "Segmenteringer_Lisa/"
@@ -22,9 +24,8 @@ import util
 # PID_ANNE_LISE = MAIN_FOLDER + "Koblingsliste__Anne_Line.xlsx"
 # DATA_PATH_LGG = MAIN_FOLDER + "Data_HansKristian_LGG/LGG/NIFTI/"
 
-MAIN_FOLDER = "/home/dahoiv/disk/data/Segmentations/"
-DWICONVERT_PATH = "/home/dahoiv/disk/kode/Slicer/Slicer-SuperBuild/Slicer-build/lib/Slicer-4.6/cli-modules/DWIConvert"
-
+MAIN_FOLDER = "/media/leb/data/"
+CONVERTER_PATH = "/home/leb/dev/BRAINSTools/build/bin/ConvertBetweenFileFormats"
 
 def create_db(path):
     """Make the database"""
@@ -109,8 +110,8 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
 
     volume_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type + ".nii.gz"
     print("--->", volume_out)
-    os.system(DWICONVERT_PATH + " --inputVolume " + volume_temp + " -o " + volume_out +
-              " --conversionMode NrrdToFSL --allowLossyConversion")
+    os.system(CONVERTER_PATH + " '" + volume_temp + "' " + volume_out)
+
     volume_out_db = volume_out.replace(util.DATA_FOLDER, "")
     cursor.execute('''UPDATE Images SET filepath = ?, filepath_reg = ? WHERE id = ?''', (volume_out_db, None, img_id))
     os.remove(volume_temp)
@@ -126,8 +127,7 @@ def convert_and_save_dataset(pid, cursor, image_type, volume_labels, volume, gli
 
         volume_label_out = img_out_folder + str(pid) + "_" + str(img_id) + "_MR_T1_" + image_type\
             + "_label_all.nii.gz"
-        os.system(DWICONVERT_PATH + " --inputVolume " + volume_label_temp + " -o " +
-                  volume_label_out + " --conversionMode NrrdToFSL --allowLossyConversion")
+        os.system(CONVERTER_PATH + " '" + volume_label_temp + "' " + volume_label_out)
         volume_label_out_db = volume_label_out.replace(util.DATA_FOLDER, "")
         cursor.execute('''UPDATE Labels SET filepath = ?, filepath_reg = ? WHERE id = ?''',
                        (volume_label_out_db, None, label_id))
@@ -284,13 +284,14 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
     cursor = conn.cursor()
 
     log = ""
-
+    
     for case_id in case_ids:
         data_path = path + str(case_id) + "/"
         if not os.path.exists(data_path):
             continue
-
+        
         pid = str(case_id)
+        print("\n ====================\n Adding patient " + pid)
         if update:
             for _file in glob.glob(util.DATA_FOLDER + str(pid) + "/volumes_labels/*"):
                 _file = _file.replace(util.DATA_FOLDER, "")
@@ -300,12 +301,6 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
                 shutil.rmtree(util.DATA_FOLDER + str(pid))
             except OSError:
                 pass
-
-        data_path = path + str(case_id) + "/"
-        if not os.path.exists(data_path):
-            continue
-
-        print(data_path)
 
         file_type_nrrd = True
         volume_label = glob.glob(data_path + '/*label.nrrd')
@@ -352,7 +347,7 @@ def convert_data(path, glioma_grade, update=False, case_ids=range(2000)):
     cursor.close()
     conn.close()
 
-
+    
 def convert_lgg_data(path):
     """convert_lgg_data"""
     convert_table = get_convert_table('/home/dahoiv/disk/data/Segmentations/NY_PID_LGG segmentert.xlsx')
@@ -403,6 +398,87 @@ def vacuum_db():
     conn.close()
 
 
+def update_segmentations(path):
+    """Update existing patients with new segmentations from Even"""
+    # pylint: disable= too-many-locals, too-many-branches, too-many-statements
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+
+    log = ""
+
+    included_cases = path + "Included cases - final.xlsx"
+    case_list = load_workbook(included_cases,data_only=True)['Included cases - final']
+    for case in range(2, 213):
+
+        cell_name = "{}{}".format("A", case)
+        pid = str(case_list[cell_name].value)
+
+        cell_name = "{}{}".format("B", case)
+        new_segmentation = str(case_list[cell_name].value)
+
+        data_path = path + "Segmenteringer/" + pid + "/"
+
+        if new_segmentation == "1" and os.path.exists(util.DATA_FOLDER + pid + "/" ):# and pid == "711":
+            print("Converting image " + pid)
+            log = log + "\n Converting image " + pid
+            
+            label_file_endings = ('*label.nrrd',
+                                  '*label_1.nrrd',
+                                  'Segmentation/*label.nrrd',
+                                  'Segmentering/*label.nrrd',
+                                  '*hele-label.nii')       
+
+            for file_ending in label_file_endings:
+                volume_label = glob.glob(data_path + file_ending)    
+                if volume_label:
+                    break
+            if len(volume_label) > 1:
+                log = log + "\n Warning!! More than one file with label found "
+                for volume_label_i in volume_label:
+                    log = log + volume_label_i
+                continue
+            volume_label = volume_label[0]
+            if not os.path.exists(volume_label):
+                log = log + "\n Warning!! No label found " + data_path + volume_label
+            
+            cursor.execute("SELECT id FROM Images WHERE pid = ?", (pid,))
+            image_id = cursor.fetchone()
+            image_id = str(image_id[0])
+
+            cursor.execute("SELECT transform FROM Images WHERE id = ?", (image_id,))
+            transforms_temp = cursor.fetchone()
+            if transforms_temp is None:
+                log = log + "\n Warning!! No transform found for image " + image_id
+            else:
+                transforms_temp = str(transforms_temp[0])
+            transforms = []
+            for _transform in transforms_temp.split(","):
+                transforms.append(util.DATA_FOLDER + _transform.strip())
+             
+            cursor.execute("SELECT filepath, filepath_reg FROM Labels WHERE image_id = ?", (image_id,))
+                        
+            for row in cursor:
+                _filepath = row[0]
+                _filepath_reg = row[1]
+                try:
+                    os.remove(util.DATA_FOLDER + _filepath)
+                    os.remove(util.DATA_FOLDER + _filepath_reg)
+                except OSError:
+                    pass
+                
+                # Converting file to nii.gz if necessary
+                os.system(CONVERTER_PATH + " '" + volume_label + "' " + util.DATA_FOLDER + _filepath)
+
+                temp = util.compress_vol( image_registration.move_vol(util.DATA_FOLDER + _filepath, transforms, True) )
+                shutil.copy(temp, util.DATA_FOLDER + _filepath_reg)
+
+
+    with open("Log.txt", "w") as text_file:
+        text_file.write(log)
+    cursor.close()
+    conn.close()    
+
+    
 def update_glioma_grade(glioma_grade):
     """Convert qol data to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -662,6 +738,78 @@ def add_study_lgg():
     conn.close()
 
 
+def add_study_survival(path):
+    """add study to database """
+    conn = sqlite3.connect(util.DB_PATH)
+
+    # Remove commas in study IDs
+    cursor = conn.cursor()
+    cursor2 = conn.cursor()
+    cursor.execute("SELECT pid, study_id FROM Patient")
+    for row in cursor:
+        pid = row[0]
+        study_id = row[1]
+        if study_id:
+            cursor2.execute("UPDATE Patient SET study_id = ? WHERE pid = ?",
+                                   (study_id.replace('qol_grade3,4','qol_grade34'), pid))
+            conn.commit()
+    cursor2.close()
+    
+    # Add new study IDs
+    survival_id = "GBM_survival_time"
+    included_cases = path + "Included cases - final.xlsx"
+    case_list = load_workbook(included_cases,data_only=True)['Included cases - final']
+    for case in range(2, 213):
+
+        cell_name = "{}{}".format("A", case)
+        pid = case_list[cell_name].value
+
+        cursor.execute("SELECT study_id FROM Patient WHERE pid = ?", (pid,))
+        study_id = cursor.fetchone()
+        if study_id and study_id[0]:
+            study_id = study_id[0]
+            if survival_id not in study_id:
+                study_id += ", " + survival_id
+        else:
+            study_id = survival_id    
+        cursor.execute("UPDATE Patient SET study_id = ? WHERE pid = ?",
+                                  (study_id, pid))
+        conn.commit()
+        
+    cursor.close()        
+    conn.close()    
+
+def add_survival_in_days(path):
+    """add survival data to database """
+    
+    conn = sqlite3.connect(util.DB_PATH)
+    cursor = conn.cursor()
+    
+    included_cases = path + "Location and survival - survival in days.xlsx"
+    case_list = load_workbook(included_cases,data_only=True)['Location and survival - surviva']
+    for case in range(2, 213):
+
+        cell_name = "{}{}".format("A", case)
+        pid = case_list[cell_name].value
+
+        cell_name = "{}{}".format("B", case)
+        survival_days = case_list[cell_name].value
+
+        cursor.execute("SELECT survival_days FROM Patient WHERE pid = ?", (pid,))
+        survival_days_db = cursor.fetchone()
+        if survival_days_db and survival_days_db[0]:
+            if survival_days_db[0] != survival_days:
+                print("survival_days_db is not equal to survival_days for pid " + str(pid))
+        elif survival_days != "#NULL!":
+            print("Survival days for pid " + str(pid) + ": " + str(survival_days))
+            cursor.execute("UPDATE Patient SET survival_days = ? WHERE pid = ?",
+                              (survival_days, pid))
+            conn.commit()
+        
+    cursor.close()
+    conn.close()    
+    
+
 def add_tumor_volume():
     """add tumor volume to database """
     conn = sqlite3.connect(util.DB_PATH)
@@ -701,8 +849,54 @@ def add_tumor_volume():
     conn.close()
 
 
+def add_resection_status(path):
+    """add resection status to database """
+
+    conn = sqlite3.connect(util.DB_PATH)
+
+    try:
+        conn.execute("alter table Patient add column 'resection' 'INTEGER'")
+    except sqlite3.OperationalError:
+        pass
+
+    # Add resection status
+    data = pyexcel_xlsx.get_data(path + "Biopsy_cases.xlsx")
+    case_list = [int(pid[0]) for pid in data['Ark1'][2:]]
+
+    cursor = conn.execute("SELECT pid FROM Patient WHERE study_id LIKE '%GBM_survival_time%'")
+    for pid in cursor:
+        pid = pid[0]
+        if pid in case_list:
+            resection_status = 0
+        else:
+            resection_status = 1
+        conn.execute("UPDATE Patient SET resection = ? WHERE pid = ?",
+                    (resection_status, pid))
+        conn.commit()
+
+    cursor.close()
+    conn.close()
+
+
 if __name__ == "__main__":
-    util.setup_paths()
+#    util.setup_paths()
+
+    temp_path = "reg_labels_temp/"
+    util.setup(temp_path)
+
+    add_resection_status(MAIN_FOLDER + "Even_survival/")
+#    add_survival_in_days(MAIN_FOLDER + "Even_survival/")
+#    add_study_survival(MAIN_FOLDER + "Even_survival/")
+    
+#    update_segmentations(MAIN_FOLDER + "Even_survival/")
+
+#    convert_data(MAIN_FOLDER + "Even_survival/Segmenteringer/New_patients/", 4, update=True, case_ids=range(16000, 17000))
+
+
+
+
+
+
 #    try:
 #        shutil.rmtree(util.DATA_FOLDER)
 #    except OSError:
@@ -745,11 +939,11 @@ if __name__ == "__main__":
 
 #    qol_change_to_db()
 
-    add_survival_age_kps_days()
+#    add_survival_age_kps_days()
 
 
 #    add_study_lgg()
 
-    add_tumor_volume()
+#    add_tumor_volume()
 
     vacuum_db()
